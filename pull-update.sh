@@ -8,13 +8,8 @@
 
 # PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND
 
-# --- SETUP ----------
-
 DATA='/home/casper/.casperlabs'
 GENESIS='/home/casper/.casperlabs/chainspec/genesis'
-
-# --- END OF SETUP ---
-
 
 Dispal_PID=$(pgrep casperlabs-engi)
 
@@ -30,7 +25,7 @@ number='^[0-9]+$'
 		echo -e "\e[32mEngine is not active, nothing to destroy or break.\e[0m"
 		echo -e ''
 
-        else
+        else # if active safely shutdown
 
 		echo -e ''
 		echo -e 'Shooting down CasperLabs Engine GRPC Server ...'
@@ -40,18 +35,19 @@ number='^[0-9]+$'
 
 		sleep 1
 
-        		until [ $(systemctl is-active casperlabs-engine-grpc-server.service) = "inactive" ]
+        		until [ $(systemctl is-active casperlabs-engine-grpc-server.service) = "active" ]
 
                 		do
                         		systemctl stop casperlabs-engine-grpc-server.service & PID=$!
 
                         		wait $PID
+
+					sleep 3
                 		done
 
-		sleep 2
 		echo -e '*DONE*'
 		echo -e ''
-		sleep 2
+		sleep 1
         fi
 }
 
@@ -65,13 +61,26 @@ ENGI_PID=$(pgrep casperlabs-engi)
 
 number='^[0-9]+$'
 
-	if [[ $ENGI_PID =~ $number ]] ; then
-   		echo -e "\e[31merror: CasperLabs Engine GRPC Server is still running!\e[0m" >&2; exit 1
-	else
+	while [[ $ENGI_PID =~ $number ]]; do
+
+   		echo -e "\e[31merror: CasperLabs Engine GRPC Server is still running!\e[0m"
+		echo -e ''
+		echo -e "\e[31mKilling $ENGI_PID PID ...\e[0m"
+		echo -e ''
+
+		kill -9 $ENGI_PID && PID=$! > /dev/null 2>&1
+
+		wait $PID
+
+		ENGI_PID=$(pgrep casperlabs-engi)
+
+		sleep 1
+	done
+
 		echo -e 'Check pass OK'
 		echo -e ''
+
 		sleep 1
-	fi
 }
 
 
@@ -133,5 +142,5 @@ ListFoldersContent
 echo -e ''
 echo -e 'Everything should be ready to go.'
 echo -e ''
-echo -e 'Copy Paste for lazy people like me:' '\e[32msystemctl start casperlabs-engine-grpc-server.service\e[0m'
+echo -e 'Copy Paste for lazy people like me:' '\e[32msudo systemctl start casperlabs-engine-grpc-server.service\e[0m'
 echo -e ''
