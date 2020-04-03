@@ -1,0 +1,14 @@
+# Note: This file is an example and does not run as is. We recommend overriding
+# this file in /etc/systemd/system with a similar copy. 
+[Unit]
+Description=CasperLabs Node
+After=network.target casperlabs-engine-grpc-server.service
+BindsTo=casperlabs-engine-grpc-server.service
+
+[Service]
+ExecStart=/usr/bin/casperlabs-node --config-file=/etc/casperlabs/casperd-config.toml run -m --server-data-dir=/home/casper/.casperlabs
+User=casper
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
