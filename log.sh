@@ -27,9 +27,13 @@ EXE='Executing action='
 CREATE='Created kind='
 F_CREATE='Finished handling created message='
 SCHEDULE='Scheduling action='
+
+LFB='New last finalized block'
+
 ERROR='error'
 
-tail -f $LOG_PATH |  jq '.text | .message | select (.!=null)' | lch -red.wl "$UNCAUGHT" "$ERROR" -yellow.wl "$HANDLING" "$ATTEMPTING" -green.wl "$FINISHED" "$ADD_MESSAGE" -cyan.wl "$PEER_SIZE" "$F_CREATE" -magenta.wl "$EXE" "$CREATE" "$SCHEDULE"
+VOTE='vote any main child'
 
+tail -f $LOG_PATH |  jq '.text | .message | select (.!=null)' | lch -red.wl "$UNCAUGHT" "$ERROR" "$VOTE" -yellow.wl "$HANDLING" "$ATTEMPTING" -green.wl "$FINISHED" "$ADD_MESSAGE" -cyan.wl "$PEER_SIZE" "$F_CREATE" -magenta.wl "$EXE" "$CREATE" "$SCHEDULE" "$LFB"
 
 
