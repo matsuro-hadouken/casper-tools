@@ -35,6 +35,14 @@ ERROR='error'
 
 VOTE='vote any main child'
 
-SUCCESS='Success'
+APPROVAL='Added new approval'
 
-tail -f $LOG_PATH |  jq '.text | .message | select (.!=null)' | lch -red.wl "$UNCAUGHT" "$ERROR" "$VOTE" -yellow.wl "$HANDLING" -white.bold.wl "$ATTEMPTING" -green.wl "$FINISHED" "$ADD_MESSAGE" -cyan.wl "$PEER_SIZE" "$F_CREATE" -magenta.wl "$SUCCESS" "$EXE" "$CREATE" "$SCHEDULE" "$LFB" -red.bold "$ERA_CREATED"
+METRIX_REPORT='Reporting metrics to destination='
+
+STARTING="Starting node"
+
+LISTENING="Listening"
+
+REQUIRED='reached required min_successful'
+
+tail -f $LOG_PATH |  jq '.text | .message | select (.!=null)' | lch -red.wl "$UNCAUGHT" "$ERROR" "$VOTE" "$REQUIRED"  -yellow.wl "$HANDLING" -white.bold.wl "$ATTEMPTING" -green.wl "$LISTENING"  "$FINISHED" "$APPROVAL" "$METRIX_REPORT"  "$ADD_MESSAGE" -cyan.wl "$PEER_SIZE" "$F_CREATE" -magenta.wl "$EXE" "$CREATE" "$STARTING" "$SCHEDULE" "$LFB" -red.bold "$ERA_CREATED" 
