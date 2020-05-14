@@ -99,7 +99,7 @@ init-sync-min-successful = 5
 # init-sync-memoize-nodes = false
 
 # Skip nodes which failed previous synchronization attempts or allow them to be tried again.
-# init-sync-skip-failed-nodes = false
+init-sync-skip-failed-nodes = true
 
 # Depth of DAG slices (by rank) retrieved slice-by-slice until node fully synchronized.
 # init-sync-step = 100
@@ -145,6 +145,20 @@ init-sync-min-successful = 5
 # Maximum number of in-flight throttled block download requests per peer,
 # if 0 then unlimited, if reached max size then peer will receive RESOURCE_EXHAUSTED response.
 # block-upload-rate-max-throttled = 0
+
+main-threads = 50
+
+# Size of the thread pool used to handle incoming requests.
+ingress-threads = 100
+
+# Size of the thread pool waiting for the database writer connection.
+db-write-threads = 90
+
+# Size of the thread pool waiting for a database reader connection.
+db-read-threads = 120
+
+# Number of database connections in the reader pool.
+db-read-connections = 30
 
 # io.casperlabs.node.configuration.Configuration.BlockStorage
 [blockstorage]
@@ -196,7 +210,6 @@ key = "/home/casper/.casperlabs/node.key.pem"
 
 # Private key to use with the public API certificate.
 # api-key = "/var/lib/casperlabs/api.key.pem"
-
 
 # io.casperlabs.casper.CasperConf
 [casper]
@@ -259,11 +272,13 @@ validator-private-key-path = /home/casper/.casperlabs/validator-private.pem
 # Use highway, or stick to NCB.
 enabled = true
 
+omega-blocks-enabled = true
+
 # Fraction of time through the round after which we can create an omega message.
-# omega-message-time-start = 0.5
+omega-message-time-start = 0.1
 
 # Fraction of time through the round before which we must have created the omega message.
-# omega-message-time-end = 0.75
+omega-message-time-end = 0.9
 
 # Initial round exponent to start the node with, before auto-adjustment takes over; corresponds to the tick unit of the chain.
 init-round-exponent = 17
@@ -282,7 +297,6 @@ prometheus = true
 
 # Enable Influx system metrics.
 # influx = false
-
 
 # io.casperlabs.node.configuration.Configuration.Influx
 [influx]
