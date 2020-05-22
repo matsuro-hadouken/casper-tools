@@ -1,13 +1,5 @@
 #!/bin/bash
 
-# Copyright (C) 2020 Matsuro Hadouken <halfordico@protonmail.com>
-
-# This file is free software; as a special exception the author gives
-# unlimited permission to copy and/or distribute it, with or without
-# modifications, as long as this notice is preserved.
-
-# PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND
-
 DATA='/home/casper/.casperlabs'
 GENESIS='/home/casper/.casperlabs/chainspec/genesis'
 
@@ -15,122 +7,112 @@ Dispal_PID=$(pgrep casperlabs-engi)
 
 clear
 
-function StopService {
+function StopService() {
 
-number='^[0-9]+$'
+    number='^[0-9]+$'
 
-        if ! [[ $ENGI_PID =~ $number ]] ; then
+    if ! [[ $ENGI_PID =~ $number ]]; then # check if service active
 
-		echo -e ''
-		echo -e "\e[32mEngine is not active, nothing to destroy or break.\e[0m"
-		echo -e ''
+        echo && echo -e "\e[32mEngine is not active, nothing to destroy or break.\e[0m" && echo
 
-        else # if active safely shutdown
+    else # if active safely shutdown
 
-		echo -e ''
-		echo -e 'Shooting down CasperLabs Engine GRPC Server ...'
-		echo -e ''
-		echo -e "Process PID: $Dispal_PID"
-		echo -e ''
+        echo && echo 'Shooting down CasperLabs Engine GRPC Server ...' && echo
+        echo "Process PID: $Dispal_PID" && echo
 
-		sleep 1
+        sleep 1
 
-        		until [ $(systemctl is-active casperlabs-engine-grpc-server.service) = "active" ]
+        until [ $(systemctl is-active casperlabs-engine-grpc-server.service) = "active" ]; do
 
-                		do
-                        		systemctl stop casperlabs-engine-grpc-server.service & PID=$!
+            systemctl stop casperlabs-engine-grpc-server.service &
 
-                        		wait $PID
+            PID=$!
 
-					sleep 3
-                		done
+            wait $PID
 
-		echo -e '*DONE*'
-		echo -e ''
-		sleep 1
-        fi
+            sleep 5
+
+        done
+
+        echo -e '*DONE*' && echo && sleep 3
+
+    fi
 }
 
+function CheckService() {
 
-function CheckService {
+    echo 'Checking if service down one more time, just in case ...' && echo
 
-echo -e 'Checking if service down one more time, just in case ...'
-echo -e ''
+    ENGI_PID=$(pgrep casperlabs-engi)
 
-ENGI_PID=$(pgrep casperlabs-engi)
+    number='^[0-9]+$'
 
-number='^[0-9]+$'
+    while [[ $ENGI_PID =~ $number ]]; do
 
-	while [[ $ENGI_PID =~ $number ]]; do
+        echo -e "\e[31merror: CasperLabs Engine GRPC Server is still running!\e[0m" && echo
+        echo -e "\e[31mKilling $ENGI_PID PID ...\e[0m" && echo
 
-   		echo -e "\e[31merror: CasperLabs Engine GRPC Server is still running!\e[0m"
-		echo -e ''
-		echo -e "\e[31mKilling $ENGI_PID PID ...\e[0m"
-		echo -e ''
+        kill -9 $ENGI_PID && PID=$! >/dev/null 2>&1
 
-		kill -9 $ENGI_PID && PID=$! > /dev/null 2>&1
+        wait $PID
 
-		wait $PID
+        ENGI_PID=$(pgrep casperlabs-engi)
 
-		ENGI_PID=$(pgrep casperlabs-engi)
+        sleep 1
 
-		sleep 1
-	done
+    done
 
-		echo -e 'Check pass OK'
-		echo -e ''
-
-		sleep 1
+    echo -e 'Check pass OK' && echo && sleep 1
 }
 
+function update() {
 
-function update {
+    sudo apt update && sudo apt upgrade -y
 
-echo -e 'Updating manifest.toml and accounts.csv'
-echo ''
+    echo && echo "Server upgrade complete." && echo && sleep 5
 
-sleep 1
+    echo 'Updating manifest.toml and accounts.csv' && echo
 
-oldManifest=$(md5sum $GENESIS/manifest.toml)
-oldAccounts=$(md5sum $GENESIS/accounts.csv)
+    sleep 1
 
-echo -e 'Removing old files ...'
-echo -e ''
-echo -e 'Compare check sum ...'
+    oldManifest=$(md5sum $GENESIS/manifest.toml)
+    oldAccounts=$(md5sum $GENESIS/accounts.csv)
 
-sleep 1
+    echo 'Removing old files ...' && echo && echo 'Compare check sum ...'
 
-echo -e ''
-echo -e "\e[31mOld mnifest md5sum:\e[0m  $oldManifest"
-echo -e "\e[31mOld accounts md5sum:\e[0m $oldAccounts"
-echo -e ''
+    sleep 1
 
-cd $DATA && rm -r sql* log* .casper-node.sock global_state > /dev/null 2>&1
+    echo && echo -e "\e[31mOld mnifest md5sum:\e[0m  $oldManifest"
+    echo -e "\e[31mOld accounts md5sum:\e[0m $oldAccounts" && echo
 
-cd $GENESIS && curl -O https://repo.casperlabs.io/casperlabs/repo/testing/manifest.toml > /dev/null 2>&1
-cd $GENESIS && curl -O https://repo.casperlabs.io/casperlabs/repo/testing/accounts.csv  > /dev/null 2>&1
+    cd $DATA && rm -r sql* log* .casper-node.sock global_state >/dev/null 2>&1
 
-newManifest=$(md5sum $GENESIS/manifest.toml)
-newAccounts=$(md5sum $GENESIS/accounts.csv)
+    echo && echo 'Truncate EE log ...' && echo && sleep 2
 
-echo -e "\e[32mNEW mnifest md5sum:\e[0m  $newManifest"
-echo -e "\e[32mNEW accounts md5sum:\e[0m $newAccounts"
-echo -e ''
+    sudo sudo truncate -s 0 /var/log/casperlabs-node.log
+
+    echo
+
+    cd $GENESIS && curl -O https://raw.githubusercontent.com/CasperLabs/CasperLabs/dev/testnet/accounts.csv >/dev/null 2>&1
+    cd $GENESIS && curl -O https://raw.githubusercontent.com/CasperLabs/CasperLabs/dev/testnet/manifest.toml >/dev/null 2>&1
+
+    newManifest=$(md5sum $GENESIS/manifest.toml)
+    newAccounts=$(md5sum $GENESIS/accounts.csv)
+
+    echo -e "\e[32mNEW mnifest md5sum:\e[0m  $newManifest"
+    echo -e "\e[32mNEW accounts md5sum:\e[0m $newAccounts" && echo
 
 }
 
-function ListFoldersContent {
+function ListFoldersContent() {
 
-echo -e 'DATA folder content:'
-echo -e ''
+    echo 'DATA folder content:' && echo
 
-ls -la $DATA
+    ls -la $DATA
 
-echo -e ''
-echo -e 'GENESIS folder content:'
-echo -e ''
+    echo && echo 'GENESIS folder content:' && echo
 
-ls -la $GENESIS
+    ls -la $GENESIS
 
 }
 
@@ -139,8 +121,13 @@ CheckService
 update
 ListFoldersContent
 
-echo -e ''
-echo -e 'Everything should be ready to go.'
-echo -e ''
+echo
+casperlabs-engine-grpc-server --version
+echo
+casperlabs-node --version
+
+echo
+echo 'Everything should be ready to go.'
+echo
 echo -e 'Copy Paste for lazy people like me:' '\e[32msudo systemctl start casperlabs-engine-grpc-server.service\e[0m'
-echo -e ''
+echo
