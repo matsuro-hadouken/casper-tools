@@ -13,7 +13,7 @@ json-path = /home/casper/.casperlabs/
 [server]
 
 # Hostname or IP of this node.
-# host = 
+# host =
 
 # Network port to use for intra-node gRPC communication.
 # port = 40400
@@ -31,7 +31,7 @@ json-path = /home/casper/.casperlabs/
 # no-upnp = false
 
 # Default timeout for roundtrip connections.
-# default-timeout = "5second"
+# default-timeout = "15second"
 
 # Timeout for shutting down gRPC services.
 # shutdown-timeout = "1minute"
@@ -86,6 +86,9 @@ relay-factor = 5
 # Maximum DAG depth to ask in iterative requests during syncing.
 # sync-max-depth-ancestors-request = 5
 
+# Maximum number of parallel synchronizations to run at any time.
+sync-max-parallel = 10
+
 # Disable DAG shape validations during synchronization.
 # sync-disable-validations = true
 
@@ -114,7 +117,10 @@ init-sync-skip-failed-nodes = true
 # periodic-sync-round-period = "60second"
 
 # Maximum number of parallel block downloads initiated by the download manager.
-# download-max-parallel-blocks = 10
+# download-max-parallel-blocks = 8
+
+# Maximum number of parallel deploy downloads initiated by the download manager.
+# download-max-parallel-deploys = 2
 
 # Maximum number of times to retry to download a block from the same node.
 # download-max-retries = 0
@@ -125,11 +131,17 @@ init-sync-skip-failed-nodes = true
 # Exponential factor to apply on subsequent wait times before trying to download again.
 # download-retry-backoff-factor = 2.0
 
+# Try downloading blocks without deploys in them first, fetching the missing deploys as a separate step.
+# download-partial-blocks = true
+
 # Maximum number of parallel block downloads allowed to peers.
 # relay-max-parallel-blocks = 5
 
 # Maximum time to allow a peer downloading a block to consume each chunk.
 # relay-block-chunk-consumer-timeout = "10second"
+
+# Maximum number of blocks to try to validate at any time.
+# validate-max-parallel-blocks = 8
 
 # Use this flag to clear the blockStorage and dagStorage
 # clean-block-storage = false
@@ -146,6 +158,7 @@ init-sync-skip-failed-nodes = true
 # if 0 then unlimited, if reached max size then peer will receive RESOURCE_EXHAUSTED response.
 # block-upload-rate-max-throttled = 0
 
+# Size of the main thread pool.
 main-threads = 50
 
 # Size of the thread pool used to handle incoming requests.
@@ -159,6 +172,16 @@ db-read-threads = 120
 
 # Number of database connections in the reader pool.
 db-read-connections = 30
+
+# Parallelism per CPU core.
+# parallelism-cpu-multiplier = 1.0
+
+# Minimum parallelism.
+# min-parallelism = 8
+
+# With deploy gossiping enabled, nodes will share deploys among each other as soon as they received them,
+# and try to optimize block downloads by fetching missing deploys separately.
+deploy-gossip-enabled = true
 
 # io.casperlabs.node.configuration.Configuration.BlockStorage
 [blockstorage]
@@ -211,6 +234,7 @@ key = "/home/casper/.casperlabs/node.key.pem"
 # Private key to use with the public API certificate.
 # api-key = "/var/lib/casperlabs/api.key.pem"
 
+
 # io.casperlabs.casper.CasperConf
 [casper]
 
@@ -229,6 +253,7 @@ key = "/home/casper/.casperlabs/node.key.pem"
 
 # Path to the base-64 or PEM encoded private key to use for signing a proposed blocks.
 validator-private-key-path = /home/casper/.casperlabs/validator-private.pem
+
 
 # Name of the algorithm to use for signing proposed blocks.
 # Currently supported values: ed25519.
@@ -272,16 +297,17 @@ validator-private-key-path = /home/casper/.casperlabs/validator-private.pem
 # Use highway, or stick to NCB.
 enabled = true
 
-omega-blocks-enabled = true
-
 # Fraction of time through the round after which we can create an omega message.
 omega-message-time-start = 0.1
 
 # Fraction of time through the round before which we must have created the omega message.
 omega-message-time-end = 0.9
 
+# Enable the creating blocks instead of ballots as omega-messages.
+omega-blocks-enabled = true
+
 # Initial round exponent to start the node with, before auto-adjustment takes over; corresponds to the tick unit of the chain.
-init-round-exponent = 17
+init-round-exponent = 19
 
 # io.casperlabs.node.configuration.Configuration.Kamon
 [metrics]
@@ -297,6 +323,7 @@ prometheus = true
 
 # Enable Influx system metrics.
 # influx = false
+
 
 # io.casperlabs.node.configuration.Configuration.Influx
 [influx]
