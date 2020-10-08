@@ -1,0 +1,23 @@
+[Unit]
+Description=Casperlabs Node
+ConditionPathExists=/path/to/config.toml
+After=network.target
+
+[Service]
+Type=simple
+
+StandardOutput=file:/home/whatever/casper-node.log
+StandardError=file:/home/whatever/casper-node.err
+
+User=username
+Group=usergroup
+
+Restart=no
+RestartSec=1
+
+PrivateTmp=true
+
+ExecStart=nohup env RUST_LOG=INFO /usr/bin/casper-node validator /etc/casper/config.toml
+
+[Install]
+WantedBy=multi-user.target
