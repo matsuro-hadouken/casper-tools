@@ -1,9 +1,14 @@
 #!/bin/bash
 
-# Bond validator sequence
+# Bond validat to networks
+# Requirements: 'apt install jq'
+# Requirements: Set 'validator public hex' , 'BID_AMOUNT' , 'PROFIT ( fee ), 'CHAIN_NAME', 'OWNER_PRIVATE_KEY' path, 'API' end pint, 'BONDING_CONTRACT' path.
 
-BID_AMOUNT="10000"
+PUB_KEY_HEX='<PUBLIC_HEX_KEY>'
+
+BID_AMOUNT="1110333"
 PROFIT="10"
+
 CHAIN_NAME="casper-testnet-8"
 OWNER_PRIVATE_KEY="/etc/casper/validator_keys/secret_key.pem"
 API_HOST="http://127.0.0.1:7777"
@@ -20,22 +25,9 @@ TX=$(casper-client put-deploy \
         --node-address "$API_HOST" \
         --secret-key "$OWNER_PRIVATE_KEY" \
         --session-path "$BONDING_CONTRACT" \
-        --payment-amount '100000000' \
+        --payment-amount 1000000000000 \
+        --session-arg="public_key:public_key='$PUB_KEY_HEX'" \
         --session-arg="amount:u512='$BID_AMOUNT'" \
         --session-arg="delegation_rate:u64='$PROFIT'" | jq -r '.result | .deploy_hash')
 
-
 echo -e "${RED}Transaction hash: ${CYAN}$TX${NC}" && echo
-
-echo -e "${RED}Query transaction ...${NC}" && echo
-
-casper-client get-deploy --node-address "$API_HOST" "$TX" | jq 'del(.result.deploy.session.ModuleBytes.module_bytes)'
-
-echo && echo -e "${RED}Auction status:${NC}" && echo
-
-casper-client get-auction-info --node-address "$API_HOST" | jq
-
-echo && echo -e "${RED}Last added block info:${NC}" && echo
-
-curl -s "$API_HOST"/status | jq .last_added_block_info && echo
-
