@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Tested and works on "casper-testnet-8"
+
 # Bond validat to networks
 # Requirements: 'apt install jq'
 # Requirements: Set 'validator public hex' , 'BID_AMOUNT' , 'PROFIT ( fee ), 'CHAIN_NAME', 'OWNER_PRIVATE_KEY' path, 'API' end pint, 'BONDING_CONTRACT' path.
