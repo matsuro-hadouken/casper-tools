@@ -5,16 +5,18 @@
 # Requirements: Set appropriate 'CHAIN_NAME'
 
 AMOUNT='10101' # coins to send each transaction
-SPAM_EACH='10' # how much transactions to push trough each host
+SPAM_EACH='2'  # how much transactions to push trough each host ( minimum 2 )
+
+LOOP_TIMES='0' # how many times repeat all the process ( 0 = no repeat )
 
 CHAIN_NAME="casper-testnet-8"
 
 # Big bag:
-MAIN_ADDRESS='PUB_KEY_HEX_1'
+MAIN_ADDRESS='01bdda22721033ae556e92ccf1034f8d14f24c3794fa7befaa831bcae98f9f1e9b'
 MAIN_PRIVATE_KEY='/etc/casper/validator_keys/secret_key.pem'
 
 # Spare address:
-SPARE_ADDRESS='PUB_KEY_HEX_2'
+SPARE_ADDRESS='01222865738d312d9d49731da0249877244b2285dd04019edf0ba62fa231db1b20'
 SPARE_PRIVATE_KEY="$HOME/scripts/keys/secret_key.pem"
 
 # -------------------------------------------------------------------------------
@@ -83,6 +85,22 @@ function PingPong() {
 
 burst=$(expr "$SPAM_EACH" / 2)
 
-main
+if [[ "$LOOP_TIMES" -eq 0 ]]; then
+
+  main
+
+else
+
+  for run in $(seq "$LOOP_TIMES"); do
+
+    main && echo
+
+    echo -e "${CYAN}================================================${NC}"
+    echo -e "${RED}PASS TROUGH ALL ACTIVE PEERS, STARTING AGAIN ...${NC}"
+    echo -e "${CYAN}================================================${NC}"
+
+  done
+
+fi
 
 echo
