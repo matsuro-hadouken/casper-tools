@@ -1,8 +1,12 @@
 #!/bin/bash
 
-IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
+# Check hosts for HTTP availability, count, provide LFB hash.
 
-LOCAL_HTTP_PORT='7777' # if any
+LOCAL_HTTP_PORT='7777' # if any, if no active validator then doesn't meter
+
+# ------------------------------------------------------------------------
+
+IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -21,7 +25,7 @@ function CountPeers() {
                 ((counter=counter+1))
         done
 
-        # check if run from active active validator host, so it will be +1
+        # check if run from active validator host, so it will be +1
         if [[ $(curl -s http://127.0.0.1:"$LOCAL_HTTP_PORT"/status | jq -r .api_version) ]]; then
                 echo -e "Script run from active validator host, so it will be plus one" && echo
                 echo -e "${CYAN}Detected peers: ${NC}$((counter+1))" && echo
