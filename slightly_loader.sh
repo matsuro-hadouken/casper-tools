@@ -12,11 +12,11 @@ LOOP_TIMES='0' # how many times repeat all the process ( 0 = no repeat )
 CHAIN_NAME="casper-testnet-8"
 
 # Big bag:
-MAIN_ADDRESS='01bdda22721033ae556e92ccf1034f8d14f24c3794fa7befaa831bcae98f9f1e9b'
+MAIN_ADDRESS='<MAIN_BAG_HEX_ADDRESS>'
 MAIN_PRIVATE_KEY='/etc/casper/validator_keys/secret_key.pem'
 
 # Spare address:
-SPARE_ADDRESS='01222865738d312d9d49731da0249877244b2285dd04019edf0ba62fa231db1b20'
+SPARE_ADDRESS='<SPARE_INPUT_HEX>'
 SPARE_PRIVATE_KEY="$HOME/scripts/keys/secret_key.pem"
 
 # -------------------------------------------------------------------------------
