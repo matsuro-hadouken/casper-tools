@@ -27,7 +27,7 @@ TX=$(casper-client put-deploy \
         --node-address "$API_HOST" \
         --secret-key "$OWNER_PRIVATE_KEY" \
         --session-path "$BONDING_CONTRACT" \
-        --payment-amount 1000000000000 \
+        --payment-amount 10000000000 \
         --session-arg=public_key:"public_key='$PUB_KEY_HEX'" \
         --session-arg=amount:"u512='$BID_AMOUNT'" \
         --session-arg=delegation_rate:"u64='$PROFIT'" | jq -r '.result | .deploy_hash')
