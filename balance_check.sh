@@ -26,7 +26,7 @@ LFB_ROOT=$(casper-client get-block  --node-address http://localhost:7777 -b "$LF
 echo -e "${CYAN}Block ${GREEN}$LFB ${CYAN}state root hash: ${GREEN}$LFB_ROOT${NC}" && echo
 
 # 3) Get purse UREF
-PURSE_UREF=$(casper-client query-state --node-address http://localhost:7777 -k "$INPUT_HEX" -g "$LFB_ROOT" | jq -r '.result | .stored_value | .Account | .main_purse')
+PURSE_UREF=$(casper-client query-state --node-address http://localhost:7777 -k "$INPUT_HEX" -s "$LFB_ROOT" | jq -r '.result | .stored_value | .Account | .main_purse')
 
 echo -e "${CYAN}Main purse uref: ${GREEN}$PURSE_UREF${NC}" && echo
 
