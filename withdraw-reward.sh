@@ -19,22 +19,32 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+function CheckBalance() {
+
+  LFB=$(curl -s http://127.0.0.1:7777/status | jq -r '.last_added_block_info | .height')
+
+  LFB_ROOT=$(casper-client get-block --node-address http://localhost:7777 -b "$LFB" | jq -r '.result | .block | .header | .state_root_hash')
+
+  PURSE_UREF=$(casper-client query-state --node-address http://localhost:7777 -k "$VALIDATOR_PUB_HEX" -s "$LFB_ROOT" | jq -r '.result | .stored_value | .Account | .main_purse')
+
+  BALANCE=$(casper-client get-balance --node-address http://localhost:7777 --purse-uref "$PURSE_UREF" --state-root-hash "$LFB_ROOT" | jq -r '.result | .balance_value')
+
+}
+
 function Broadcast() {
 
   echo && echo -e "Deploying withdrawal transaction ..." && echo
 
   TX=$(casper-client put-deploy \
     --chain-name casper-delta-1 \
-    --node-address "$API" \
+    --node-address http://localhost:7777 \
     -k /etc/casper/validator_keys/secret_key.pem \
     --session-path "$withdraw_validator_reward_contract" \
     --payment-amount 1000000000 \
     --session-arg "validator_public_key:public_key='$VALIDATOR_PUB_HEX'" \
     --session-arg "target_purse:opt_uref=null" | jq -r '.result | .deploy_hash')
 
-  echo -e "Transaction ID: ${GREEN}$TX${NC}" && echo
-
-  WatchPassTrough
+  echo -e "${CYAN}Transaction ID:${NC} ${GREEN}$TX${NC}" && echo
 
 }
 
@@ -56,11 +66,11 @@ function WatchPassTrough() {
     if [[ "${#BlockHash}" -eq 64 ]]; then
 
       duration=$(echo "$(date +%s.%N) - $start" | bc)
-      execution_time=`printf "%.2f seconds" "$duration"`
+      execution_time=$(printf "%.2f seconds" "$duration")
 
       echo && echo && echo -e "${CYAN}Confirmed in${NC} $execution_time ${CYAN}seconds, block hash: ${GREEN}$BlockHash${NC}" && echo
 
-      CheckTX
+      break
 
     fi
 
@@ -76,8 +86,24 @@ function CheckTX() {
 
   casper-client get-deploy --node-address http://127.0.0.1:7777 "$TX" | jq 'del(.result.deploy.session.ModuleBytes.module_bytes)'
 
-  exit 0
-
 }
 
+CheckBalance
+
+START_BALANCE="$BALANCE"
+
 Broadcast
+
+WatchPassTrough
+
+CheckTX
+
+CheckBalance
+
+# RETURN=$(echo "$BALANCE - $START_BALANCE" | bc -l)
+
+echo && echo -e "${CYAN}Input initial balance: ${GREEN}$START_BALANCE${NC}"
+
+echo -e "${CYAN}Input current balance: ${GREEN}$BALANCE${NC}" && echo
+
+# echo -e "${GREEN}Withdraw amount: $RETURN" && echo
