@@ -1,147 +1,177 @@
 #!/bin/bash
 
-# check peers situation
+# Matsuro Hadouken <matsuro-hadouken@protonmail.com> 2020
 
-# THIS IS A MESS FOR NOW, NOTHING FUNCY
+# This file is free software; as a special exception the author gives
+# unlimited permission to copy and/or distribute it, with or without
+# modifications, as long as this notice is preserved.
 
-IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
+# PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND
+
+# Works with 'Delta-1' (WOrk In Progress )
 
 LOCAL_HTTP_PORT='7777' # if any
+
+IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
+WHITE='\033[0;37m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
+
+ValidatorsCount="0"
+
+header="${CYAN} %-10s %-16s %10s %20s %9s %7s %11s\n${NC}"
+
+COLUMNS=$(tput cols)
+divider=$(printf "%${COLUMNS}s" " " | tr " " "-")
+width=92
+
+function Report() {
+
+	NC='\033[0m'
+
+	color=$(echo "$@" | cut -d" " -f1)
+	msg=$(echo "$*" | cut -d" " -f2-)
+
+	[[ $color == WHITE ]] && color="$WHITE"
+	[[ $color == RED ]] && color="$RED"
+	[[ $color == GREEN ]] && color="$GREEN"
+	[[ $color == CYAN ]] && color="$CYAN"
+
+	echo -e "$color$msg${NC}" && echo
+}
 
 function Seeds() {
 
-  echo && echo -e "Check for trusted hash, going trough seeds ..." && echo
+	declare -a TrustedHashArray
 
-  read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
+	echo && printf "$header" "STATUS" "IP ADDRESS" "TRUSTED HASH" "CHAIN NAME" "ERA" "HEIGH" "VERSION"
 
-  for i in "${trustedHosts[@]}"; do
+	printf "%$width.${width}s\n" "$divider"
 
-    trusted_lfb_hash=$(curl -s --connect-timeout 2 --max-time 2 http://"$i":7777/status | jq -r '.last_added_block_info | .hash')
-    chain_name_reference=$(curl -s http://"$i":7777/status | jq -r .chainspec_name)
+	read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
 
-    if [[ "${#trusted_lfb_hash}" -ne 64 ]] && [[ ! "$trusted_lfb_hash" =~ 'null' ]]; then
+	for seed_ip in "${trustedHosts[@]}"; do
 
-      echo -e "${RED}Bogus     -- $i -- Closed HTTP access or dead engine -- $validator_lfb_hash -- $chain_name_reference${NC}"
+		GetPeerData "$seed_ip"
 
-    else
-      if [[ "$trusted_lfb_hash" =~ 'null' ]]; then
-        trusted_lfb_hash='Waiting for genesis'
-      fi
+		TrustedHashArray+=("$LastAddedBlockHash")
 
-      echo -e "${CYAN}$i${NC} -- ${GREEN}$trusted_lfb_hash${NC} -- ${GREEN}$chain_name_reference${NC}"
-    fi
+		printf "$format" "$HostStatus" "$seed_ip" "$last_added_block_hash" "$chainspec_name" "$era_id" "$chain_height" "$build_version"
 
-  done
-}
+	done
 
-function CountPeers() {
+	printf "%$width.${width}s\n" "$divider"
 
-  echo && echo "Counting peers ..." && echo
+	if ! [[ "${TrustedHashArray[0]}" =~ ${TrustedHashArray[1]} ]] && ! [[ "${TrustedHashArray[1]}" =~ ${TrustedHashArray[2]} ]]; then
 
-  counter=1
+		Report RED "Trusted validators hash missmatch, please run script again." && exit
 
-  for i in "${validators_ip[@]}"; do
-    ((counter = counter + 1))
-  done
+	else
 
-  # check if run from active active validator host, so it will be +1
-  if [[ $(curl -s http://127.0.0.1:"$LOCAL_HTTP_PORT"/status | jq -r .api_version) ]]; then
+		ReferenceChainspec=$chainspec_name
+		ReferenceBuildVersion=$build_version
+		ReferenceIP=$seed_ip
+		TrustedHash=$LastAddedBlockHash
 
-    echo -e "Script run from active node host, so it will be plus one" && echo
-
-    host_hash=$(curl -s http:/127.0.0.1:7777/status | jq -r '.last_added_block_info | .hash')
-    host_chain_name=$(curl -s http:/127.0.0.1:7777/status | jq -r '.chainspec_name')
-
-    if [[ "$host_chain_name" =~ "$chain_name_reference" ]]; then
-      COLOR_CHAIN_NAME='\033[0;32m'
-      HOST_STATUS="${GREEN}Awailable${NC}"
-    else
-      COLOR_CHAIN_NAME='\033[0;31m'
-      HOST_STATUS="${RED}Forked${NC}"
-    fi
-
-    echo -e "Host: $HOST_STATUS -- ${GREEN}$host_hash -- $COLOR_CHAIN_NAME$host_chain_name${NC}" && echo
-
-    echo -e "${CYAN}Detected peers: ${NC}$((counter + 1))" && echo
-
-  else
-
-    echo -e "${CYAN}Active peers in network: ${NC}$counter" && echo
-
-  fi
-}
-
-function main() {
-
-  for i in "${validators_ip[@]}"; do
-
-    validator_lfb_hash=$(curl -s --connect-timeout 2 --max-time 2 http://"$i":7777/status | jq -r '.last_added_block_info | .hash')
-    chain_name=$(curl -s http://"$i":7777/status | jq -r .chainspec_name)
-
-    if [[ "$chain_name" =~ "$chain_name_reference" ]]; then
-      COLOR_CHAIN_NAME='\033[0;32m'
-      HOST_STATUS="${GREEN}Awailable${NC}"
-    else
-      COLOR_CHAIN_NAME='\033[0;31m'
-      HOST_STATUS="${RED}Forked${NC}"
-    fi
-
-    if [[ "${#validator_lfb_hash}" -ne 64 ]] && [[ ! "$validator_lfb_hash" =~ "null" ]]; then
-
-      echo -e "${RED}Bogus  -- $i -- Closed HTTP access or dead engine -- -- $validator_lfb_hash${NC} -- $COLOR_CHAIN_NAME$chain_name${NC}"
-
-    else
-
-      if [[ "$trusted_lfb_hash" =~ 'Waiting for genesis' ]]; then
-
-        if [[ "$validator_lfb_hash" =~ 'null' ]]; then
-
-          echo -e "${GREEN}Waiting for genesis -- $i${NC} -- $COLOR_CHAIN_NAME$chain_name${NC}"
-
-        else
-
-          echo -e "${RED}Fork    -- $i -- $validator_lfb_hash${NC} -- $COLOR_CHAIN_NAME$chain_name${NC}"
-
-        fi
-
-      fi
-
-      if ! [[ "$trusted_lfb_hash" =~ 'Waiting for genesis' ]]; then
-
-        if [[ "${#validator_lfb_hash}" -ne 64 ]]; then
-
-          echo -e "${RED}Bogus  -- $i -- Closed HTTP access or dead engine -- -- $validator_lfb_hash${NC} -- $COLOR_CHAIN_NAME$chain_name${NC}"
-
-        else
-
-          echo -e "$HOST_STATUS -- $i -- ${GREEN}$validator_lfb_hash${NC} -- $COLOR_CHAIN_NAME$chain_name${NC}"
-
-        fi
-
-      fi
-
-    fi
-
-  done
+	fi
 
 }
 
-start=$(date +%s.%N)
+function Condition() {
 
-read -r -a validators_ip < <(echo $(curl -s http://127.0.0.1:7777/status | jq .peers | grep -E -o "$IPv4_STRING"))
+	if [[ "${#LastAddedBlockHash}" -eq 64 ]] && [[ ! "$LastAddedBlockHash" =~ 'null' ]]; then
+		format=" ${GREEN}%-10s${NC} %-16s %17s %19s %5s %6s %10s\n"
+		HostStatus='Trusted'
+	elif [[ "$LastAddedBlockHash" =~ 'null' ]]; then
+		format=" ${CYAN}%-10s${NC} %-16s %17s %19s %5s %6s %10s\n"
+		HostStatus='Genesis'
+	else
+		format=" ${RED}%-10s${NC} %-16s %17s %19s %5s %6s %10s\n"
+		HostStatus='Bogus'
+	fi
+}
+
+function GetPeerData() {
+
+	validator_ip="$1"
+
+	Stage="$2"
+
+	PeerDataList=$(curl -s --connect-timeout 2 --max-time 2 http://$validator_ip:7777/status | jq -r '.build_version, .chainspec_name, .last_added_block_info.hash, .last_added_block_info.era_id, .last_added_block_info.height')
+
+	if ! [[ $PeerDataList ]]; then
+
+		format=" ${YELLOW}%-10s %-16s %17s %19s %5s %6s %10s${NC}\n"
+
+		HostStatus='Blocked'
+
+		build_version=''
+		chainspec_name=''
+		last_added_block_hash=''
+		era_id=''
+		chain_height=''
+
+		return
+
+	fi # NO HTTP ACCESS OR DEAD PEER
+
+	readarray -t PeerDataArray <<< "$PeerDataList"
+
+	LastAddedBlockHash=${PeerDataArray[2]}
+
+	build_version=${PeerDataArray[0]}
+	chainspec_name=${PeerDataArray[1]}
+
+	if [[ $LastAddedBlockHash == "null" ]]; then
+		last_added_block_hash="null"
+	else
+		last_added_block_hash="$(echo "$LastAddedBlockHash" | cut -c1-5) .... $(echo "$LastAddedBlockHash" | cut -c59-64)"
+	fi
+
+	era_id=${PeerDataArray[3]}
+	chain_height=${PeerDataArray[4]}
+
+	if [[ "$Stage" =~ "COUNT" ]]; then
+		ValidatorsCount=$((ValidatorsCount+1))
+	else
+	 	Condition
+	fi
+
+}
+
+function CheckPeers() {
+
+	read -r -a peers_list < <(echo $(curl -s http://127.0.0.1:7777/status | jq .peers | grep -E -o "$IPv4_STRING"))
+
+	for peer_ip in "${peers_list[@]}"; do
+
+		format=" %-10s %-16s %17s %19s %5s %6s %10s\n"
+
+		HostStatus='Available'
+
+		GetPeerData "$peer_ip" "COUNT"
+
+		if ! [[ $HostStatus =~ 'Blocked' ]] && ! [[ $chainspec_name =~ $ReferenceChainspec ]]; then
+			format=" ${RED}%-10s %-16s %-17s %19s %5s %6s %10s${NC}\n"
+			HostStatus='Useless'
+		fi
+
+		#    0            1              2              3          4        5         6
+		# "STATUS"  "IP ADDRESS"  "TRUSTED HASH"  "CHAIN NAME"   "ERA"   "HEIGH"  "VERSION"
+
+		printf "$format" "$HostStatus" "$peer_ip" "$last_added_block_hash" "$chainspec_name" "$era_id" "$chain_height" "$build_version"
+
+	done
+}
 
 Seeds
 
-CountPeers
+CheckPeers
 
-main
+echo && echo -e "${CYAN}Trusted hash:${NC} ${GREEN}$TrustedHash${NC}" && echo
 
-duration=$(echo "$(date +%s.%N) - $start" | bc)
-execution_time=$(printf "%.2f seconds" "$duration")
-
-echo && echo "Check complete in $execution_time seconds." && echo
+echo "PeersCount: $ValidatorsCount" && echo
