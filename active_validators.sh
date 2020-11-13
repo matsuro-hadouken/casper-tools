@@ -1,13 +1,16 @@
 #!/bin/bash
 
-# Query active validators list
+# Query active validators list, can accept input pub key: './active_validators.sh <validator_pub_key>' will output position and bond if active.
+
 # Requirements: 'apt install jq'
 # Requirements: Should run from active node with 'casper-client' available, used method 'get-auction-info'
 
-LOCAL_HTTP_PORT='7777'
+# Known issue: On era change return bogus output ( ll ), still need to debug this, not yet sure if this is script related or API error.
+
+LOCAL_HTTP_PORT='7777' # if any
 API='127.0.0.1'
 
-#------------------------------
+# -----------------------------------------------------------
 
 IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 
@@ -16,6 +19,14 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
+
+if [[ "${#1}" -eq 64 ]]; then
+   MyValidatorPubKey="$1"
+else
+   MyValidatorPubKey='false'
+fi
+
+echo && echo -e "${RED}If output show something like ${NC}<${GREEN}l ${CYAN}l${NC}>${RED}, wait and run again, this happen on era change, I need to debug this.${NC}"
 
 function Auction() {
 
@@ -62,7 +73,17 @@ function Auction() {
 
                 ActiveValidatorsNow=$((ActiveValidatorsNow+1))
 
+                if [[ "$MyValidatorPubKey" =~ $XValidator_pub_key ]]; then
+
+                        MyValidatorBidAmount="$Xbond_amount"
+                        MyValidatorPosition="$ActiveValidatorsNow"
+                        MyValidatorStatus="true"
+                fi
+
         done <<<"$ValidatrsListSorted"
+
+
+
         printf "%$width.${width}s" "$divider"
 
         echo && echo -e "${GREEN}Active validators: ${CYAN}$ActiveValidatorsNow ${GREEN}Active era: ${CYAN}$era_current${NC}"
@@ -71,4 +92,9 @@ function Auction() {
 
 }
 
-Auction 
+if ! [[ "$MyValidatorPubKey" =~ false ]] && [[ "$MyValidatorStatus" =~ true ]]; then
+        echo -e "Key is in ${GREEN}active${NC} validator list, position ${CYAN}$MyValidatorPosition${GREEN}, bond amount ${CYAN}$MyValidatorBidAmount${NC}" && echo
+elif ! [[ "$MyValidatorPubKey" =~ false ]] && ! [[ "$MyValidatorStatus" =~ true ]]; then
+        echo -e "${RED}Pub key is not belong to validator!${NC}" && echo
+        echo -e "${RED}Current minimum bid amount should be greater then: ${CYAN}$Xbond_amount${NC}" && echo
+fi
