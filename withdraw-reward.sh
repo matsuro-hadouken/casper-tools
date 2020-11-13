@@ -44,7 +44,7 @@ function Broadcast() {
     --session-arg "validator_public_key:public_key='$VALIDATOR_PUB_HEX'" \
     --session-arg "target_purse:opt_uref=null" | jq -r '.result | .deploy_hash')
 
-  echo -e "${CYAN}Transaction ID:${NC} ${GREEN}$TX${NC}" && echo
+  echo -e "${CYAN}Transaction ID:${NC} ${GREEN}$TX${NC}" && sleep 5 &&echo
 
 }
 
