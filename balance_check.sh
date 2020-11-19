@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Version: Delta-2
+
 # Check input balance
 # Requirements: 'apt install jq'
 # Requirements: `Provide Public Key Hex` in to `INPUT_HEX` variable below.
