@@ -17,7 +17,7 @@ RestartSec=1
 
 PrivateTmp=true
 
-ExecStart=nohup env RUST_LOG=INFO /usr/bin/casper-node validator /etc/casper/config.toml
+ExecStart=nohup env RUST_LOG=info,casper_node::reactor=trace /usr/bin/casper-node validator /etc/casper/config.toml
 
 [Install]
 WantedBy=multi-user.target
