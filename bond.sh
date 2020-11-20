@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Tested and works on "casper-delta-2"
+# Tested and works on "casper-delta-3"
 
 # Bond validat to networks
 # Requirements: 'apt install jq'
@@ -14,7 +14,7 @@ GAS="1000000000" # So far this is minimum which I be able to achive, 9 zeros
 
 PROFIT="10"
 
-CHAIN_NAME="casper-delta-2"
+CHAIN_NAME="casper-delta-3"
 OWNER_PRIVATE_KEY="/etc/casper/validator_keys/secret_key.pem"
 API_HOST="http://127.0.0.1:7777"
 BONDING_CONTRACT="$HOME/casper-node/target/wasm32-unknown-unknown/release/add_bid.wasm"
