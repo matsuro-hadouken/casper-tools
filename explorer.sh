@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Works with 'Delta-2'
+# Works with 'Delta-3'
 
 # Matsuro Hadouken <matsuro-hadouken@protonmail.com> 2020
 
