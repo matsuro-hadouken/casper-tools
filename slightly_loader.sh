@@ -9,7 +9,7 @@ SPAM_EACH='2'  # how much transactions to push trough each host ( minimum 2 )
 
 LOOP_TIMES='0' # how many times repeat all the process ( 0 = no repeat )
 
-CHAIN_NAME="casper-testnet-8"
+CHAIN_NAME="casper-delta-3"
 
 # Big bag:
 MAIN_ADDRESS='<MAIN_BAG_HEX_ADDRESS>'
