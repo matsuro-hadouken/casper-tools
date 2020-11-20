@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version: Delta-2
+# Version: Delta-3
 
 # Check input balance
 # Requirements: 'apt install jq'
