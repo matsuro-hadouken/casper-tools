@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version: Delta-2
+# Version: Delta-3
 
 # it will send funds from address A to address B
 
@@ -29,7 +29,7 @@ deploysCount=1
 
 TTL='1m'
 
-CHAIN_NAME="casper-delta-2"
+CHAIN_NAME="casper-delta-3"
 
 TARGET_HOST="$1"
 
