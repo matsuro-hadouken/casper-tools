@@ -86,15 +86,15 @@ function Auction() {
 
         printf "%$width.${width}s" "$divider"
 
-        echo && echo -e "${GREEN}Active validators: ${CYAN}$ActiveValidatorsNow ${GREEN}Active era: ${CYAN}$era_current${NC}"
+        echo && echo -e "${GREEN}Active bonds: ${CYAN}$ActiveValidatorsNow ${GREEN}Active era: ${CYAN}$era_current${NC}"
 
         printf "%$width.${width}s" "$divider" && echo -e "\\n"
 
 }
 
 if ! [[ "$MyValidatorPubKey" =~ false ]] && [[ "$MyValidatorStatus" =~ true ]]; then
-        echo -e "Key is in ${GREEN}active${NC} validator list, position ${CYAN}$MyValidatorPosition${GREEN}, bond amount ${CYAN}$MyValidatorBidAmount${NC}" && echo
+        echo -e "Key present in ${GREEN}active${NC} bonds list, position ${CYAN}$MyValidatorPosition${GREEN}, bond amount ${CYAN}$MyValidatorBidAmount${NC}" && echo
 elif ! [[ "$MyValidatorPubKey" =~ false ]] && ! [[ "$MyValidatorStatus" =~ true ]]; then
-        echo -e "${RED}Pub key is not belong to validator!${NC}" && echo
+        echo -e "${RED}Pub key is not present in active bonds list.${NC}" && echo
         echo -e "${RED}Current minimum bid amount should be greater then: ${CYAN}$Xbond_amount${NC}" && echo
 fi
