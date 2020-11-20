@@ -2,7 +2,7 @@
 
 # reward withdraw
 
-# Requirements: DELTA 1 master branch contracts ('make build-contracts-rs release')
+# Requirements: DELTA 3 master branch contracts ('make build-contracts-rs release')
 # Requirements: 'apt install jq'
 # Requirements: 'path to smart contract` and 'validator public hex` below
 
@@ -11,6 +11,8 @@ VALIDATOR_PUB_HEX='VALIDATOR_PUB_HEX'
 withdraw_validator_reward_contract="$HOME/casper-node/target/wasm32-unknown-unknown/release/withdraw_validator_reward.wasm"
 
 API='http://localhost:7777' # set to another point if necessary
+
+CHAIN_NAME='casper-delta-3'
 
 # ------------------------------------------------------------------------------------------------------------------------
 
@@ -36,7 +38,7 @@ function Broadcast() {
   echo && echo -e "Deploying withdrawal transaction ..." && echo
 
   TX=$(casper-client put-deploy \
-    --chain-name casper-delta-1 \
+    --chain-name "$CHAIN_NAME" \
     --node-address http://localhost:7777 \
     -k /etc/casper/validator_keys/secret_key.pem \
     --session-path "$withdraw_validator_reward_contract" \
