@@ -4,35 +4,62 @@
 
 # Check input balance
 # Requirements: 'apt install jq'
-# Requirements: `Provide Public Key Hex` in to `INPUT_HEX` variable below.
+# Instruction:  'balance_check.sh <PUBLIC_KEY_HEX>'
 
-INPUT_HEX='PUBLIC_KEY_HEX'
+#!/bin/bash
 
-# -----------------------------------------------------------------------
+INPUT_HEX="$1"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-echo && echo -e "${CYAN}Input HEX: ${GREEN}$INPUT_HEX${NC}" && echo
+function checkArguments() {
 
-# 1) Get chain heigh
-LFB=$(curl -s http://127.0.0.1:7777/status | jq -r '.last_added_block_info | .height')
+    if [ -z "$INPUT_HEX" ]; then
 
-echo -e "${CYAN}Chain height: ${GREEN}$LFB${NC}" && echo
+        echo && echo -e "${RED}ERROR: Not enough arguments.${NC}" && echo
+        echo -e "${GREEN}balance_check.sh <PUBLIC_KEY_HEX>${NC}" && echo
 
-# 2) Get LFB state root hash
-LFB_ROOT=$(casper-client get-block  --node-address http://localhost:7777 -b "$LFB" | jq -r '.result | .block | .header | .state_root_hash')
+        exit
 
-echo -e "${CYAN}Block ${GREEN}$LFB ${CYAN}state root hash: ${GREEN}$LFB_ROOT${NC}" && echo
+    fi
 
-# 3) Get purse UREF
-PURSE_UREF=$(casper-client query-state --node-address http://localhost:7777 -k "$INPUT_HEX" -s "$LFB_ROOT" | jq -r '.result | .stored_value | .Account | .main_purse')
+    if ! [[ "${#INPUT_HEX}" -eq 66 ]]; then
 
-echo -e "${CYAN}Main purse uref: ${GREEN}$PURSE_UREF${NC}" && echo
+        echo && echo -e "${RED}ERROR: This is probably not a public key ...${NC}" && echo
+        echo -e "${GREEN}Check:${NC} cat /etc/casper/validator_keys/public_key_hex" && echo
 
-# 4) Found balance
-BALANCE=$(casper-client get-balance --node-address http://localhost:7777 --purse-uref "$PURSE_UREF" --state-root-hash "$LFB_ROOT" | jq -r '.result | .balance_value')
+        exit
 
-echo -e "${CYAN}Input balance: ${GREEN}$BALANCE${NC}" && echo
+    fi
+
+}
+
+function checkBalance() {
+
+    echo && echo -e "${CYAN}Input HEX: ${GREEN}$INPUT_HEX${NC}" && echo
+
+    LFB=$(curl -s http://127.0.0.1:7777/status | jq -r '.last_added_block_info | .height')
+
+    echo -e "${CYAN}Chain height: ${GREEN}$LFB${NC}" && echo
+
+    LFB_ROOT=$(casper-client get-block --node-address http://localhost:7777 -b "$LFB" | jq -r '.result | .block | .header | .state_root_hash')
+
+    echo -e "${CYAN}Block ${GREEN}$LFB ${CYAN}state root hash: ${GREEN}$LFB_ROOT${NC}" && echo
+
+    PURSE_UREF=$(casper-client query-state --node-address http://localhost:7777 -k "$INPUT_HEX" -s "$LFB_ROOT" | jq -r '.result | .stored_value | .Account | .main_purse')
+
+    echo -e "${CYAN}Main purse uref: ${GREEN}$PURSE_UREF${NC}" && echo
+
+    BALANCE=$(casper-client get-balance --node-address http://localhost:7777 --purse-uref "$PURSE_UREF" --state-root-hash "$LFB_ROOT" | jq -r '.result | .balance_value')
+
+    echo -e "${CYAN}Input balance: ${GREEN}$BALANCE${NC}" && echo
+
+}
+
+checkArguments
+
+checkBalance
+
