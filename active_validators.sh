@@ -72,20 +72,27 @@ function QueryActiveValidatorsList() {
 	ValidatrsListSorted=$(echo "$ActiveValidatorsList" | sort -nr -t" " -k2n | tac)
 
 	while read validator; do
+	
+                Xbond_amount=$(echo -e "$validator" | cut -d ' ' -f 2)
+                XValidator_pub_key=$(echo -e "$validator" | cut -d ' ' -f 1)
 
-		Xbond_amount=$(echo -e "$validator" | cut -d ' ' -f 2)
-		XValidator_pub_key=$(echo -e "$validator" | cut -d ' ' -f 1)
+                KeyColor='\033[0;32m'
+                BondColor='\033[0;33m'
 
-		echo -e "${GREEN}$XValidator_pub_key ${YELLOW}$Xbond_amount${NC}"
+                if [[ "$MyValidatorPubKey" =~ $XValidator_pub_key ]]; then
 
-		ActiveValidatorsNow=$((ActiveValidatorsNow + 1))
+                        MyValidatorBidAmount="$Xbond_amount"
+                        MyValidatorPosition="$ActiveValidatorsNow"
+                        MyValidatorStatus="true"
 
-		if [[ "$MyValidatorPubKey" =~ $XValidator_pub_key ]]; then
+                        KeyColor='\e[5m'
+                        BondColor='\033[0;33m'
 
-			MyValidatorBidAmount="$Xbond_amount"
-			MyValidatorPosition="$ActiveValidatorsNow"
-			MyValidatorStatus="true"
-		fi
+                fi
+
+                echo -e "$KeyColor$XValidator_pub_key $BondColor$Xbond_amount${NC}"
+
+                ActiveValidatorsNow=$((ActiveValidatorsNow+1))
 
 	done <<<"$ValidatrsListSorted"
 
