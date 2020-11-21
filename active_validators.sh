@@ -21,10 +21,13 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 
 if [[ "${#1}" -eq 64 ]]; then
-	MyValidatorPubKey="$1"
+   MyValidatorPubKey="$1"
+elif [[ "${#1}" -eq 66 ]];then
+   MyValidatorPubKey=$(echo "$1" | cut -c 3-)
 else
-	MyValidatorPubKey='false'
+   MyValidatorPubKey='false'
 fi
+
 
 echo && echo -e "${RED}If output show something like ${NC}<${GREEN}l ${CYAN}l${NC}>${RED}, run again in 2 minutes, will fix next update, known issue.${NC}" && echo
 
