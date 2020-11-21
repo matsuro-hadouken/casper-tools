@@ -26,7 +26,7 @@ else
 	MyValidatorPubKey='false'
 fi
 
-echo && echo -e "${RED}If output show something like ${NC}<${GREEN}l ${CYAN}l${NC}>${RED}, will fix next update.${NC}"
+echo && echo -e "${RED}If output show something like ${NC}<${GREEN}l ${CYAN}l${NC}>${RED}, run again in 2 minutes, will fix next update, known issue.${NC}" && echo
 
 function GetCurrentEra() {
 
