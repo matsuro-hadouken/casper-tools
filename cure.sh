@@ -1,7 +1,7 @@
 #!/bin/bash
 
 query_port='8888'
-query_ip='54.183.27.7'
+query_ip='<TRUSTED_SOURCE_IP>'
 TrustedSource="http://$query_ip:$query_port/status"
 config_path='/etc/casper/config.toml'
 service_name='casperlabs'
@@ -101,7 +101,7 @@ function ClearDatabase() {
 
 function TrustedHash() {
 
-    trusted_hash="$(curl -s --connect-timeout 2 --max-time 2 http://54.183.27.75:8888/status | jq -r '.last_added_block_info | .hash')"
+    trusted_hash="$(curl -s --connect-timeout 2 --max-time 2 "http://$query_ip:$query_port/status" | jq -r '.last_added_block_info | .hash')"
 
     if ! [[ "${#trusted_hash}" -eq 64 ]]; then
 
