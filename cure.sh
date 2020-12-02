@@ -1,7 +1,7 @@
 #!/bin/bash
 
-query_port='<ENDPOINT_PORT>'
-query_ip='<TRUSTED_IP>'
+query_port='8888'
+query_ip='54.183.27.7'
 TrustedSource="http://$query_ip:$query_port/status"
 config_path='/etc/casper/config.toml'
 service_name='casperlabs'
@@ -34,14 +34,22 @@ function StopService() {
         done
 
     else
+
         echo "Service $service_name is $unit_status and does not require termination." && echo
+
     fi
 
 }
 
-function main() {
+function StartService() {
 
-    echo
+    echo "Starting service ..." && echo
+
+    systemctl restart "$service_name"
+
+}
+
+function main() {
 
     StopService
 
@@ -53,13 +61,28 @@ function main() {
 
     cat "$config_path" | grep 'trusted_hash = ' && echo
 
-    echo "List database folder folder content:" && echo '-----' && echo
+    CheckContent
 
-    ls "$database_location" && echo '-----' && echo
-
-    systemctl restart "$service_name"
+    StartService
 
     echo "Service $service_name is $(systemctl is-active $service_name), mission complete." && echo
+
+}
+
+function CheckContent() {
+
+    if [ ! "$(ls -A $database_location)" ]; then
+
+        echo "ERROR: Database folder is not empty !" && echo && echo '-----' && echo
+
+        ls -lah "$database_location" && echo '-----' && echo && exit 1
+
+    else
+
+        echo "Database clear, continue ..." && echo
+
+    fi
+
 }
 
 function ClearDatabase() {
@@ -78,11 +101,11 @@ function ClearDatabase() {
 
 function TrustedHash() {
 
-    trusted_hash="$(curl -s --connect-timeout 2 --max-time 2 "$TrustedSource" | jq -r '.last_added_block_info | .hash')"
+    trusted_hash="$(curl -s --connect-timeout 2 --max-time 2 http://54.183.27.75:8888/status | jq -r '.last_added_block_info | .hash')"
 
     if ! [[ "${#trusted_hash}" -eq 64 ]]; then
 
-        echo && echo "Query failed, trusted source replay: $trusted_hash" && echo && exit 1
+        echo "Query failed, trusted source replay: $trusted_hash" && echo && exit 1
 
     fi
 
@@ -92,4 +115,20 @@ function TrustedHash() {
 
 }
 
-main
+function WatchDog() {
+
+    echo "Printing content of the error log ..." && echo '==============================================================================' && echo
+
+    cat "$log_path*.err"
+
+    echo "Tailing logstream, Ctrl +C to stop ..." && sleep 1 && echo
+
+    tail -f "$log_path*.log" | jq
+
+}
+
+echo && main
+
+ClearLogs
+
+WatchDog
