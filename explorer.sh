@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Works with 'Delta-3'
+# Works with 'Delta-4'
 
 # Matsuro Hadouken <matsuro-hadouken@protonmail.com> 2020
 
@@ -10,7 +10,7 @@
 
 # PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND
 
-LOCAL_HTTP_PORT='7777'       # if any
+LOCAL_HTTP_PORT='8888'       # if any
 HostLocalNetwork='127.0.0.1' # if any
 
 IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
@@ -47,7 +47,7 @@ function Report() {
     [[ $color == CYAN ]] && color="$CYAN"
 
     echo -e "$color$msg${NC}" && echo
-} # useless for the moment
+}
 
 function Seeds() {
 
@@ -106,7 +106,7 @@ function GetPeerData() {
 
     Stage="$2"
 
-    PeerDataList=$(curl -s --connect-timeout 2 --max-time 2 http://$validator_ip:7777/status | jq -r '.build_version, .chainspec_name, .last_added_block_info.hash, .last_added_block_info.era_id, .last_added_block_info.height')
+    PeerDataList=$(curl -s --connect-timeout 2 --max-time 2 "http://$validator_ip:$LOCAL_HTTP_PORT/status" | jq -r '.build_version, .chainspec_name, .last_added_block_info.hash, .last_added_block_info.era_id, .last_added_block_info.height')
 
     if ! [[ $PeerDataList ]]; then
 
@@ -152,7 +152,7 @@ function GetPeerData() {
 
 function CheckPeers() {
 
-    read -r -a peers_list < <(echo $(curl -s http://127.0.0.1:7777/status | jq .peers | grep -E -o "$IPv4_STRING"))
+    read -r -a peers_list < <(echo $(curl -s "http://$HostLocalNetwork:$LOCAL_HTTP_PORT/status" | jq .peers | grep -E -o "$IPv4_STRING"))
 
     for peer_ip in "${peers_list[@]}"; do
 
@@ -164,7 +164,7 @@ function CheckPeers() {
 
         if ! [[ $HostStatus =~ 'Blocked' ]] && ! [[ $chainspec_name =~ $ReferenceChainspec ]]; then
             format=" ${RED}%-10s %-16s %-17s %19s %5s %6s %10s${NC}\n"
-            HostStatus='Useless'
+            HostStatus='Useless' && echo "$peer_ip" >>useless.peers
             UselessHosts=$((UselessHosts + 1))
         elif ! [[ $HostStatus =~ 'Blocked' ]] && [[ $chainspec_name =~ $ReferenceChainspec ]]; then
             AvailableHosts=$((AvailableHosts + 1))
@@ -181,22 +181,83 @@ function CheckPeers() {
 function CheckActiveHost() {
 
     # check if run from active active validator host, so it will be +1
-    if [[ $(curl -s http://$HostLocalNetwork:"$LOCAL_HTTP_PORT"/status | jq -r .api_version) ]]; then
+    if [[ $(curl -s "http://$HostLocalNetwork:$LOCAL_HTTP_PORT/status" | jq -r .api_version) ]]; then
 
         GetPeerData "$HostLocalNetwork" "COUNT"
         HostStatus='HOST'
-        peer_ip=$HostLocalNetwork
+        peer_ip="$HostLocalNetwork"
 
         if [[ $chainspec_name =~ $ReferenceChainspec ]]; then
             format=" ${BLUE}%-10s${NC} %-16s %-17s %19s %5s %6s %10s${NC}\n"
             AvailableHosts=$((AvailableHosts + 1))
+
+            IsHostActive='true'
+
         else
             format=" ${RED}%-10s${NC} %-16s ${RED}%-17s${NC} %19s %5s %6s %10s${NC}\n"
             UselessHosts=$((UselessHosts + 1)) # THIS NEED TO REWRITE WITH CHECK FOR OUTSIDE PORT ACCESS ( BLOCKED / AWAILABLE )
+            IsHostActive='false'
+
         fi
     fi
 
     printf "$format" "$HostStatus" "$peer_ip" "$last_added_block_hash" "$chainspec_name" "$era_id" "$chain_height" "$build_version"
+}
+
+function Auction() {
+
+    ActiveValidatorsNow="0"
+
+    COLUMNS=$(tput cols)
+    divider=$(printf "%${COLUMNS}s" " " | tr " " "-")
+    width=64
+
+    auction_header="${CYAN}%42s\n${NC}"
+
+    echo && echo -e "${CYAN}Query active validators list ...${NC}"
+
+    echo && printf "%$width.${width}s" "$divider"
+    echo && printf "$auction_header" "VALIDATOR PUBLIC KEY"
+    printf "%$width.${width}s\n" "$divider"
+
+    numba='^[0-9]+$'
+
+    read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
+
+    for seed_ip in "${trustedHosts[@]}"; do
+
+        era_current=$(curl -s http://"$seed_ip":"$LOCAL_HTTP_PORT"/status | jq -r '.last_added_block_info | .era_id')
+
+        if [[ "$era_current" =~ $numba ]]; then
+            break
+        fi
+    done
+
+    if ! [[ "$era_current" =~ $numba ]]; then
+
+        echo -e "${RED}ERROR: Can't get current era from trusted source, exit ...${NC}" && sleep 1 && echo && exit 1
+    fi
+
+    ActiveValidatorsList=$(casper-client get-auction-info --node-address "http://:LOCAL_HTTP_PORT" | jq -r '.result | .era_validators.'\"$era_current\"'' | grep -v "{" | grep -v "}" | cut -c4- | tr -d ':",')
+
+    ValidatrsListSorted=$(echo "$ActiveValidatorsList" | sort -nr -t" " -k2n | tac)
+
+    while read validator; do
+
+        Xbond_amount=$(echo -e "$validator" | cut -d ' ' -f 2)
+        XValidator_pub_key=$(echo -e "$validator" | cut -d ' ' -f 1)
+
+        echo -e "${GREEN}$XValidator_pub_key ${YELLOW}$Xbond_amount${NC}"
+
+        ActiveValidatorsNow=$((ActiveValidatorsNow + 1))
+
+    done <<<"$ValidatrsListSorted"
+    printf "%$width.${width}s" "$divider"
+
+    echo && echo -e "${CYAN}Active validators: ${GREEN}$ActiveValidatorsNow ${CYAN}Active era: ${GREEN}$era_current${NC}"
+
+    printf "%$width.${width}s" "$divider" && echo -e "\\n"
+
 }
 
 Seeds
@@ -205,12 +266,14 @@ CheckActiveHost
 
 CheckPeers
 
-echo && echo -e "${CYAN}Trusted hash:${NC} ${GREEN}$TrustedHash${NC}" && echo
+if [[ "$IsHostActive" =~ true ]]; then
+    Auction
+fi
 
-echo "PeersCount:     $ValidatorsCount" && echo
+echo -e "${CYAN}Trusted hash:${NC} ${GREEN}$TrustedHash${NC}" && echo
 
-echo "Useless peers:  $UselessHosts"
-echo "Blocked access: $BlockedHTTP"
-echo "Good condition: $((ValidatorsCount - UselessHosts - BlockedHTTP))" && echo
+echo -e "${CYAN}PeersCount:     ${GREEN}$ValidatorsCount${NC}" && echo
 
-# echo "Good condition: $AvailableHosts" && echo # Work in progress
+echo -e "${CYAN}Useless peers:  ${GREEN}$UselessHosts${NC}"
+echo -e "${CYAN}Blocked access: ${GREEN}$BlockedHTTP${NC}"
+echo -e "${CYAN}Good condition: ${GREEN}$((ValidatorsCount - UselessHosts - BlockedHTTP))${NC}" && echo
