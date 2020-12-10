@@ -6,9 +6,9 @@
 # Requirements: 'apt install jq'
 # Requirements: Set 'validator public hex' , 'BID_AMOUNT' , 'PROFIT ( fee ), 'CHAIN_NAME', 'OWNER_PRIVATE_KEY' path, 'API' end pint, 'BONDING_CONTRACT' path.
 
-PUB_KEY_HEX='01d77dbc0e3a798edfba46ff234c3109184c28de48c600a09c17850098d1747c1c'
+PUB_KEY_HEX='PUBLIC_HEX'
 
-BID_AMOUNT="99999000000000"
+BID_AMOUNT="101010101"
 
 GAS="1000000000" # So far this is minimum which I be able to achive, 9 zeros
 
