@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# Tested and works on "casper-delta-3"
+# Tested and works on "casper-delta-4"
 
 # Bond validat to networks
 # Requirements: 'apt install jq'
 # Requirements: Set 'validator public hex' , 'BID_AMOUNT' , 'PROFIT ( fee ), 'CHAIN_NAME', 'OWNER_PRIVATE_KEY' path, 'API' end pint, 'BONDING_CONTRACT' path.
 
-PUB_KEY_HEX='<PUBLIC_HEX_KEY>'
+PUB_KEY_HEX='01d77dbc0e3a798edfba46ff234c3109184c28de48c600a09c17850098d1747c1c'
 
-BID_AMOUNT="20200202"
+BID_AMOUNT="99999000000000"
 
 GAS="1000000000" # So far this is minimum which I be able to achive, 9 zeros
 
 PROFIT="10"
 
-CHAIN_NAME="casper-delta-3"
+CHAIN_NAME="casper-delta-4"
 OWNER_PRIVATE_KEY="/etc/casper/validator_keys/secret_key.pem"
 API_HOST="http://127.0.0.1:7777"
 BONDING_CONTRACT="$HOME/casper-node/target/wasm32-unknown-unknown/release/add_bid.wasm"
@@ -36,3 +36,4 @@ TX=$(casper-client put-deploy \
         --session-arg=delegation_rate:"u64='$PROFIT'" | jq -r '.result | .deploy_hash')
 
 echo -e "${RED}Transaction hash: ${CYAN}$TX${NC}" && echo
+
