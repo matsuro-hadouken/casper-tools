@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Version: Delta-4
+
+# Check input balance
+# Requirements: 'apt install jq'
+# Instruction:  'balance_check.sh <PUBLIC_KEY_HEX>'
+
 INPUT_HEX="$1"
 
 RED='\033[0;31m'
