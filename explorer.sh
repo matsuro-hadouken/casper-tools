@@ -164,7 +164,7 @@ function CheckPeers() {
 
         if ! [[ $HostStatus =~ 'Blocked' ]] && ! [[ $chainspec_name =~ $ReferenceChainspec ]]; then
             format=" ${RED}%-10s %-16s %-17s %19s %5s %6s %10s${NC}\n"
-            HostStatus='Useless' && echo "$peer_ip" >>useless.peers
+            HostStatus='Useless' && echo "$peer_ip" >> useless.peers
             UselessHosts=$((UselessHosts + 1))
         elif ! [[ $HostStatus =~ 'Blocked' ]] && [[ $chainspec_name =~ $ReferenceChainspec ]]; then
             AvailableHosts=$((AvailableHosts + 1))
@@ -235,6 +235,13 @@ function Auction() {
 
     if ! [[ "$era_current" =~ $numba ]]; then
 
+	if [[ $(curl -s http://54.67.67.33:8888/status | jq '.last_added_block_info') == null ]]; then
+
+	    echo && echo -e "${RED}Last added block null. ${BLUE}Genesis ? ${RED}Skipping auction data quesry ...${NC}" && echo
+	    return
+
+	fi
+
         echo -e "${RED}ERROR: Can't get current era from trusted source, exit ...${NC}" && sleep 1 && echo && exit 1
     fi
 
@@ -266,11 +273,7 @@ CheckActiveHost
 
 CheckPeers
 
-if [[ "$IsHostActive" =~ true ]]; then
-    Auction
-fi
-
-echo -e "${CYAN}Trusted hash:${NC} ${GREEN}$TrustedHash${NC}" && echo
+echo && echo -e "${CYAN}Trusted hash:${NC} ${GREEN}$TrustedHash${NC}" && echo
 
 echo -e "${CYAN}PeersCount:     ${GREEN}$ValidatorsCount${NC}" && echo
 
