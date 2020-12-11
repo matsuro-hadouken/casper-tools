@@ -10,7 +10,7 @@ PUB_KEY_HEX='PUBLIC_HEX'
 
 BID_AMOUNT="101010101"
 
-GAS="1000000000" # So far this is minimum which I be able to achive, 9 zeros
+GAS="10000000000" # So far this is minimum which I be able to achive, 10 zeros
 
 PROFIT="10"
 
