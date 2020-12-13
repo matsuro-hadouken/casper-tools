@@ -5,12 +5,10 @@
 # Requirements: 'apt install jq'
 # Requirements: Should run from active node with 'casper-client' available, used method 'get-auction-info'
 
-# Known issue: On era change return bogus output ( ll ), still need to debug this, not yet sure if this is script related or API error.
+public_hex_path='/etc/casper/validator_keys/public_key_hex'
 
-LOCAL_HTTP_PORT='7777' # if any
+HTTP_PORT="8888"
 API='127.0.0.1'
-
-# -----------------------------------
 
 IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 
@@ -20,109 +18,183 @@ CYAN='\033[0;36m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-if [[ "${#1}" -eq 64 ]]; then
-   MyValidatorPubKey="$1"
-elif [[ "${#1}" -eq 66 ]];then
-   MyValidatorPubKey=$(echo "$1" | cut -c 3-)
-else
-   MyValidatorPubKey='false'
-fi
+numba='^[0-9]+$'
 
+function GetPublicHEX() {
 
-echo && echo -e "${RED}If output show something like ${NC}<${GREEN}l ${CYAN}l${NC}>${RED}, run again in 2 minutes, will fix next update, known issue.${NC}" && echo
+    manual_input="$1"
+
+    AutoHEX=$(cat "$public_hex_path")
+
+    if [[ "${#manual_input}" -eq 66 ]]; then
+
+        MyValidatorPubKey="$1"
+
+    elif [[ "${#AutoHEX}" -eq 66 ]]; then
+
+        MyValidatorPubKey="$AutoHEX"
+        echo && echo -e "${RED}No valid manual input detected !${NC}" && echo
+        echo -e "Using public HEX from: ${RED}$public_hex_path${NC}"
+
+    else
+
+        MyValidatorPubKey='false'
+
+    fi
+
+    echo && echo -e "Public HEX: ${CYAN}$MyValidatorPubKey${NC}"
+
+}
+
+function CreateTemporaryFolder() {
+
+    chain_name="-$(curl -s http://$API:$HTTP_PORT/status | jq -r .chainspec_name)"
+
+    TMPDIR=$(mktemp -d --suffix="$chain_name")
+
+    if [ ! -e "$TMPDIR" ]; then
+
+        echo >&2 -e "${RED}Failed to create temp directory${NC}" && echo
+        exit 1
+
+    fi
+
+    trap "exit 1" HUP INT PIPE QUIT TERM
+    trap 'rm -rf "$TMPDIR"' EXIT
+
+}
 
 function GetCurrentEra() {
 
-	read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
+    read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
 
-	for seed_ip in "${trustedHosts[@]}"; do
+    for seed_ip in "${trustedHosts[@]}"; do
 
-		Ch_hash=$(curl -s --connect-timeout 3 --max-time 3 http://"$seed_ip":7777/status | jq -r '.last_added_block_info | .hash')
+        echo && echo -e "Trusted address list: ${GREEN}$seed_ip${NC}, query era ..."
 
-		if [[ "${#Ch_hash}" -eq 64 ]]; then
-			era_current=$(curl -s http://"$seed_ip":7777/status | jq -r '.last_added_block_info | .era_id')
-			era_return='true'
-		fi
+        Ch_hash=$(curl -s --connect-timeout 3 --max-time 3 "http://$seed_ip:$HTTP_PORT"/status | jq -r '.last_added_block_info | .hash')
 
-		if ! [[ "$era_current" =~ $numba ]]; then
-			era_return='false'
-		fi
+        if [[ "${#Ch_hash}" -eq 64 ]]; then
+            era_current=$(curl -s "http://$seed_ip:$HTTP_PORT/status" | jq -r '.last_added_block_info | .era_id')
+        fi
 
-	done
+        if ! [[ "$era_current" =~ $numba ]]; then
+            echo -e "${RED}ERROR: Bogus output [ $era_current ] from ${GREEN}$seed_ip${RED}, exit ...${NC}" && echo && exit 1
+        fi
+
+    done
 }
 
-function QueryActiveValidatorsList() {
+function GetVisibleEras() {
 
-	ActiveValidatorsNow="0"
-
-	COLUMNS=$(tput cols)
-	divider=$(printf "%${COLUMNS}s" " " | tr " " "-")
-	width=64
-
-	auction_header="${CYAN}%42s\n${NC}"
-
-	echo && printf "%$width.${width}s" "$divider"
-	echo && printf "$auction_header" "VALIDATOR PUBLIC KEY"
-	printf "%$width.${width}s\n" "$divider"
-
-	numba='^[0-9]+$'
-
-	ActiveValidatorsList=$(casper-client get-auction-info --node-address http://"$API":7777 | jq -r '.result | .era_validators.'\"$era_current\"'' | grep -v "{" | grep -v "}" | cut -c4- | tr -d ':",')
-
-	ValidatrsListSorted=$(echo "$ActiveValidatorsList" | sort -nr -t" " -k2n | tac)
-
-	while read validator; do
-	
-                Xbond_amount=$(echo -e "$validator" | cut -d ' ' -f 2)
-                XValidator_pub_key=$(echo -e "$validator" | cut -d ' ' -f 1)
-
-                KeyColor='\033[0;32m'
-                BondColor='\033[0;33m'
-
-                if [[ "$MyValidatorPubKey" =~ $XValidator_pub_key ]]; then
-
-                        MyValidatorBidAmount="$Xbond_amount"
-                        MyValidatorPosition="$ActiveValidatorsNow"
-                        MyValidatorStatus="true"
-
-                        KeyColor='\e[5m'
-                        BondColor='\033[0;33m'
-
-                fi
-
-                echo -e "$KeyColor$XValidator_pub_key $BondColor$Xbond_amount${NC}"
-
-                ActiveValidatorsNow=$((ActiveValidatorsNow+1))
-
-	done <<<"$ValidatrsListSorted"
-
-	printf "%$width.${width}s" "$divider"
-
-	echo && echo -e "${GREEN}Active bonds: ${CYAN}$ActiveValidatorsNow ${GREEN}Active era: ${CYAN}$era_current${NC}"
-
-	printf "%$width.${width}s" "$divider" && echo -e "\\n"
+    IFS=$'\n' VisibleEras=($(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | .era_id'))
 
 }
 
-function ValidatorsConditionCheck() {
+function DrawLine() {
 
-	if ! [[ "$MyValidatorPubKey" =~ false ]] && [[ "$MyValidatorStatus" =~ true ]]; then
-		echo -e "Key is in ${GREEN}active${NC} bonds list, ${CYAN}$MyValidatorPosition${GREEN}, bond amount ${CYAN}$MyValidatorBidAmount${NC}" && echo
-	elif ! [[ "$MyValidatorPubKey" =~ false ]] && ! [[ "$MyValidatorStatus" =~ true ]]; then
-		echo -e "${RED}Public key is not present in active bonds.${NC}" && echo
-		echo -e "${RED}Current minimum bid amount should be greater then: ${CYAN}$Xbond_amount${NC}" && echo
-	fi
+    echo && echo "------------------------------------------------------------------" && echo
 
+}
+
+function BrowseTroughEras() {
+
+    echo && echo -e "${CYAN}Ongoing era: ${YELLOW}$era_current${CYAN}, looking in to future ... following sequence: ${YELLOW}${VisibleEras[@]}${NC}"
+
+    for era in "${VisibleEras[@]}"; do
+
+        validators_in_era=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | select(.era_id=='$era') | .validator_weights | length')
+
+        echo && echo -e "---> ${YELLOW}Crawling era: ${CYAN}$era${YELLOW} amount of bonds: ${CYAN}$validators_in_era${NC}" && echo
+
+        for ((i = 0; i < "$validators_in_era"; ++i)); do
+
+            validator_bublic_key=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | select(.era_id=='$era') | .validator_weights['$i'] | .public_key')
+            validator_weight=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | select(.era_id=='$era') | .validator_weights['$i'] | .weight')
+
+            echo "$validator_bublic_key $validator_weight"
+
+        done >"$TMPDIR/$era.db"
+
+        cat "$TMPDIR/$era.db" | sort -nr -t" " -k2n | tac >tmp && mv tmp "$TMPDIR/$era.db"
+
+        PrittyPrint "$TMPDIR/$era.db"
+
+    done
+
+}
+
+function PrittyPrint() {
+
+    ActiveValidatorsNow="1"
+
+    while IFS= read -r validator; do
+
+        XValidator_pub_key=$(echo -e "$validator" | cut -d ' ' -f 1)
+        Xbond_amount=$(echo -e "$validator" | cut -d ' ' -f 2)
+
+        KeyColor='\033[0;32m'
+        BondColor='\033[0;33m'
+
+        # if key is present in era
+        if [[ "$MyValidatorPubKey" =~ $XValidator_pub_key ]]; then
+
+            MyValidatorBidAmount="$Xbond_amount"
+            MyValidatorPosition="$ActiveValidatorsNow"
+            MyValidatorStatus="true"
+
+            KeyColor='\e[5m'
+            BondColor='\033[0;33m'
+
+        fi
+
+        # this will also set minimum bid amount, because we sort from height to low, last read will be the lowest one.
+        echo -e "$KeyColor$XValidator_pub_key $BondColor$Xbond_amount${NC}"
+
+        # count validators in era
+        ActiveValidatorsNow=$((ActiveValidatorsNow + 1))
+
+    done <"$1"
+
+    # if we have public hex as input
+    if ! [[ "$MyValidatorPubKey" =~ false ]]; then
+
+        # send for report
+        EraConditionReport
+
+    fi
+
+}
+
+function EraConditionReport() {
+
+    echo -e "${YELLOW}--------> ${CYAN}ERA $era${NC}" >>"$TMPDIR/report.txt"
+
+    if [[ "$MyValidatorStatus" =~ true ]]; then
+
+        echo -e "Key is in ${GREEN}active${NC} validator list !" >>"$TMPDIR/report.txt"
+        echo -e "Position ${GREEN}$MyValidatorPosition${NC}, bond amount: ${YELLOW}$MyValidatorBidAmount${NC}" >>"$TMPDIR/report.txt"
+        echo -e "Active bonds: ${GREEN}$(($ActiveValidatorsNow - 1))${NC}" >>"$TMPDIR/report.txt"
+        echo >>"$TMPDIR/report.txt"
+
+    elif ! [[ "$MyValidatorPubKey" =~ false ]] && ! [[ "$MyValidatorStatus" =~ true ]]; then
+
+        echo -e "Key is ${RED}not${NC} in active bonds list !" >>"$TMPDIR/report.txt"
+        echo -e "Era minimum bid should be greater then: ${YELLOW}$Xbond_amount${NC}" >>"$TMPDIR/report.txt"
+        echo -e "Active bonds: ${GREEN}$(($ActiveValidatorsNow - 1))${NC}" >>"$TMPDIR/report.txt"
+        echo >>"$TMPDIR/report.txt"
+
+    fi
 }
 
 GetCurrentEra
 
-if [[ "$era_return" =~ true ]]; then
+GetPublicHEX "$1"
 
-	QueryActiveValidatorsList && ValidatorsConditionCheck
+CreateTemporaryFolder
 
-else
+GetVisibleEras
 
-	echo -e "${RED}Can't get current era from trusted sources.${NC}" && echo && exit 1
+BrowseTroughEras
 
-fi
+echo && cat "$TMPDIR/report.txt"
