@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Version: DELTA 5
+
 API='http://127.0.0.1:7777'
 
 TX="$1"
