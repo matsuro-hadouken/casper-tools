@@ -1,4 +1,4 @@
- - get list of ongoing era active bonds
+ - Auction tool, show data related to bons and bids
 ``` bash
 active_validators.sh
 ```
