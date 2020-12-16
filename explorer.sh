@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Works with 'Delta-4'
+# Works with 'Delta-5'
 
 # Matsuro Hadouken <matsuro-hadouken@protonmail.com> 2020
 
@@ -202,69 +202,6 @@ function CheckActiveHost() {
     fi
 
     printf "$format" "$HostStatus" "$peer_ip" "$last_added_block_hash" "$chainspec_name" "$era_id" "$chain_height" "$build_version"
-}
-
-function Auction() {
-
-    ActiveValidatorsNow="0"
-
-    COLUMNS=$(tput cols)
-    divider=$(printf "%${COLUMNS}s" " " | tr " " "-")
-    width=64
-
-    auction_header="${CYAN}%42s\n${NC}"
-
-    echo && echo -e "${CYAN}Query active validators list ...${NC}"
-
-    echo && printf "%$width.${width}s" "$divider"
-    echo && printf "$auction_header" "VALIDATOR PUBLIC KEY"
-    printf "%$width.${width}s\n" "$divider"
-
-    numba='^[0-9]+$'
-
-    read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
-
-    for seed_ip in "${trustedHosts[@]}"; do
-
-        era_current=$(curl -s http://"$seed_ip":"$LOCAL_HTTP_PORT"/status | jq -r '.last_added_block_info | .era_id')
-
-        if [[ "$era_current" =~ $numba ]]; then
-            break
-        fi
-    done
-
-    if ! [[ "$era_current" =~ $numba ]]; then
-
-	if [[ $(curl -s http://54.67.67.33:8888/status | jq '.last_added_block_info') == null ]]; then
-
-	    echo && echo -e "${RED}Last added block null. ${BLUE}Genesis ? ${RED}Skipping auction data quesry ...${NC}" && echo
-	    return
-
-	fi
-
-        echo -e "${RED}ERROR: Can't get current era from trusted source, exit ...${NC}" && sleep 1 && echo && exit 1
-    fi
-
-    ActiveValidatorsList=$(casper-client get-auction-info --node-address "http://:LOCAL_HTTP_PORT" | jq -r '.result | .era_validators.'\"$era_current\"'' | grep -v "{" | grep -v "}" | cut -c4- | tr -d ':",')
-
-    ValidatrsListSorted=$(echo "$ActiveValidatorsList" | sort -nr -t" " -k2n | tac)
-
-    while read validator; do
-
-        Xbond_amount=$(echo -e "$validator" | cut -d ' ' -f 2)
-        XValidator_pub_key=$(echo -e "$validator" | cut -d ' ' -f 1)
-
-        echo -e "${GREEN}$XValidator_pub_key ${YELLOW}$Xbond_amount${NC}"
-
-        ActiveValidatorsNow=$((ActiveValidatorsNow + 1))
-
-    done <<<"$ValidatrsListSorted"
-    printf "%$width.${width}s" "$divider"
-
-    echo && echo -e "${CYAN}Active validators: ${GREEN}$ActiveValidatorsNow ${CYAN}Active era: ${GREEN}$era_current${NC}"
-
-    printf "%$width.${width}s" "$divider" && echo -e "\\n"
-
 }
 
 Seeds
