@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version: DELTA 5
+# Version: DELTA 7
 
 # Check input balance
 # Requirements: 'apt install jq'
