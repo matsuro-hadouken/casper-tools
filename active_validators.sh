@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# DELTA 7
+
 # Query active validators list, can accept input pub key: './active_validators.sh <validator_pub_key>' will output position and bond if active.
 # If no input provided will check '$public_hex_path' path for 'public_key_hex'
 
