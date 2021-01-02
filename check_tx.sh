@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version: DELTA 5
+# Version: DELTA 7
 
 API='http://127.0.0.1:7777'
 
