@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# We can't get all IP's anymore easily, explorer now show only connected peers to specified host.
+# For better result use seed nodes, they usually have most peers connected to them.
+
 # Works with 'Delta-7'
 
 # Matsuro Hadouken <matsuro-hadouken@protonmail.com> 2020
