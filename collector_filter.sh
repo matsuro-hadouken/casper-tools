@@ -1,8 +1,11 @@
 #!/bin/bash
 
-# IP filter, need to change name of the print function in 'dead_or_alive', currently set to build_config' line 21
-# dead_or_alive function feed with "big.brother" database collected by network crawler script line 23
-# available functions: 'print_all', 'print_good', 'print_good_ip_only', 'build_config', 'print_bad' << set on line 21
+# To make it functional need IP database, collected by crawler which is a separate script
+# https://github.com/matsuro-hadouken/casper-tools/blob/master/Big_Brother.sh
+
+# IP filter, need to change name of the print function in 'dead_or_alive', currently set to 'build_config' line 21
+# 'dead_or_alive' function feed with "big.brother" database collected by network crawler script line 23
+# available functions: 'print_all', 'print_good', 'print_good_ip_only', 'build_config', 'print_bad' set on line 21
 
 format=" %-15s %-14s %-14s\n"
 
