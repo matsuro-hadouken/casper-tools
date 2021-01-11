@@ -1,4 +1,7 @@
 [Unit]
+
+# the reason for this service is to generate proper JSON logs in specified location then separate errors from actual validator output.
+
 Description=Casperlabs Node
 ConditionPathExists=/path/to/config.toml
 After=network.target
