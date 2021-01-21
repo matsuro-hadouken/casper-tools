@@ -10,12 +10,14 @@ STATUS_PORT='8888'
 base_1='/home/casper/casper-tools/crawler/base.1'
 # tmp base 2
 base_2='/home/casper/casper-tools/crawler/base.2'
-# main collector which never got truncated
+# main collector which will never be truncated
 big_brother='/home/casper/casper-tools/crawler/big.brother'
+
+IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 
 function start_init() {
 
-  curl -s --max-time 10 --connect-timeout 10 http://"$INITIAL_IP":"$STATUS_PORT"/status | jq -r '.peers | .[].address' | cut -f1 -d":" > "$base_1"
+  curl -s --max-time 10 --connect-timeout 10 http://"$INITIAL_IP":"$STATUS_PORT"/status | jq -r '.peers | .[].address' | grep -E -o "$IPv4_STRING"  >"$base_1"
 
   crawler
 
@@ -25,13 +27,14 @@ function crawler() {
 
   while IFS= read -r peer_ip; do
 
-    curl -s --max-time 10 --connect-timeout 10 http://"$peer_ip":"$STATUS_PORT"/status | jq -r '.peers | .[].address' | cut -f1 -d":" >>"$base_2"
+    curl -s --max-time 10 --connect-timeout 10 http://"$peer_ip":"$STATUS_PORT"/status | jq -r '.peers | .[].address' | grep -E -o "$IPv4_STRING" >>"$base_2"
 
   done <"$base_1"
 
   sort_u
 
 }
+
 
 function sort_u() {
 
