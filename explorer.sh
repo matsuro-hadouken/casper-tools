@@ -3,7 +3,7 @@
 # We can't get all IP's anymore easily, explorer now show only connected peers to specified host.
 # For better result use seed nodes, they usually have most peers connected to them.
 
-# Works with 'Delta-7'
+# Works with 'Delta-10'
 
 # Matsuro Hadouken <matsuro-hadouken@protonmail.com> 2020
 
@@ -60,7 +60,7 @@ function Seeds() {
 
     printf "%$width.${width}s\n" "$divider"
 
-    read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
+    read -r -a trustedHosts < <(echo $(cat /etc/casper/1_0_0/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
 
     for seed_ip in "${trustedHosts[@]}"; do
 
