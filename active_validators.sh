@@ -70,7 +70,7 @@ function CreateTemporaryFolder() {
 
 function GetCurrentEra() {
 
-    read -r -a trustedHosts < <(echo $(cat /etc/casper/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
+    read -r -a trustedHosts < <(echo $(cat /etc/casper/1_0_0/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
 
     for seed_ip in "${trustedHosts[@]}"; do
 
