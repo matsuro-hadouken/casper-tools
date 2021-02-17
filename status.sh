@@ -22,9 +22,9 @@ watch \
 	printf '\n' && \
 	df && \
 	printf '\n' && \
-	echo 'height (you / current): $GREEN`curl -s localhost:8888/status | jq -r .last_added_block_info.height`$NC / $GREEN `curl -s 18.144.176.168:8888/status | jq -r .last_added_block_info.height`$NC' && \
-	echo 'Last Block: $GREEN`date --date=$(curl -s localhost:8888/status | jq -r .last_added_block_info.timestamp)`$NC' &&\
-	echo 'Local DB Size: $GREEN`du -h /var/lib/casper/casper-node/ | cut -f 1`$NC' &&
+	echo -n 'Height:\n     Local: $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.height && echo -n '$NC   Current: $GREEN' && curl -s 18.144.176.168:8888/status | jq -r .last_added_block_info.height && echo -n '$NC' && \
+	echo -n 'Last Block: $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.timestamp && echo -n '$NC' &&\
+	echo -n '  Local DB: $GREEN' && du -h /var/lib/casper/casper-node/ | cut -f 1 && echo -n '$NC' &&
 	printf '\n' && \
 	sudo tail /var/log/casper/casper-node.log"
 
