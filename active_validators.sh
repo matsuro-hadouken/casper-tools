@@ -107,18 +107,17 @@ function BrowseTroughEras() {
     echo -e "${CYAN}Ongoing era: ${YELLOW}$era_current${CYAN}, looking in to future ...      Following sequence: ${YELLOW}${VisibleEras[@]}${NC}"
     echo '------------------------------------------------------------------'
 
+    era_section=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[]')
+
     for era in "${VisibleEras[@]}"; do
 
-        validators_in_era=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | select(.era_id=='$era') | .validator_weights | length')
+		validator_era=$(echo $era_section | jq -r 'select(.era_id=='$era')')
+        validators_in_era=$(echo $validator_era | jq -r '.validator_weights | length')
 
         echo && echo -e "---> ${YELLOW}Crawling era: ${CYAN}$era${YELLOW} amount of bonds: ${CYAN}$validators_in_era${NC}" && echo
 
         for ((i = 0; i < "$validators_in_era"; ++i)); do
-
-            validator_bublic_key=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | select(.era_id=='$era') | .validator_weights['$i'] | .public_key')
-            validator_weight=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | select(.era_id=='$era') | .validator_weights['$i'] | .weight')
-
-            echo "$validator_bublic_key $validator_weight"
+			echo $validator_era | jq -r '.validator_weights['$i'] | [.public_key,.weight] | join(" ")'
 
         done >"$TMPDIR/$era.db"
 
@@ -127,7 +126,6 @@ function BrowseTroughEras() {
         PrittyPrint "$TMPDIR/$era.db"
 
     done
-
 }
 
 function PrittyPrint() {
@@ -205,16 +203,12 @@ function CheckAuction() {
     # collect auction data >tmp
     casper-client get-auction-info --node-address "http://$API:$RPC_PORT" >"$TMPDIR/tmp.auction"
 
-    ace_of_base=$(cat "$TMPDIR/tmp.auction" | jq '.result | .bids | length')
-
+    bids=$(cat "$TMPDIR/tmp.auction" | jq '.result | .bids')
+    ace_of_base=$(echo $bids | jq 'length')
+    
     for ((b = 0; b < "$ace_of_base"; ++b)); do
-
-        bid_pub_key="$(cat "$TMPDIR/tmp.auction" | jq -r '.result | .bids['$b'] | .public_key')"
-        bid_amount="$(cat "$TMPDIR/tmp.auction" | jq -r '.result | .bids['$b'] | .bid.staked_amount')"
-
+	echo $bids | jq -r '.['$b'] | [.public_key,.bid.staked_amount,.bid.reward] |join(" ")'
         total_bids=$((total_bids + 1))
-
-        echo "$bid_pub_key $bid_amount"
 
     done >"$TMPDIR/tmp.bids"
 
