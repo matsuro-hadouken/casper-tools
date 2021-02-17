@@ -26,6 +26,6 @@ watch \
 	echo -n 'Last Block: $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.timestamp && echo -n '$NC' &&\
 	echo -n '  Local DB: $GREEN' && du -h /var/lib/casper/casper-node/ | cut -f 1 && echo -n '$NC' &&
 	printf '\n' && \
-	sudo tail /var/log/casper/casper-node.log"
+	sudo tail /var/log/casper/casper-node.log | perl -pe 's/.*era.*/\e[0;32m$&\e[0m/g'"
 
 
