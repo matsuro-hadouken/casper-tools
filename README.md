@@ -1,4 +1,4 @@
- - Auction tool, show data related to bons and bids
+ - Auction tool, show data related to bonds and bids
 ``` bash
 active_validators.sh
 ```
@@ -13,6 +13,10 @@ bond.sh
  - chain explorer
  ``` bash
 explorer.sh
+```
+ - active node status (press ctrl-c to exit)
+ ``` bash
+status.sh
 ```
 
  - example of systemd config
