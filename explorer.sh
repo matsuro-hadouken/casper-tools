@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# We can't get all IP's anymore easily, explorer now show only connected peers to specified host.
-# For better result use seed nodes, they usually have most peers connected to them.
+# We can not get all IP's anymore, explorer show only connected peers to specified host.
 
-# Works with 'Delta-10'
+# Works with 'Delta-11'
 
 # Matsuro Hadouken <matsuro-hadouken@protonmail.com> 2020
 
@@ -13,8 +12,8 @@
 
 # PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND
 
-LOCAL_HTTP_PORT='8888'       # if any
-HostLocalNetwork='127.0.0.1' # if any
+LOCAL_HTTP_PORT='8888'       # set target if any
+HostLocalNetwork='127.0.0.1' # set target if any
 
 IPv4_STRING='(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 
@@ -34,8 +33,8 @@ AvailableHosts="0"
 header="${CYAN} %-10s %-16s %10s %20s %9s %7s %11s\n${NC}"
 
 COLUMNS=$(tput cols)
-divider=$(printf "%${COLUMNS}s" " " | tr " " "-")
-width=92
+divider=$(printf ${YELLOW}"%${COLUMNS}s" " "${NC} | tr " " "-")
+width=101
 
 function Report() {
 
@@ -215,7 +214,7 @@ CheckPeers
 
 echo && echo -e "${CYAN}Trusted hash:${NC} ${GREEN}$TrustedHash${NC}" && echo
 
-echo -e "${CYAN}PeersCount:     ${GREEN}$ValidatorsCount${NC}" && echo
+echo -e "${CYAN}Peers connected:     ${GREEN}$ValidatorsCount${NC}" && echo
 
 echo -e "${CYAN}Useless peers:  ${GREEN}$UselessHosts${NC}"
 echo -e "${CYAN}Blocked access: ${GREEN}$BlockedHTTP${NC}"

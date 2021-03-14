@@ -2,9 +2,8 @@
 
 # reward withdraw
 
-# Requirements: DELTA 3 master branch contracts ('make build-contracts-rs release')
-# Requirements: 'apt install jq'
-# Requirements: 'path to smart contract` and 'validator public hex` below
+# Requirements: 'apt install jq && apt install bc'
+# Requirements: 'path to withdraw contract' and 'validator public hex'
 
 VALIDATOR_PUB_HEX='VALIDATOR_PUB_HEX'
 
@@ -102,10 +101,6 @@ CheckTX
 
 CheckBalance
 
-# RETURN=$(echo "$BALANCE - $START_BALANCE" | bc -l)
+echo && echo -e "${CYAN}Initial balance: ${GREEN}$START_BALANCE${NC}"
 
-echo && echo -e "${CYAN}Input initial balance: ${GREEN}$START_BALANCE${NC}"
-
-echo -e "${CYAN}Input current balance: ${GREEN}$BALANCE${NC}" && echo
-
-# echo -e "${GREEN}Withdraw amount: $RETURN" && echo
+echo -e "${CYAN}Current balance: ${GREEN}$BALANCE${NC}" && echo

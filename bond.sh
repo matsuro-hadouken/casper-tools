@@ -1,20 +1,23 @@
 #!/bin/bash
 
-# Tested and works on "delta-10"
+# Coming to Delta-11, 'not tested yet'
 
-# Bond validat to networks
+# Propose validator bid.
+
 # Requirements: 'apt install jq'
-# Requirements: Set 'validator public hex' , 'BID_AMOUNT' , 'PROFIT ( fee ), 'CHAIN_NAME', 'OWNER_PRIVATE_KEY' path, 'API' end pint, 'BONDING_CONTRACT' path.
+# Requirements: 'add_bid.wasm' should be compiled according instruction. Current 'Delta 11' target 'v0.9.3'
+# Requirements: 'BID AMOUNT', 'validator comission', 'CHAIN NAME', 'OWNER PRIVATE KEY PATH', 'TARGET IP', 'ADD BID WASM PATH'.
 
-PUB_KEY_HEX='PUBLIC_HEX'
+# Note the path to files and keys. Note: the 'session arguments need to be encased in double-quotes', with the 'parameter values in single quotes'.
+# Note the required payment amount. It must contain 'at least 10 zeros'. The payment amount is specified 'in motes'.
 
-BID_AMOUNT="101010101"
+PUB_KEY_HEX="$(cat /etc/casper/validator_keys/public_key_hex)"
+BID_AMOUNT="1234567890"
 
-GAS="1000000000" # So far this is minimum which I be able to achive, 10 zeros
+payment_amount="10000000000"
 
-PROFIT="10"
-
-CHAIN_NAME="delta-10"
+validator_comission="10"
+CHAIN_NAME="delta-11"
 OWNER_PRIVATE_KEY="/etc/casper/validator_keys/secret_key.pem"
 API_HOST="http://127.0.0.1:7777"
 BONDING_CONTRACT="$HOME/casper-node/target/wasm32-unknown-unknown/release/add_bid.wasm"
@@ -23,17 +26,16 @@ RED='\033[0;31m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-echo && echo -e "Broadcasting bind transaction ..." && echo
+echo && echo -e "Deploy ..." && echo
 
 TX=$(casper-client put-deploy \
         --chain-name "$CHAIN_NAME" \
         --node-address "$API_HOST" \
         --secret-key "$OWNER_PRIVATE_KEY" \
         --session-path "$BONDING_CONTRACT" \
-        --payment-amount "$GAS" \
-        --session-arg=public_key:"public_key='$PUB_KEY_HEX'" \
-        --session-arg=amount:"u512='$BID_AMOUNT'" \
-        --session-arg=delegation_rate:"u64='$PROFIT'" | jq -r '.result | .deploy_hash')
+        --payment-amount "$payment_amount" \
+        --session-arg="public_key:public_key='$PUB_KEY_HEX'" \
+        --session-arg="amount:u512='$BID_AMOUNT'" \
+        --session-arg="delegation_rate:u64='$validator_comission'" | jq -r '.result | .deploy_hash')
 
-echo -e "${RED}Transaction hash: ${CYAN}$TX${NC}" && echo
-
+sleep 2 && echo -e "${RED}Transaction hash: ${CYAN}$TX${NC}" && echo
