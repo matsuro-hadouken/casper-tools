@@ -36,6 +36,6 @@ TX=$(casper-client put-deploy \
         --payment-amount "$payment_amount" \
         --session-arg="public_key:public_key='$PUB_KEY_HEX'" \
         --session-arg="amount:u512='$BID_AMOUNT'" \
-        --session-arg="delegation_rate:u64='$validator_comission'" | jq -r '.result | .deploy_hash')
+        --session-arg="delegation_rate:u8='$validator_comission'" | jq -r '.result | .deploy_hash')
 
 sleep 2 && echo -e "${RED}Transaction hash: ${CYAN}$TX${NC}" && echo
