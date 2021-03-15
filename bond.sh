@@ -12,6 +12,7 @@
 # Note the required payment amount. It must contain 'at least 10 zeros'. The payment amount is specified 'in motes'.
 
 PUB_KEY_HEX="$(cat /etc/casper/validator_keys/public_key_hex)"
+
 BID_AMOUNT="1234567890"
 
 payment_amount="10000000000"
@@ -34,6 +35,7 @@ TX=$(casper-client put-deploy \
         --secret-key "$OWNER_PRIVATE_KEY" \
         --session-path "$BONDING_CONTRACT" \
         --payment-amount "$payment_amount" \
+	--gas-price=1 \
         --session-arg="public_key:public_key='$PUB_KEY_HEX'" \
         --session-arg="amount:u512='$BID_AMOUNT'" \
         --session-arg="delegation_rate:u8='$validator_comission'" | jq -r '.result | .deploy_hash')
