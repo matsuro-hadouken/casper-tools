@@ -91,7 +91,7 @@ function GetCurrentEra() {
 
 function GetVisibleEras() {
 
-    IFS=$'\n' VisibleEras=($(casper-client get-auction-info | jq -r '.result | .era_validators | .[] | .era_id'))
+    IFS=$'\n' VisibleEras=($(casper-client get-auction-info | jq -r '.result | .auction_state.era_validators | .[] | .era_id'))
 
 }
 
@@ -107,7 +107,7 @@ function BrowseTroughEras() {
     echo -e "${CYAN}Ongoing era: ${YELLOW}$era_current${CYAN}, looking in to future ...      Following sequence: ${YELLOW}${VisibleEras[@]}${NC}"
     echo '------------------------------------------------------------------'
 
-    era_section=$(casper-client get-auction-info | jq -r '.result | .era_validators | .[]')
+    era_section=$(casper-client get-auction-info | jq -r '.result | .auction_state.era_validators | .[]')
 
     for era in "${VisibleEras[@]}"; do
 
