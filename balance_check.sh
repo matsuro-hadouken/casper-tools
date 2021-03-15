@@ -1,37 +1,32 @@
 #!/bin/bash
 
+# Version: DELTA 10
+
 # Check input balance
 # Requirements: 'apt install jq'
 # Instruction:  'balance_check.sh <PUBLIC_KEY_HEX>'
-
-INPUT_HEX="$1"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+public_hex_path='/etc/casper/validator_keys/public_key_hex'
+INPUT_HEX="$1"
+
 TARGET_HOST="127.0.0.1"
 
-function checkArguments() {
+function GetPublicHEX() {
+
+    AutoHEX=$(cat "$public_hex_path")
 
     if [ -z "$INPUT_HEX" ]; then
-
-        echo && echo -e "${RED}ERROR: Not enough arguments.${NC}" && echo
-        echo -e "${GREEN}balance_check.sh <PUBLIC_KEY_HEX>${NC}" && echo
-
-        exit
-
+        INPUT_HEX="$AutoHEX"
+        echo && echo -e "${RED}No valid manual input detected !${NC}" && echo
+        echo -e "Using public HEX from: ${RED}$public_hex_path${NC}"
     fi
 
-    if ! [[ "${#INPUT_HEX}" -eq 66 ]];then
-
-        echo && echo -e "${RED}ERROR: This is probably not a public key ...${NC}" && echo
-        echo -e "${GREEN}Check:${NC} cat /etc/casper/validator_keys/public_key_hex" && echo
-
-        exit
-
-    fi
+    echo && echo -e "Public HEX: ${CYAN}$INPUT_HEX${NC}"
 
 }
 
@@ -57,6 +52,6 @@ echo -e "${CYAN}Input balance: ${GREEN}$BALANCE${NC}" && echo
 
 }
 
-checkArguments
+GetPublicHEX
 
 checkBalance
