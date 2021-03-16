@@ -48,10 +48,9 @@ TX=$(casper-client put-deploy \
         --node-address "$API_HOST" \
         --secret-key "$OWNER_PRIVATE_KEY" \
         --session-path "$BONDING_CONTRACT" \
-        --payment-amount "$GAS" \
-        --session-arg=public_key:"public_key='$PUB_KEY_HEX'" \
-        --session-arg=amount:"u512='$BID_AMOUNT'" \
-        --session-arg=delegation_rate:"u8='$PROFIT'" | jq -r '.result | .deploy_hash')
-
-echo -e "${RED}Transaction hash: ${CYAN}$TX${NC}" && echo
+        --payment-amount "$payment_amount" \
+	--gas-price=1 \
+        --session-arg="public_key:public_key='$PUB_KEY_HEX'" \
+        --session-arg="amount:u512='$BID_AMOUNT'" \
+        --session-arg="delegation_rate:u8='$validator_comission'" | jq -r '.result | .deploy_hash')
 

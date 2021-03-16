@@ -24,6 +24,8 @@ NC='\033[0m'
 
 numba='^[0-9]+$'
 
+trusted_cap="3"
+
 function GetPublicHEX() {
 
     manual_input="$1"
@@ -70,6 +72,8 @@ function CreateTemporaryFolder() {
 
 function GetCurrentEra() {
 
+    trusted_counter=0
+
     read -r -a trustedHosts < <(echo $(cat /etc/casper/1_0_0/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
 
     for seed_ip in "${trustedHosts[@]}"; do
@@ -77,6 +81,8 @@ function GetCurrentEra() {
         echo && echo -e "Trusted address list: ${GREEN}$seed_ip${NC}, query era ..."
 
         Ch_hash=$(curl -s --connect-timeout 3 --max-time 3 "http://$seed_ip:$HTTP_PORT"/status | jq -r '.last_added_block_info | .hash')
+
+        trusted_counter=$(( trusted_counter + 1 ))
 
         if [[ "${#Ch_hash}" -eq 64 ]]; then
             era_current=$(curl -s "http://$seed_ip:$HTTP_PORT/status" | jq -r '.last_added_block_info | .era_id')
@@ -86,12 +92,16 @@ function GetCurrentEra() {
             echo -e "${RED}ERROR: Bogus output [ $era_current ] from ${GREEN}$seed_ip${RED}, exit ...${NC}" && echo && exit 1
         fi
 
+	if [[ "$trusted_counter" -ge $trusted_cap ]]; then
+		break
+	fi
+
     done
 }
 
 function GetVisibleEras() {
 
-    IFS=$'\n' VisibleEras=($(casper-client get-auction-info | jq -r '.result | .auction_state.era_validators | .[] | .era_id'))
+    IFS=$'\n' VisibleEras=($(casper-client get-auction-info | jq -r '.result.auction_state.era_validators | .[] | .era_id'))
 
 }
 
@@ -107,7 +117,7 @@ function BrowseTroughEras() {
     echo -e "${CYAN}Ongoing era: ${YELLOW}$era_current${CYAN}, looking in to future ...      Following sequence: ${YELLOW}${VisibleEras[@]}${NC}"
     echo '------------------------------------------------------------------'
 
-    era_section=$(casper-client get-auction-info | jq -r '.result | .auction_state.era_validators | .[]')
+    era_section=$(casper-client get-auction-info | jq -r '.result.auction_state.era_validators | .[]')
 
     for era in "${VisibleEras[@]}"; do
 
@@ -203,9 +213,9 @@ function CheckAuction() {
     # collect auction data >tmp
     casper-client get-auction-info --node-address "http://$API:$RPC_PORT" >"$TMPDIR/tmp.auction"
 
-    bids=$(cat "$TMPDIR/tmp.auction" | jq '.result | .bids')
+    bids=$(cat "$TMPDIR/tmp.auction" | jq '.result.auction_state.bids')
     ace_of_base=$(echo $bids | jq 'length')
-    
+
     for ((b = 0; b < "$ace_of_base"; ++b)); do
 	echo $bids | jq -r '.['$b'] | [.public_key,.bid.staked_amount,.bid.reward] |join(" ")'
         total_bids=$((total_bids + 1))

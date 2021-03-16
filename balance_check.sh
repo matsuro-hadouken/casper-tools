@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Version: DELTA 10
+# Version: DELTA 11
 
 # Check input balance
 # Requirements: 'apt install jq'
@@ -25,8 +25,6 @@ function GetPublicHEX() {
         echo && echo -e "${RED}No valid manual input detected !${NC}" && echo
         echo -e "Using public HEX from: ${RED}$public_hex_path${NC}"
     fi
-
-    echo && echo -e "Public HEX: ${CYAN}$INPUT_HEX${NC}"
 
 }
 
