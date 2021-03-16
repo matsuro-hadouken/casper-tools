@@ -26,8 +26,6 @@ function GetPublicHEX() {
         echo -e "Using public HEX from: ${RED}$public_hex_path${NC}"
     fi
 
-    echo && echo -e "Public HEX: ${CYAN}$INPUT_HEX${NC}"
-
 }
 
 function checkBalance() {
