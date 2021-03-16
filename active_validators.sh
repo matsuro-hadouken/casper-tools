@@ -213,7 +213,7 @@ function CheckAuction() {
     # collect auction data >tmp
     casper-client get-auction-info --node-address "http://$API:$RPC_PORT" >"$TMPDIR/tmp.auction"
 
-    bids=$(cat "$TMPDIR/tmp.auction" | jq '.result | .bids')
+    bids=$(cat "$TMPDIR/tmp.auction" | jq '.result.auction_state.bids')
     ace_of_base=$(echo $bids | jq 'length')
 
     for ((b = 0; b < "$ace_of_base"; ++b)); do
