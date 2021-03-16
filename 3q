@@ -33,7 +33,7 @@ theoretically_trusted_ip=$(cat /etc/casper/1_0_0/config.toml | grep 'known_addre
 
 function watch_unit() {
 
-watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --color=always -e MemoryCurrent \
+watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep -e MemoryCurrent \
   -e ActiveState \
   -e LoadState \
   -e FragmentPath \
@@ -48,9 +48,9 @@ watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --
   echo -n 'Chain name   : $GREEN' && curl -s localhost:8888/status | jq -r .chainspec_name && echo -n '$NC' && \
   echo -n 'Starting hash: $GREEN' && curl -s localhost:8888/status | jq -r .starting_state_root_hash && echo -n '$NC' && \
   echo && echo 'Database Size:' && echo && \
-  tree -C --noreport -h --inodes /var/lib/casper/casper-node && echo && \
-  echo -n 'Peers connected: $GREEN' && curl -s localhost:8888/status | jq -r '.peers | length' && echo -n '$NC' && echo && \
-  echo -n 'Validator Slots: $GREEN' && cat /etc/casper/1_0_0/chainspec.toml | grep -e validator_slots  | cut -c19- && echo -n '$NC' && echo"
+  tree --noreport -h --inodes /var/lib/casper/casper-node && echo && \
+  echo Peers connected: curl -s localhost:8888/status | jq -r '.peers | length' && echo && \
+  echo $(cat /etc/casper/1_0_0/chainspec.toml | grep -e validator_slots) && echo"
 
 
 
