@@ -39,7 +39,7 @@ watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --
   -e FragmentPath \
   -e StateChangeTimestamp= && \
   echo && \
-  echo '${CYAN}Active for$NC : $GREEN$(($(( ($(date -d "Wed Mar 17 18:16:21 UTC 2021" +%s) - $(date -d "Wed 2021-03-17 12:49:27 UTC" +%s))  ))/86400))" days "$(date -d "1970-01-01 + $(( ($(date -d "Wed Mar 17 18:16:21 UTC 2021" +%s) - $(date -d "Wed 2021-03-17 12:49:27 UTC" +%s))  )) seconds" "+%H hours %M minutes %S seconds")$NC'
+  ps -p $(pidof casper-node-launcher) -o etime && \
   echo && \
   echo -n 'Public signing key: $GREEN' && curl -s localhost:8888/status | jq -r .our_public_signing_key && echo -n '$NC' && echo && \
   echo -n 'Local height : $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.height && echo -n '$NC' && \
