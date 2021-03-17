@@ -49,11 +49,9 @@ watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --
   echo -n 'Local ERA    : $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.era_id && echo -n '$NC' && echo && \
   echo -n 'Starting hash: $GREEN' && curl -s localhost:8888/status | jq -r .starting_state_root_hash && echo -n '$NC' && \
   echo && echo 'Database Size:' && echo && \
-  tree -C --noreport -h --inodes /var/lib/casper/casper-node && echo && \
+  tree -C -P *lmdb* --noreport -h --inodes /var/lib/casper/casper-node && echo && \
   echo -n 'Peers connected: $GREEN' && curl -s localhost:8888/status | jq -r '.peers | length' && echo -n '$NC' && echo && \
-  echo -n 'Validator Slots: $GREEN' && cat /etc/casper/1_0_0/chainspec.toml | grep -e validator_slots  | cut -c19- && echo -n '$NC' && echo"
-
-
+  echo -n 'Validator Slots: $GREEN' && cat /etc/casper/1_0_0/chainspec.toml | grep -e validator_slots  | cut -c19- && echo -n '$NC' && echo"  
 
 }
 
