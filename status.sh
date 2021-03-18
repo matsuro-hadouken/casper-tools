@@ -48,6 +48,7 @@ watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --
   echo -n 'Next upgrade : $GREEN' && curl -s localhost:8888/status | jq -r '.next_upgrade | "\""Activation ERA: \(.activation_point)\tProtocol: \(.protocol_version)"\""' && echo -n '$NC' && \
   echo -n 'Build version: $GREEN' && curl -s localhost:8888/status | jq -r .build_version && echo -n '$NC' && \
   echo -n 'Chain name   : $GREEN' && curl -s localhost:8888/status | jq -r .chainspec_name && echo -n '$NC' && \
+  echo -n 'API Version  : $GREEN' && curl -s localhost:8888/status | jq -r .api_version && echo -n '$NC' && \
   echo -n 'Local ERA    : $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.era_id && echo -n '$NC' && echo && \
   echo -n 'Starting hash: $GREEN' && curl -s localhost:8888/status | jq -r .starting_state_root_hash && echo -n '$NC' && \
   echo && echo 'Database Size:' && echo && \
