@@ -40,6 +40,7 @@ watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --
   -e StateChangeTimestamp= && \
   echo && \
   echo -n 'Public signing key: $GREEN' && curl -s localhost:8888/status | jq -r .our_public_signing_key && echo -n '$NC' && echo && \
+  echo -n 'API version  : $GREEN' && curl -s localhost:8888/status | jq -r .api_version && echo -n '$NC' && \
   echo -n 'Local height : $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.height && echo -n '$NC' && \
   echo -n 'Chain height : $GREEN' && curl -s 18.144.176.168:8888/status | jq -r .last_added_block_info.height && echo -n '$NC' && \
   echo -n 'Round length : $GREEN' && curl -s localhost:8888/status | jq -r .round_length && echo -n '$NC' && \
