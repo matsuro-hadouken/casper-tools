@@ -69,4 +69,3 @@ watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --
 }
 
 watch_unit
-

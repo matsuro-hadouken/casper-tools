@@ -19,10 +19,6 @@ explorer.sh
 status.sh
 ```
 
- - example of systemd config
- ``` bash
-rust-casperlabs.service
-```
  - ping-pong spammer
  ``` bash
 rust-transactions-spam.sh
@@ -35,7 +31,7 @@ slightly_loader.sh
  ``` bash
 well_enough_spam.sh
 ```
- - get validator reward
+ - withdraw reward
  ``` bash
 withdraw-reward.sh
 ```
