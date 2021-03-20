@@ -9,8 +9,7 @@
 PUB_KEY_HEX="$1"
 
 BID_AMOUNT="12345678"
-payment_amount="1000000000" # So far this is minimum which I be able to achive, 10 zeros
-
+payment_amount="3000000"
 validator_comission="10"
 
 CHAIN_NAME=`curl -s localhost:8888/status | jq -r .chainspec_name`
