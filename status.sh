@@ -42,7 +42,7 @@ watch -c SYSTEMD_COLORS=1 "systemctl show casper-node-launcher.service | grep --
   ps -p $(pidof casper-node-launcher) -o etime && echo && \
   echo -n 'Public signing key: ${GREEN}${PUB_KEY}${NC}' && echo && \
   echo -n 'Local height : $GREEN' && curl -s localhost:8888/status | jq -r .last_added_block_info.height && echo -n '$NC' && \
-  echo -n 'Chain height : $GREEN' && curl -s 18.144.176.168:8888/status | jq -r .last_added_block_info.height && echo -n '$NC' && \
+  echo -n 'Chain height : $GREEN' && curl -s 31.7.207.16:8888/status | jq -r .last_added_block_info.height && echo -n '$NC' && \
   echo -n 'Round length : $GREEN' && curl -s localhost:8888/status | jq -r .round_length && echo -n '$NC' && \
   echo -n 'Next upgrade : $GREEN' && curl -s localhost:8888/status | jq -r '.next_upgrade | "\""Activation ERA: \(.activation_point)\tProtocol: \(.protocol_version)"\""' && echo -n '$NC' && \
   echo -n 'Build version: $GREEN' && curl -s localhost:8888/status | jq -r .build_version && echo -n '$NC' && echo &&\
