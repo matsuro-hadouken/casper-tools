@@ -14,10 +14,15 @@ bond.sh
  ``` bash
 explorer.sh
 ```
- - active node status (press ctrl-c to exit)
+ - active node status (bash script) (press ctrl-c to exit)
  ``` bash
 status.sh
 ```
+ - active node status (python script) (press ctrl-c to exit)
+ ``` bash
+status.py
+```
+![alt text](https://github.com/RapidMark/casper-tools/raw/master/images/status.PNG)
 
  - ping-pong spammer
  ``` bash
