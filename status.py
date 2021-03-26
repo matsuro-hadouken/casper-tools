@@ -147,10 +147,20 @@ def casper_block_info():
     block_info.addstr(index, 1, 'Local ERA    : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
 
+def casper_public_key():
+    global pub_key_win
+    pub_key_win = curses.newwin(3, 70, 20, 0)
+    pub_key_win.box()
+    box_height, box_width = pub_key_win.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    pub_key_win.addstr(0, 2, 'Public Key', curses.color_pair(4))
+
+    pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(1))
+
 
 def casper_validator():
     global validator
-    validator = curses.newwin(9, 70, 20, 0)
+    validator = curses.newwin(9, 70, 23, 0)
     validator.box()
     box_height, box_width = validator.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -172,9 +182,6 @@ def casper_validator():
     except:
         era_current_weight = 0;
         era_future_weight = 0;
-
-    validator.addstr(1, 1, 'Public Key   : ', curses.color_pair(1))
-    validator.addstr(2, 1, '{}'.format(public_key), curses.color_pair(4))
 
     validator.addstr(4, 1, 'ERA {}       : '.format(local_era), curses.color_pair(1))
     validator.addstr('{:,} CSPR'.format(era_current_weight/1000000000, era_current_weight), curses.color_pair(4))
@@ -222,6 +229,7 @@ def draw_menu(casper):
 
         casper_launcher()
         casper_block_info()
+        casper_public_key()
         casper_validator()
 
         # Render status bar
@@ -235,6 +243,7 @@ def draw_menu(casper):
 
         launcher.refresh()
         block_info.refresh()
+        pub_key_win.refresh()
         validator.refresh()
         casper.refresh()
 
