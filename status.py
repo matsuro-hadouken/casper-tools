@@ -69,6 +69,7 @@ def casper_block_info():
     except:
         global_height = 'null'
 
+    global local_status
     local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
     try:
         last_added_block_info = local_status['last_added_block_info']
