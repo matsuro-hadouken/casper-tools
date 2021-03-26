@@ -116,8 +116,12 @@ def draw_menu(casper):
             local_era = 'null'
 
 
-        era_current_weight = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[0].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
-        era_future_weight  = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[1].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+        try:
+            era_current_weight = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[0].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+            era_future_weight  = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[1].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+        except:
+            era_current_weight = 0;
+            era_future_weight = 0;
 
         index += 1
         casper.addstr(index, 1, 'Local height : ', curses.color_pair(1))
