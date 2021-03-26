@@ -39,19 +39,19 @@ def casper_launcher():
     except:
         timestamp = 'null'
 
-    launcher.addstr(1, 1, 'MemoryCurrent: ', curses.color_pair(1))
+    launcher.addstr(1, 2, 'MemoryCurrent: ', curses.color_pair(1))
     launcher.addstr('{}'.format(memory), curses.color_pair(4))
 
-    launcher.addstr(2, 1, 'ActiveState  : ', curses.color_pair(1))
+    launcher.addstr(2, 2, 'ActiveState  : ', curses.color_pair(1))
     launcher.addstr('{}'.format(active), curses.color_pair(4))
 
-    launcher.addstr(3, 1, 'LoadState    : ', curses.color_pair(1))
+    launcher.addstr(3, 2, 'LoadState    : ', curses.color_pair(1))
     launcher.addstr('{}'.format(load), curses.color_pair(4))
     
-    launcher.addstr(4, 1, 'FragmentPath : ', curses.color_pair(1))
+    launcher.addstr(4, 2, 'FragmentPath : ', curses.color_pair(1))
     launcher.addstr('{}'.format(fragment), curses.color_pair(4))
 
-    launcher.addstr(5, 1, 'Timestamp    : ', curses.color_pair(1))
+    launcher.addstr(5, 2, 'Timestamp    : ', curses.color_pair(1))
     launcher.addstr('{}'.format(timestamp), curses.color_pair(4))
 
 
@@ -117,34 +117,34 @@ def casper_block_info():
 
 
     index = 1
-    block_info.addstr(index, 1, 'Local height : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Local height : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_height), curses.color_pair(4))
 
     index += 1
-    block_info.addstr(index, 1, 'Chain height : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Chain height : ', curses.color_pair(1))
     block_info.addstr('{}'.format(global_height), curses.color_pair(4))
     index += 1
-    block_info.addstr(index, 1, 'Round Length : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Round Length : ', curses.color_pair(1))
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
     index += 1
-    block_info.addstr(index, 1, 'Next Upgrade : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
     block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4))
     index += 1
-    block_info.addstr(index, 1, 'Build Version: ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Build Version: ', curses.color_pair(1))
     block_info.addstr('{}'.format(build_version), curses.color_pair(4))
 
     index += 2
-    block_info.addstr(index, 1, 'Chain Name   : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Chain Name   : ', curses.color_pair(1))
     block_info.addstr('{}'.format(chain_name), curses.color_pair(4))
     index += 1
-    block_info.addstr(index, 1, 'Starting Hash: ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Starting Hash: ', curses.color_pair(1))
     block_info.addstr('{}'.format(root_hash), curses.color_pair(4))
 
     index += 2
-    block_info.addstr(index, 1, 'API Version  : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'API Version  : ', curses.color_pair(1))
     block_info.addstr('{}'.format(api_version), curses.color_pair(4))
     index += 1
-    block_info.addstr(index, 1, 'Local ERA    : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Local ERA    : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
 
 def casper_public_key():
@@ -160,7 +160,7 @@ def casper_public_key():
 
 def casper_validator():
     global validator
-    validator = curses.newwin(9, 70, 23, 0)
+    validator = curses.newwin(6, 70, 23, 0)
     validator.box()
     box_height, box_width = validator.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -183,13 +183,13 @@ def casper_validator():
         era_current_weight = 0;
         era_future_weight = 0;
 
-    validator.addstr(4, 1, 'ERA {}       : '.format(local_era), curses.color_pair(1))
+    validator.addstr(1, 2, 'ERA {}       : '.format(local_era), curses.color_pair(1))
     validator.addstr('{:,} CSPR'.format(era_current_weight/1000000000, era_current_weight), curses.color_pair(4))
 
-    validator.addstr(5, 1, 'ERA {}       : '.format(local_era+1), curses.color_pair(1))
+    validator.addstr(2, 2, 'ERA {}       : '.format(local_era+1), curses.color_pair(1))
     validator.addstr('{:,} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
 
-    validator.addstr(7, 1, 'Last Reward  : ', curses.color_pair(1))
+    validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
     reward = era_future_weight - era_current_weight
     if (reward > 1000000000):
         reward //=1000000000
