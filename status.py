@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import sys,os,curses,json,time,select
+from datetime import datetime
 
 def casper_launcher():
     global launcher
@@ -36,6 +37,9 @@ def casper_launcher():
         fragment = 'null'
     try:
         timestamp = json_dict['StateChangeTimestamp']
+        target = datetime.strptime(timestamp,'%a %Y-%m-%d %H:%M:%S %Z')
+        now = datetime.now()
+        timestamp = now - target
     except:
         timestamp = 'null'
 
@@ -51,7 +55,7 @@ def casper_launcher():
     launcher.addstr(4, 2, 'FragmentPath : ', curses.color_pair(1))
     launcher.addstr('{}'.format(fragment), curses.color_pair(4))
 
-    launcher.addstr(5, 2, 'Timestamp    : ', curses.color_pair(1))
+    launcher.addstr(5, 2, 'Running Time : ', curses.color_pair(1))
     launcher.addstr('{}'.format(timestamp), curses.color_pair(4))
 
 
@@ -192,8 +196,9 @@ def casper_validator():
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
     reward = era_future_weight - era_current_weight
     if (reward > 1000000000):
-        reward //=1000000000
-    validator.addstr('{:,}'.format(reward), curses.color_pair(4))
+        validator.addstr('{:,} CSPR'.format(reward // 1000000000), curses.color_pair(4))
+    else:
+        validator.addstr('{:,} mote'.format(reward), curses.color_pair(4))
 
 
 def draw_menu(casper):
