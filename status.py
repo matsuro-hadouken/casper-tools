@@ -76,7 +76,7 @@ def system_disk():
     sysdisk.addstr(2, 2, 'Free Space : ', curses.color_pair(1))
     sysdisk.addstr('{:.2f} GB'.format(float(free_size)), curses.color_pair(4))
 
-    disk_percent = 100*float(free_size)/float(total_size)
+    disk_percent = 100*float(total_size-free_size)/float(total_size)
 
     sysdisk.addstr(3, 2, 'Disk Used  : ', curses.color_pair(1))
 
