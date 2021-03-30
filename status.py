@@ -243,13 +243,6 @@ def casper_block_info():
 
     if peer_address != 'null':
         try:
-            statusbarstr = 'Press \'ctrl-c\' to exit | STATUS BAR | Getting Status from peer : {} <- if this stays too long, pres ctrl-c to skip '.format(peer_address)
-            main_window.attron(curses.color_pair(3))
-            main_window.addstr(main_height-1, 1, statusbarstr)
-            main_window.addstr(main_height-1, len(statusbarstr), " " * (main_width - len(statusbarstr) - 1))
-            main_window.attroff(curses.color_pair(3))
-            main_window.refresh()
-            
             try:
                 global_status = json.loads(os.popen('curl -m 2 -s {}:8888/status | jq -r .last_added_block_info'.format(peer_address)).read())
             except:
@@ -266,7 +259,7 @@ def casper_block_info():
     block_info.addstr('{}'.format(local_height), curses.color_pair(4))
 
     index += 1
-    block_info.addstr(index, 2, 'Chain height : ', curses.color_pair(1))
+    block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
     block_info.addstr('{}\t\t'.format(global_height), curses.color_pair(4))
 
     block_info.addstr('<- From Peer : ', curses.color_pair(1))
