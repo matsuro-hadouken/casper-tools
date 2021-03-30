@@ -1,41 +1,29 @@
 #!/bin/bash
 
-# Version: Delta-3
+# test tool, requirements: 'apt install jq && apt install bc'
 
-# it will send funds from address A to address B
+sleep_time=0.58 # sleep interval [0.58] is about 100 transaction per minute.
 
-# Requirements: 'apt install jq`
-# Requirements: Setup all variables below
-# Requirements: Need two inputs, keys, set appropriate path for both.
+GAS="10000" # mandatory gas value, this is not refundable in any case and absolute minimum. 
 
-# Exemple of use: './well_enough_spam.sh <target_host_ip>'
-# Example of use: './well_enough_spam.sh 127.0.0.1'
+DESTINATION_ADDRESS="DESTINATION_PUB_HEX" # we will send transaction this direction
 
-#!/bin/bash
+AMOUNT='2500000000' # This is minimum amount which can be send for now ( minimum requirement for input activation )
 
-# we will spam in to this HEX
-DESTINATION_ADDRESS="<DESTINATION_ADDRESS>"
+deploysCount=1 # how many deploys we about to push
 
-# Funds will be spend from here
-OWNER_ADDRESS='<BIG_BAG_ADDRESS>'
-OWNER_PRIVATE_KEY='/etc/casper/validator_keys/secret_key.pem'
+TTL='30m'
 
-AMOUNT='111'
+CHAIN_NAME="casper-dryrun" # chain name, match mandatory.
 
-GAS="1000000000"
+TARGET_HOST="127.0.0.1" # Target. In case target is remote machine, please consider latency when setting up $sleep_time
 
-# How many deploys ?
-deploysCount=1
+API="http://$TARGET_HOST:7777" # port probably standard, but just in case check.
 
-TTL='1m'
+OWNER_ADDRESS="$(cat /home/casper/test_key/public_key_hex)" # check path
+OWNER_PRIVATE_KEY='/home/casper/test_key/secret_key.pem'    # check path
 
-CHAIN_NAME="casper-delta-3"
-
-TARGET_HOST="$1"
-
-# --------------------------------------------------------------------------------
-
-API="http://$TARGET_HOST:7777"
+# nothing much to change below
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -44,38 +32,27 @@ NC='\033[0m'
 
 function send_transaction_ttl() {
 
-    TX=$(casper-client transfer \
-        --node-address "$API" \
-        --secret-key "$OWNER_PRIVATE_KEY" \
-        -a "$AMOUNT" \
-        -t "$DESTINATION_ADDRESS" \
-        -p "$GAS" \
-        --chain-name "$CHAIN_NAME" \
-        --ttl="$TTL" | jq -r '.result | .deploy_hash')
+TX=$(casper-client transfer \
+                --node-address "$API" \
+                --secret-key "$OWNER_PRIVATE_KEY" \
+                -a "$AMOUNT" \
+                -t "$DESTINATION_ADDRESS" \
+                -p "$GAS" \
+                --chain-name "$CHAIN_NAME" \
+                --ttl="$TTL" | jq -r '.result | .deploy_hash')
 
-}
-
-function send_transaction() {
-
-    TX=$(casper-client transfer \
-        --node-address "$API" \
-        --secret-key "$OWNER_PRIVATE_KEY" \
-        -a "$AMOUNT" \
-        -t "$DESTINATION_ADDRESS" \
-        -p "$GAS" \
-        --chain-name "$CHAIN_NAME" | jq -r '.result | .deploy_hash')
 }
 
 start=$(date +%s.%N) # start time check
 
 for run in $(seq "$deploysCount"); do
 
-    send_transaction_ttl
-    echo -e "${CYAN}Transaction hash: ${GREEN}$TX${NC}"
+        send_transaction_ttl && sleep "$sleep_time"
+        echo -e "${CYAN}Transaction hash: ${GREEN}$TX${NC}"
 
 done
 
 duration=$(echo "$(date +%s.%N) - $start" | bc)
-execution_time=$(printf "%.2f seconds" $duration)
+execution_time=$(printf "%.2f seconds" "$duration")
 
-echo && echo -e "${RED}Execution Time: $execution_time${NC}" && echo
+echo -e "${RED}Execution Time: $execution_time${NC}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Tested and works on "delta-10"
+# Tested and works on "delta-11"
 
 # Bond validat to networks
 # Requirements: 'apt install jq'
@@ -8,10 +8,9 @@
 
 PUB_KEY_HEX="$1"
 
-BID_AMOUNT="978000000000"
-GAS="1000000000" # So far this is minimum which I be able to achive, 10 zeros
-
-PROFIT="10"
+BID_AMOUNT="12345678"
+payment_amount="3000000"
+validator_comission="10"
 
 CHAIN_NAME=`curl -s localhost:8888/status | jq -r .chainspec_name`
 public_hex_path='/etc/casper/validator_keys/public_key_hex'
@@ -41,7 +40,7 @@ function GetPublicHEX() {
 
 GetPublicHEX
 
-echo && echo -e "Broadcasting bind transaction for ${CYAN}$CHAIN_NAME${NC}..." && echo
+echo && echo -e "Broadcasting, chain name:  ${CYAN}$CHAIN_NAME${NC} ..." && echo
 
 TX=$(casper-client put-deploy \
         --chain-name "$CHAIN_NAME" \
@@ -49,7 +48,6 @@ TX=$(casper-client put-deploy \
         --secret-key "$OWNER_PRIVATE_KEY" \
         --session-path "$BONDING_CONTRACT" \
         --payment-amount "$payment_amount" \
-	--gas-price=1 \
         --session-arg="public_key:public_key='$PUB_KEY_HEX'" \
         --session-arg="amount:u512='$BID_AMOUNT'" \
         --session-arg="delegation_rate:u8='$validator_comission'" | jq -r '.result | .deploy_hash')
