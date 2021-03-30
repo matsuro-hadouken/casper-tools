@@ -23,8 +23,9 @@ def system_memory():
 
     sysmemory.addstr(1, 2, 'MemTotal : ', curses.color_pair(1))
     sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemTotal'].value)/1024/1024), curses.color_pair(4))
-
+    
     sysmemory.addstr(2, 2, 'MemAvail : ', curses.color_pair(1))
+
     sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemAvailable'].value)/1024/1024), curses.color_pair(4))
 
     mem_total = float(meminfo['MemTotal'].value)
