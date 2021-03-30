@@ -1,9 +1,10 @@
 #!/usr/bin/python3
-import sys,os,curses,json,time,select
+import sys,os,curses,json,time,select,random
 from datetime import datetime
 from collections import namedtuple
 from configparser import ConfigParser
 
+peer_blacklist = []
 
 def system_memory():
     global sysmemory
@@ -90,6 +91,34 @@ def system_disk():
 
     sysdisk.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
 
+def casper_peers():
+    global peers
+    peers = curses.newwin(10, 70, 31, 0)
+    peers.box()
+    box_height, box_width = peers.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    peers.addstr(0, 2, 'Casper Peers', curses.color_pair(4))
+
+    try:
+        num_peers = len(local_status['peers'])
+    except:
+        num_peers = 0
+
+    peers.addstr(1, 2, 'Peers        : ', curses.color_pair(1))
+    peers.addstr('{}'.format(num_peers), curses.color_pair(4))
+
+    config.read('/etc/casper/1_0_0/chainspec.toml')
+    validator_slots = config.get('core', 'validator_slots').strip('\'')
+
+    peers.addstr(2, 2, 'Num Val Slots: ', curses.color_pair(1))
+    peers.addstr('{}'.format(validator_slots), curses.color_pair(4))
+
+    peers.addstr(3, 2, 'In Blacklist : ', curses.color_pair(1))
+    peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
+    peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
+
+    peers.addstr(4, 2,'{}'.format(peer_blacklist)[:347], curses.color_pair(4))
+
 def casper_launcher():
     global launcher
     launcher = curses.newwin(7, 70, 0, 0)
@@ -156,12 +185,6 @@ def casper_block_info():
     block_info.addstr(0, 2, 'Casper Block Info', curses.color_pair(4))
 
     try:
-        global_status = json.loads(os.popen('curl -s 18.188.152.102:8888/status | jq -r .last_added_block_info').read())
-        global_height = global_status['height']
-    except:
-        global_height = 'null'
-
-    try:
         global local_status
         local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
 
@@ -209,13 +232,41 @@ def casper_block_info():
         local_era = 'null'
 
 
+    try:
+        peer_to_use_as_global = random.choice(local_status['peers'])
+        peer_address = peer_to_use_as_global['address'].split(':')[0]
+        if peer_address in peer_blacklist: # then do it again (but don't loop forever, just do it once)
+            peer_to_use_as_global = random.choice(local_status['peers'])
+            peer_address = peer_to_use_as_global['address'].split(':')[0]
+
+    except:
+        peer_address = 'null'
+
+    if peer_address != 'null':
+        try:
+            try:
+                global_status = json.loads(os.popen('curl -m 2 -s {}:8888/status | jq -r .last_added_block_info'.format(peer_address)).read())
+            except:
+                if peer_address not in peer_blacklist:
+                    peer_blacklist.append(peer_address)
+            global_height = global_status['height']
+        except:
+            global_height = 'null'
+    else:
+        global_height = 'null'
+
+
     index = 1
     block_info.addstr(index, 2, 'Local height : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_height), curses.color_pair(4))
 
     index += 1
-    block_info.addstr(index, 2, 'Chain height : ', curses.color_pair(1))
-    block_info.addstr('{}'.format(global_height), curses.color_pair(4))
+    block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
+    block_info.addstr('{}\t\t'.format(global_height), curses.color_pair(4))
+
+    block_info.addstr('<- From Peer : ', curses.color_pair(1))
+    block_info.addstr('{}'.format(peer_address), curses.color_pair(4))
+
     index += 1
     block_info.addstr(index, 2, 'Round Length : ', curses.color_pair(1))
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
@@ -287,10 +338,10 @@ def casper_validator():
     validator.addstr(2, 2, 'ERA {}       : '.format(local_era+1), curses.color_pair(1))
     validator.addstr('{:,} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
 
-    validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
-    reward = era_future_weight - era_current_weight
+    validator.addstr(4, 2, 'Last Reward : ', curses.color_pair(1))
+    reward = float(era_future_weight - era_current_weight)
     if (reward > 1000000000):
-        validator.addstr('{:,} CSPR'.format(reward // 1000000000), curses.color_pair(4))
+        validator.addstr('{:,} CSPR'.format(reward / 1000000000), curses.color_pair(4))
     else:
         validator.addstr('{:,} mote'.format(reward), curses.color_pair(4))
 
@@ -303,6 +354,9 @@ def draw_menu(casper):
     # Clear and refresh the screen for a blank canvas
     casper.clear()
     casper.refresh()
+
+    global main_window
+    main_window = casper
 
     # Start colors in curses
     curses.start_color()
@@ -321,23 +375,26 @@ def draw_menu(casper):
 
         # Initialization
 #        casper.clear()
-        height, width = casper.getmaxyx()
+        global main_height
+        global main_width
+        main_height, main_width = casper.getmaxyx()
 
-        cursor_x = width-1
-        cursor_y = height-1
+        cursor_x = main_width-1
+        cursor_y = main_height-1
 
         casper_launcher()
         casper_block_info()
         casper_public_key()
         casper_validator()
+        casper_peers()
         system_memory()
         system_disk()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
         casper.attron(curses.color_pair(3))
-        casper.addstr(height-1, 1, statusbarstr)
-        casper.addstr(height-1, len(statusbarstr), " " * (width - len(statusbarstr) - 1))
+        casper.addstr(main_height-1, 1, statusbarstr)
+        casper.addstr(main_height-1, len(statusbarstr), " " * (main_width - len(statusbarstr) - 1))
         casper.attroff(curses.color_pair(3))
 
         # Refresh the screen
@@ -347,6 +404,7 @@ def draw_menu(casper):
         pub_key_win.refresh()
         validator.refresh()
         sysmemory.refresh()
+        peers.refresh()
         sysdisk.refresh()
         casper.refresh()
 
@@ -361,11 +419,15 @@ def draw_menu(casper):
 def main():
     os.environ['NCURSES_NO_UTF8_ACS'] = '1'
 
+    global config
     config = ConfigParser()
     config.read('/etc/casper/1_0_0/config.toml')
     global node_path
     node_path = config.get('storage', 'path').strip('\'')
-
+    
+    global random
+    random = random.SystemRandom()
+    
     curses.wrapper(draw_menu)
 
 if __name__ == "__main__":
