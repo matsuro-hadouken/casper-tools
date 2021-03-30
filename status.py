@@ -116,7 +116,7 @@ def casper_peers():
     peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
     peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
 
-    peers.addstr(4, 2,'{}'.format(peer_blacklist)[:280], curses.color_pair(4))
+    peers.addstr(4, 2,'{}'.format(peer_blacklist)[:347], curses.color_pair(4))
 
 def casper_launcher():
     global launcher
@@ -246,7 +246,8 @@ def casper_block_info():
             try:
                 global_status = json.loads(os.popen('curl -m 2 -s {}:8888/status | jq -r .last_added_block_info'.format(peer_address)).read())
             except:
-                peer_blacklist.append(peer_address)
+                if peer_address not in peer_blacklist:
+                    peer_blacklist.append(peer_address)
             global_height = global_status['height']
         except:
             global_height = 'null'
