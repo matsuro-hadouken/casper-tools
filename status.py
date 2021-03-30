@@ -158,9 +158,10 @@ def casper_block_info():
     except:
         global_height = 'null'
 
-    global local_status
-    local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
     try:
+        global local_status
+        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+
         last_added_block_info = local_status['last_added_block_info']
         try:
             local_height = last_added_block_info['height']
@@ -255,6 +256,7 @@ def casper_validator():
     text_width = box_width - 17 # length of the Text before it gets printed
     validator.addstr(0, 2, 'Casper Validator Info', curses.color_pair(4))
 
+    local_era = 0
     try:
         last_added_block_info = local_status['last_added_block_info']
 
@@ -266,8 +268,8 @@ def casper_validator():
         local_era = 0
 
     try:
-        era_current_weight = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[0].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
-        era_future_weight  = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[1].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+        era_current_weight = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[0].validator_weights[]? | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+        era_future_weight  = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[1].validator_weights[]? | select(.public_key=="{}")| .weight\''.format(public_key)).read())
     except:
         era_current_weight = 0;
         era_future_weight = 0;
