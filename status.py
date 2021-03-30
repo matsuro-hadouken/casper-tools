@@ -26,7 +26,8 @@ def system_memory():
     sysmemory.addstr(2, 2, 'MemFree  : ', curses.color_pair(1))
     sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemFree'].value)/1024/1024), curses.color_pair(4))
 
-    mem_percent = 100*float(meminfo['MemFree'].value)/float(meminfo['MemTotal'].value)
+    mem_total = float(meminfo['MemTotal'].value)
+    mem_percent = 100*(mem_total-float(meminfo['MemFree'].value))/mem_total
 
     curses.start_color()
     curses.init_pair( 6, 2, 7)
