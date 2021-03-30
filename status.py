@@ -155,7 +155,7 @@ def casper_block_info():
     block_info.addstr(0, 2, 'Casper Block Info', curses.color_pair(4))
 
     try:
-        global_status = json.loads(os.popen('curl -s 31.7.207.16:8888/status | jq -r .last_added_block_info').read())
+        global_status = json.loads(os.popen('curl -s 18.188.152.102:8888/status | jq -r .last_added_block_info').read())
         global_height = global_status['height']
     except:
         global_height = 'null'
