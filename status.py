@@ -60,7 +60,7 @@ def system_disk():
     text_width = box_width - 17 # length of the Text before it gets printed
     sysdisk.addstr(0, 2, 'Disk Usage', curses.color_pair(4))
 
-    result=os.statvfs('/')
+    result=os.statvfs('/var/lib/casper')
     block_size=result.f_frsize
     total_blocks=result.f_blocks
     free_blocks=result.f_bfree
