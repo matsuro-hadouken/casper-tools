@@ -2,7 +2,8 @@
 import sys,os,curses,json,time,select
 from datetime import datetime
 from collections import namedtuple
-MemInfoEntry = namedtuple('MemInfoEntry', ['value', 'unit'])
+from configparser import ConfigParser
+
 
 def system_memory():
     global sysmemory
@@ -60,7 +61,7 @@ def system_disk():
     text_width = box_width - 17 # length of the Text before it gets printed
     sysdisk.addstr(0, 2, 'Disk Usage', curses.color_pair(4))
 
-    result=os.statvfs('/')
+    result=os.statvfs(node_path)
     block_size=result.f_frsize
     total_blocks=result.f_blocks
     free_blocks=result.f_bfree
@@ -147,7 +148,7 @@ def casper_launcher():
 
 def casper_block_info():
     global block_info
-    block_info = curses.newwin(13, 70, 7, 0)
+    block_info = curses.newwin(15, 70, 7, 0)
     block_info.box()
     box_height, box_width = block_info.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -238,9 +239,13 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Local ERA    : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
 
+    index += 2
+    block_info.addstr(index, 2, 'Storage Path : ', curses.color_pair(1))
+    block_info.addstr('{}'.format(node_path), curses.color_pair(4))
+
 def casper_public_key():
     global pub_key_win
-    pub_key_win = curses.newwin(3, 70, 20, 0)
+    pub_key_win = curses.newwin(3, 70, 22, 0)
     pub_key_win.box()
     box_height, box_width = pub_key_win.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -251,7 +256,7 @@ def casper_public_key():
 
 def casper_validator():
     global validator
-    validator = curses.newwin(6, 70, 23, 0)
+    validator = curses.newwin(6, 70, 25, 0)
     validator.box()
     box_height, box_width = validator.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -354,6 +359,12 @@ def draw_menu(casper):
 
 def main():
     os.environ['NCURSES_NO_UTF8_ACS'] = '1'
+
+    config = ConfigParser()
+    config.read('/etc/casper/1_0_0/config.toml')
+    global node_path
+    node_path = config.get('storage', 'path').strip('\'')
+
     curses.wrapper(draw_menu)
 
 if __name__ == "__main__":
