@@ -1,6 +1,92 @@
 #!/usr/bin/python3
 import sys,os,curses,json,time,select
 from datetime import datetime
+from collections import namedtuple
+MemInfoEntry = namedtuple('MemInfoEntry', ['value', 'unit'])
+
+def system_memory():
+    global sysmemory
+    sysmemory = curses.newwin(5, 40, 0, 71)
+    sysmemory.box()
+    box_height, box_width = sysmemory.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    sysmemory.addstr(0, 2, 'System Memory', curses.color_pair(4))
+
+    MemInfoEntry = namedtuple('MemInfoEntry', ['value', 'unit'])
+
+    meminfo = {}
+    with open('/proc/meminfo') as file:
+        for line in file:
+            key, value, *unit = line.strip().split()
+            meminfo[key.rstrip(':')] = MemInfoEntry(value, unit)
+
+    sysmemory.addstr(1, 2, 'MemTotal : ', curses.color_pair(1))
+    sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemTotal'].value)/1024/1024), curses.color_pair(4))
+
+    sysmemory.addstr(2, 2, 'MemFree  : ', curses.color_pair(1))
+    sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemFree'].value)/1024/1024), curses.color_pair(4))
+
+    mem_total = float(meminfo['MemTotal'].value)
+    mem_percent = 100*(mem_total-float(meminfo['MemFree'].value))/mem_total
+
+    curses.start_color()
+    curses.init_pair( 6, 2, 7)
+    curses.init_pair( 7, 7, 6)
+    curses.init_pair( 8, 7, 3)
+    curses.init_pair( 9, 7, 1)
+    curses.init_pair(10, 0, 7)
+
+    curses.init_pair(11, 0, 7)
+    curses.init_pair(12, 0, 6)
+    curses.init_pair(13, 0, 3)
+    curses.init_pair(14, 0, 1)
+    curses.init_pair(15, 0, 7)
+
+    sysmemory.addstr(3, 2, 'MemUsed  : ', curses.color_pair(1))
+
+    for x in range(25):
+        sysmemory.addstr(3,13+x,' ', curses.color_pair(6))
+    for x in range(int(mem_percent/4)):
+        sysmemory.addstr(3,13+x,' ', curses.color_pair(6+int(mem_percent/25)))
+
+    sysmemory.addstr(3, 13, '{:.2f} %'.format(mem_percent), curses.color_pair(11+int(mem_percent/25)))
+
+
+def system_disk():
+    global sysdisk
+    sysdisk = curses.newwin(5, 40, 5, 71)
+    sysdisk.box()
+    box_height, box_width = sysdisk.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    sysdisk.addstr(0, 2, 'Disk Usage', curses.color_pair(4))
+
+    result=os.statvfs('/')
+    block_size=result.f_frsize
+    total_blocks=result.f_blocks
+    free_blocks=result.f_bfree
+    # giga=1024*1024*1024
+    giga=1000*1000*1000
+    total_size=total_blocks*block_size/giga
+    free_size=free_blocks*block_size/giga
+#    print('total_size = %s' % total_size)
+#    print('free_size = %s' % free_size)
+
+    sysdisk.addstr(1, 2, 'Total Disk : ', curses.color_pair(1))
+    sysdisk.addstr('{:.2f} GB'.format(float(total_size)), curses.color_pair(4))
+
+    sysdisk.addstr(2, 2, 'Free Space : ', curses.color_pair(1))
+    sysdisk.addstr('{:.2f} GB'.format(float(free_size)), curses.color_pair(4))
+
+    disk_percent = 100*float(total_size-free_size)/float(total_size)
+
+    sysdisk.addstr(3, 2, 'Disk Used  : ', curses.color_pair(1))
+
+    for x in range(25):
+        sysdisk.addstr(3,13+x,' ', curses.color_pair(6))
+    for x in range(int(disk_percent/4)):
+        sysdisk.addstr(3,13+x,' ', curses.color_pair(6+int(disk_percent/25)))
+
+    sysdisk.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
 
 def casper_launcher():
     global launcher
@@ -73,9 +159,10 @@ def casper_block_info():
     except:
         global_height = 'null'
 
-    global local_status
-    local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
     try:
+        global local_status
+        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+
         last_added_block_info = local_status['last_added_block_info']
         try:
             local_height = last_added_block_info['height']
@@ -170,6 +257,7 @@ def casper_validator():
     text_width = box_width - 17 # length of the Text before it gets printed
     validator.addstr(0, 2, 'Casper Validator Info', curses.color_pair(4))
 
+    local_era = 0
     try:
         last_added_block_info = local_status['last_added_block_info']
 
@@ -181,8 +269,8 @@ def casper_validator():
         local_era = 0
 
     try:
-        era_current_weight = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[0].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
-        era_future_weight  = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[1].validator_weights[] | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+        era_current_weight = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[0].validator_weights[]? | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+        era_future_weight  = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[1].validator_weights[]? | select(.public_key=="{}")| .weight\''.format(public_key)).read())
     except:
         era_current_weight = 0;
         era_future_weight = 0;
@@ -236,6 +324,8 @@ def draw_menu(casper):
         casper_block_info()
         casper_public_key()
         casper_validator()
+        system_memory()
+        system_disk()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -250,6 +340,8 @@ def draw_menu(casper):
         block_info.refresh()
         pub_key_win.refresh()
         validator.refresh()
+        sysmemory.refresh()
+        sysdisk.refresh()
         casper.refresh()
 
         try:
