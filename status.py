@@ -5,6 +5,7 @@ from collections import namedtuple
 from configparser import ConfigParser
 
 peer_blacklist = []
+purse_uref = 0;
 
 def system_memory():
     global sysmemory
@@ -355,7 +356,7 @@ def casper_block_info():
 
 def casper_public_key():
     global pub_key_win
-    pub_key_win = curses.newwin(3, 70, 22, 0)
+    pub_key_win = curses.newwin(4, 70, 22, 0)
     pub_key_win.box()
     box_height, box_width = pub_key_win.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -363,10 +364,31 @@ def casper_public_key():
 
     pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(1))
 
+    pub_key_win.addstr(2, 2, 'Balance  : ', curses.color_pair(1))
+
+    try:
+        block_info = json.loads(os.popen('casper-client get-block').read())
+        lfb_root = block_info['result']['block']['header']['state_root_hash']
+
+        global purse_uref   # we only need to get this ref the first time
+        if purse_uref == 0:
+            query_state = json.loads(os.popen('casper-client query-state -k "{}" -s "{}"'.format(public_key, lfb_root)).read())
+            purse_uref = query_state['result']['stored_value']['Account']['main_purse']
+
+        balance_json = json.loads(os.popen('casper-client get-balance --purse-uref "{}" --state-root-hash "{}"'.format(purse_uref, lfb_root)).read())
+        balance = float(balance_json['result']['balance_value'].strip("\""))
+
+        if (balance > 1000000000):
+            pub_key_win.addstr('{:,.4f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
+        else:
+            pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
+    except:
+        pub_key_win.addstr('Not available yet', curses.color_pair(2))
+
 
 def casper_validator():
     global validator
-    validator = curses.newwin(6, 70, 25, 0)
+    validator = curses.newwin(6, 70, 26, 0)
     validator.box()
     box_height, box_width = validator.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
