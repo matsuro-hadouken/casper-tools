@@ -153,7 +153,7 @@ def casper_bonds():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(10, 70, 31, 0)
+    peers = curses.newwin(10, 70, 32, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -220,20 +220,24 @@ def casper_launcher():
     except:
         timestamp = 'null'
 
-    launcher.addstr(1, 2, 'MemoryCurrent: ', curses.color_pair(1))
-    launcher.addstr('{}'.format(memory), curses.color_pair(4))
+    if active == 'active':
+        launcher.addstr(1, 2, 'MemoryCurrent: ', curses.color_pair(1))
+        launcher.addstr('{}'.format(memory), curses.color_pair(4))
 
-    launcher.addstr(2, 2, 'ActiveState  : ', curses.color_pair(1))
-    launcher.addstr('{}'.format(active), curses.color_pair(4))
+        launcher.addstr(2, 2, 'ActiveState  : ', curses.color_pair(1))
+        launcher.addstr('{}'.format(active), curses.color_pair(4))
 
-    launcher.addstr(3, 2, 'LoadState    : ', curses.color_pair(1))
-    launcher.addstr('{}'.format(load), curses.color_pair(4))
+        launcher.addstr(3, 2, 'LoadState    : ', curses.color_pair(1))
+        launcher.addstr('{}'.format(load), curses.color_pair(4))
     
-    launcher.addstr(4, 2, 'FragmentPath : ', curses.color_pair(1))
-    launcher.addstr('{}'.format(fragment), curses.color_pair(4))
+        launcher.addstr(4, 2, 'FragmentPath : ', curses.color_pair(1))
+        launcher.addstr('{}'.format(fragment), curses.color_pair(4))
 
-    launcher.addstr(5, 2, 'Running Time : ', curses.color_pair(1))
-    launcher.addstr('{}'.format(timestamp), curses.color_pair(4))
+        launcher.addstr(5, 2, 'Running Time : ', curses.color_pair(1))
+        launcher.addstr('{}'.format(timestamp), curses.color_pair(4))
+    else:
+        launcher.addstr(1, 2, 'Casper-Node-Launcher not running', curses.color_pair(2))
+
 
 
 def casper_block_info():
