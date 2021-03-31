@@ -70,8 +70,6 @@ def system_disk():
     giga=1000*1000*1000
     total_size=total_blocks*block_size/giga
     free_size=free_blocks*block_size/giga
-#    print('total_size = %s' % total_size)
-#    print('free_size = %s' % free_size)
 
     sysdisk.addstr(1, 2, 'Total Disk : ', curses.color_pair(1))
     sysdisk.addstr('{:.2f} GB'.format(float(total_size)), curses.color_pair(4))
@@ -89,6 +87,67 @@ def system_disk():
         sysdisk.addstr(3,13+x,' ', curses.color_pair(6+int(disk_percent/25)))
 
     sysdisk.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
+
+def casper_bonds():
+    global bonds
+    bonds = curses.newwin(8, 40, 10, 71)
+    bonds.box()
+    box_height, box_width = bonds.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    bonds.addstr(0, 2, 'Capser Bond Info', curses.color_pair(4))
+
+#    casper-client get-auction-info --node-address http://13.58.71.180:7777 | jq -r '.result.auction_state.bids[] | select(.public_key=="01cb70f16e5dbfc0c0601cd6fe3d9e04e815eaebfe3e563f3d48e8035a4b8f18e2")'
+
+    try:
+        bond_info = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.bids[]? | select(.public_key=="{}")\''.format(public_key)).read())
+        try:
+            staked = float(bond_info['bid']['staked_amount'].strip("\""))
+        except:
+            staked = 0
+        try:
+            inactive = bond_info['bid']['inactive']
+        except:
+            inactive = False
+        try:
+            delegation = bond_info['bid']['delegation_rate']
+        except:
+            delegation = 0
+        try:
+            delegates = bond_info['bid']['delegators']
+            num_delegates = len(delegates)
+        except:
+            num_delegates = 0
+
+        try:
+            delegate_stake = 0
+            for d in delegates:
+                delegate_stake += float(d['staked_amount'].strip("\""))
+        except:
+            delegate_stake = 0
+
+        bonds.addstr(1, 2, 'Active       : ', curses.color_pair(1))
+        if inactive:
+            bonds.addstr('Not Active', curses.color_pair(2))
+        else:
+            bonds.addstr('True', curses.color_pair(4))
+
+        bonds.addstr(2, 2, 'Stake        : ', curses.color_pair(1))
+        bonds.addstr('{:,.4f} CSPR'.format(staked / 1000000000), curses.color_pair(4))
+
+        bonds.addstr(3, 2, 'Delegation   : ', curses.color_pair(1))
+        bonds.addstr('{} %'.format(delegation), curses.color_pair(4))
+
+        bonds.addstr(4, 2, 'Num Delegates: ', curses.color_pair(1))
+        bonds.addstr('{}'.format(num_delegates), curses.color_pair(4))
+
+        bonds.addstr(5, 2, 'DelegateStake: ', curses.color_pair(1))
+        bonds.addstr('{:,.4f} CSPR'.format(delegate_stake / 1000000000), curses.color_pair(4))
+
+        bonds.addstr(6, 2, 'Total Stake  : ', curses.color_pair(1))
+        bonds.addstr('{:,.4f} CSPR'.format((staked + delegate_stake) / 1000000000), curses.color_pair(4))
+    except:
+        bonds.addstr(1, 2, 'No Bond Info Found', curses.color_pair(1))
+
 
 def casper_peers():
     global peers
@@ -332,15 +391,15 @@ def casper_validator():
         era_future_weight = 0;
 
     validator.addstr(1, 2, 'ERA {}       : '.format(local_era), curses.color_pair(1))
-    validator.addstr('{:,} CSPR'.format(era_current_weight/1000000000, era_current_weight), curses.color_pair(4))
+    validator.addstr('{:,.4f} CSPR'.format(era_current_weight/1000000000, era_current_weight), curses.color_pair(4))
 
     validator.addstr(2, 2, 'ERA {}       : '.format(local_era+1), curses.color_pair(1))
-    validator.addstr('{:,} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
+    validator.addstr('{:,.4f} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
 
     validator.addstr(4, 2, 'Last Reward : ', curses.color_pair(1))
     reward = float(era_future_weight - era_current_weight)
     if (reward > 1000000000):
-        validator.addstr('{:,} CSPR'.format(reward / 1000000000), curses.color_pair(4))
+        validator.addstr('{:,.4f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
     else:
         validator.addstr('{:,} mote'.format(reward), curses.color_pair(4))
 
@@ -388,6 +447,7 @@ def draw_menu(casper):
         casper_peers()
         system_memory()
         system_disk()
+        casper_bonds()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -405,6 +465,7 @@ def draw_menu(casper):
         sysmemory.refresh()
         peers.refresh()
         sysdisk.refresh()
+        bonds.refresh()
         casper.refresh()
 
         try:
