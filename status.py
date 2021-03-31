@@ -96,7 +96,7 @@ def casper_bonds():
     bonds.box()
     box_height, box_width = bonds.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
-    bonds.addstr(0, 2, 'Capser Bond Info', curses.color_pair(4))
+    bonds.addstr(0, 2, 'Casper Bond Info', curses.color_pair(4))
 
 #    casper-client get-auction-info --node-address http://13.58.71.180:7777 | jq -r '.result.auction_state.bids[] | select(.public_key=="01cb70f16e5dbfc0c0601cd6fe3d9e04e815eaebfe3e563f3d48e8035a4b8f18e2")'
 
@@ -153,7 +153,7 @@ def casper_bonds():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(10, 70, 32, 0)
+    peers = curses.newwin(5, 70, 32, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -177,7 +177,7 @@ def casper_peers():
     peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
     peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
 
-    peers.addstr(4, 2,'{}'.format(peer_blacklist)[:347], curses.color_pair(4))
+#    peers.addstr(4, 2,'{}'.format(peer_blacklist)[:347], curses.color_pair(4))
 
 def casper_launcher():
     global launcher
