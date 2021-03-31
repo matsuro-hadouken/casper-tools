@@ -418,17 +418,17 @@ def casper_validator():
         era_future_weight = 0;
 
     validator.addstr(1, 2, 'ERA {}       : '.format(local_era), curses.color_pair(1))
-    validator.addstr('{:,.9f} CSPR'.format(era_current_weight/1000000000), curses.color_pair(4))
+    validator.addstr('{:>26,.9f} CSPR'.format(era_current_weight/1000000000), curses.color_pair(4))
 
     validator.addstr(2, 2, 'ERA {}       : '.format(local_era+1), curses.color_pair(1))
-    validator.addstr('{:,.9f} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
+    validator.addstr('{:>26,.9f} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
 
     validator.addstr(4, 2, 'Last Reward : ', curses.color_pair(1))
     reward = float(era_future_weight - era_current_weight)
     if (reward > 1000000000):
-        validator.addstr('{:,.4f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
+        validator.addstr('{:>26,.9f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
     else:
-        validator.addstr('{:,} mote'.format(int(reward)), curses.color_pair(4))
+        validator.addstr('{:>26,} mote'.format(int(reward)), curses.color_pair(4))
 
 
 def draw_menu(casper):
