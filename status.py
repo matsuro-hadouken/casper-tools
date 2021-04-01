@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-import sys,os,curses,json,time,select,random
+import sys,os,curses,json,time,select,random,threading,urllib.request,contextlib
 from datetime import datetime
 from collections import namedtuple
 from configparser import ConfigParser
 
 peer_blacklist = []
 purse_uref = 0;
+global_events = dict()
 
 def system_memory():
     global sysmemory
@@ -148,6 +149,77 @@ def casper_bonds():
         bonds.addstr('{:,.4f} CSPR'.format((staked + delegate_stake) / 1000000000), curses.color_pair(4))
     except:
         bonds.addstr(1, 2, 'No Bond Info Found', curses.color_pair(1))
+
+class EventTask:
+    def __init__(self):
+        self._running = True
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        user_agent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'
+
+        url = 'http://localhost:9999/events'
+        headers = {'User-Agent': user_agent}
+
+        self._request = urllib.request.Request(url, None, headers)
+        self._reader = urllib.request.urlopen(self._request)
+        CHUNK = 6 * 1024
+        partial_line = ""
+
+        try:
+            while self._running:
+                chunk = self._reader.read(CHUNK)
+                if not chunk:
+                    break
+
+                data = chunk.decode().split('\n')
+                first = True
+                for line in data:
+                    if first and len(partial_line):
+                        line = '{}{}'.format(partial_line, line)
+                        partial_line = ""
+
+                    if line.startswith('data:'):
+                        try:
+                            json_str = json.loads(line[5:])
+                            key = list(json_str.keys())[0]
+                            if key == 'ApiVersion':
+                                global_events[key] = json_str[key]
+                                continue
+                            if key in global_events:
+                                global_events[key] = global_events[key] + 1
+                            else:
+                                global_events[key] = 1
+                        except:
+                            partial_line = line
+
+            global_events['exiting'] = 1
+        except (KeyboardInterrupt, SystemExit):            
+            global_events['except'] = 1
+
+
+def casper_events():
+    global events
+
+    local_events = global_events    # make a copy in case our thread tries to stomp
+    length = len(local_events.keys())
+    events = curses.newwin(2 + (1 if length < 1 else length), 40, 18, 71)
+    events.box()
+    box_height, box_width = events.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    events.addstr(0, 2, 'Casper Events', curses.color_pair(4))
+
+    if length < 1:
+        events.addstr(1, 2, 'Waiting for first Event', curses.color_pair(5))
+    else:
+        index = 0
+        for key in list(local_events.keys()):
+            events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
+            events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
+            index = index + 1
 
 
 def casper_peers():
@@ -474,6 +546,7 @@ def draw_menu(casper):
         system_memory()
         system_disk()
         casper_bonds()
+        casper_events();
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -492,11 +565,13 @@ def draw_menu(casper):
         peers.refresh()
         sysdisk.refresh()
         bonds.refresh()
+        events.refresh()
         casper.refresh()
 
         try:
             time.sleep(1)
         except KeyboardInterrupt:
+            event_ptr.terminate()
             break;
 
         if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
@@ -513,7 +588,14 @@ def main():
     
     global random
     random = random.SystemRandom()
-    
+
+    global thread_ptr
+    global event_ptr
+    event_ptr = EventTask()
+    thread_ptr = threading.Thread(target=event_ptr.run)
+    thread_ptr.daemon = True
+    thread_ptr.start()
+
     curses.wrapper(draw_menu)
 
 if __name__ == "__main__":
