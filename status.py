@@ -417,10 +417,10 @@ def casper_validator():
         era_current_weight = 0;
         era_future_weight = 0;
 
-    validator.addstr(1, 2, 'ERA {}       : '.format(local_era), curses.color_pair(1))
+    validator.addstr(1, 2, 'ERA {:<7} : '.format(local_era), curses.color_pair(1))
     validator.addstr('{:>26,.9f} CSPR'.format(era_current_weight/1000000000), curses.color_pair(4))
 
-    validator.addstr(2, 2, 'ERA {}       : '.format(local_era+1), curses.color_pair(1))
+    validator.addstr(2, 2, 'ERA {:<7} : '.format(local_era+1), curses.color_pair(1))
     validator.addstr('{:>26,.9f} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
 
     validator.addstr(4, 2, 'Last Reward : ', curses.color_pair(1))
