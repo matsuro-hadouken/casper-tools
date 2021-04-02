@@ -12,11 +12,11 @@
       }
     ]
   },
+  "description": "Work in progress",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
   "id": 21,
-  "iteration": 1617066995106,
   "links": [],
   "panels": [
     {
@@ -44,6 +44,7 @@
               "value": "0"
             }
           ],
+          "noValue": "NO DATA",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -361,7 +362,7 @@
               },
               {
                 "color": "#EAB839",
-                "value": 50
+                "value": 60
               },
               {
                 "color": "dark-red",
@@ -834,7 +835,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Block Rate Time",
+      "title": "Block Rate Time Average (Bogus, need input)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -904,7 +905,7 @@
         "for": "3m",
         "frequency": "1m",
         "handler": 1,
-        "message": "Someone spamming network for unknown reason, please pay attention.",
+        "message": "Pending Deploys threshold triggered.",
         "name": "Pending Deploys alert",
         "noDataState": "no_data",
         "notifications": []
@@ -974,8 +975,7 @@
           "fill": true,
           "line": true,
           "op": "gt",
-          "value": 6000,
-          "yaxis": "left"
+          "value": 6000
         }
       ],
       "timeFrom": null,
@@ -1593,7 +1593,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -4285,9 +4285,175 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                120
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "10m",
+        "frequency": "1m",
+        "handler": 1,
+        "message": "Block Time is above 120 seconds.",
+        "name": "Block Time(s) Alert alert [ ALPHA BOARD ]",
+        "noDataState": "no_data",
+        "notifications": []
+      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgb(158, 0, 255)",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 50
+              },
+              {
+                "color": "dark-red",
+                "value": 100
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 9,
+        "y": 68
+      },
+      "hiddenSeries": false,
+      "id": 127,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pluginVersion": "7.0.6",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": false,
+          "expr": "time() - max_over_time(timestamp(changes(amount_of_blocks{job=\"casper\"}[30s]) > 0)[1h:15s])",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 120,
+          "yaxis": "left"
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Block Time(s) Alert",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 2,
+          "format": "s",
+          "label": "Block Time",
+          "logBase": 1,
+          "max": "180",
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
-  "refresh": false,
+  "refresh": "10s",
   "schemaVersion": 25,
   "style": "dark",
   "tags": [],
@@ -4295,7 +4461,7 @@
     "list": []
   },
   "time": {
-    "from": "now-24h",
+    "from": "2021-03-31T15:00:00.000Z",
     "to": "now"
   },
   "timepicker": {
@@ -4312,7 +4478,7 @@
     ]
   },
   "timezone": "utc",
-  "title": "ALPHA TEST",
+  "title": "CASPER VALIDATOR ALPHA BOARD",
   "uid": "90VdVXUMkssdf111",
-  "version": 4
+  "version": 20
 }
