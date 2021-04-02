@@ -168,6 +168,7 @@ class EventTask:
         self._reader = urllib.request.urlopen(self._request)
         CHUNK = 6 * 1024
         partial_line = ""
+        last_block_time = ""
 
         try:
             while self._running:
@@ -181,7 +182,7 @@ class EventTask:
                     if first and len(partial_line):
                         line = '{}{}'.format(partial_line, line)
                         partial_line = ""
-
+ 
                     if line.startswith('data:'):
                         try:
                             json_str = json.loads(line[5:])
@@ -189,6 +190,21 @@ class EventTask:
                             if key == 'ApiVersion':
                                 global_events[key] = json_str[key]
                                 continue
+                            if key == 'BlockAdded':
+                                event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                                if last_block_time == "":
+                                    global_events['Time Since Block'] = 'Calculating'
+                                else:
+                                    global_events['Time Since Block'] = event_time - last_block_time
+                                last_block_time = event_time
+
+                                try:
+                                    era_end = json_str[key]['block']['header']['era_end']
+                                    if era_end:
+                                        global_events['Last Reward'] = '{}'.format(era_end['era_report']['rewards']['{}'.format(public_key)])
+                                except:
+                                    global_events['Last Reward'] = 'Not Found'
+
                             if key in global_events:
                                 global_events[key] = global_events[key] + 1
                             else:
@@ -522,8 +538,8 @@ def draw_menu(casper):
     curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
-    global public_key
-    public_key=os.popen('curl -s localhost:8888/status | jq -r .our_public_signing_key').read().split('\n')[0]
+#    global public_key
+#    public_key=os.popen('curl -s localhost:8888/status | jq -r .our_public_signing_key').read().split('\n')[0]
 
 
     # Loop where k is the last character pressed
@@ -588,6 +604,9 @@ def main():
     
     global random
     random = random.SystemRandom()
+
+    global public_key
+    public_key=os.popen('curl -s localhost:8888/status | jq -r .our_public_signing_key').read().split('\n')[0]
 
     global thread_ptr
     global event_ptr
