@@ -28,7 +28,6 @@ def system_memory():
 
     sysmemory.addstr(1, 2, 'Mem Total  : ', curses.color_pair(1))
     sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemTotal'].value)/1024/1024), curses.color_pair(4))
-
     sysmemory.addstr(2, 2, 'Mem Avail  : ', curses.color_pair(1))
     sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemAvailable'].value)/1024/1024), curses.color_pair(4))
 
@@ -558,9 +557,9 @@ def casper_validator():
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
     reward = float(era_future_weight - era_current_weight)
     if (reward > 1000000000):
-        validator.addstr('{:,.4f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
+        validator.addstr('{:>26,.9f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
     else:
-        validator.addstr('{:,} mote'.format(int(reward)), curses.color_pair(4))
+        validator.addstr('{:>26,} mote'.format(int(reward)), curses.color_pair(4))
 
 
 def draw_menu(casper):
