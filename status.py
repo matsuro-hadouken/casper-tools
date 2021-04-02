@@ -423,7 +423,7 @@ def casper_block_info():
     try:
         peer_to_use_as_global = random.choice(local_status['peers'])
         peer_address = peer_to_use_as_global['address'].split(':')[0]
-        if peer_address in peer_blacklist:
+        if peer_address in peer_blacklist or peer_address in peer_wrong_chain:
             peer_address = previous_peer
     except:
         peer_address = previous_peer
