@@ -14,10 +14,6 @@ bond.sh
  ``` bash
 explorer.sh
 ```
- - active node status (bash script) (press ctrl-c to exit)
- ``` bash
-status.sh
-```
  - active node status (python script) (press ctrl-c to exit)
  ``` bash
 status.py
