@@ -518,7 +518,7 @@ def casper_public_key():
         if (balance > 1000000000):
             pub_key_win.addstr('{:,.4f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
         else:
-            pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
+            pub_key_win.addstr('{:,} mote'.format(int(balance)), curses.color_pair(4))
     except:
         pub_key_win.addstr('Not available yet', curses.color_pair(2))
 
