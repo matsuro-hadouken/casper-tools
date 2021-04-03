@@ -5,8 +5,10 @@ from collections import namedtuple
 from configparser import ConfigParser
 
 peer_blacklist = []
+peer_wrong_chain = []
 purse_uref = 0;
 global_events = dict()
+peer_address = None
 
 def system_memory():
     global sysmemory
@@ -24,11 +26,9 @@ def system_memory():
             key, value, *unit = line.strip().split()
             meminfo[key.rstrip(':')] = MemInfoEntry(value, unit)
 
-    sysmemory.addstr(1, 2, 'MemTotal : ', curses.color_pair(1))
+    sysmemory.addstr(1, 2, 'Mem Total  : ', curses.color_pair(1))
     sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemTotal'].value)/1024/1024), curses.color_pair(4))
-    
-    sysmemory.addstr(2, 2, 'MemAvail : ', curses.color_pair(1))
-
+    sysmemory.addstr(2, 2, 'Mem Avail  : ', curses.color_pair(1))
     sysmemory.addstr('{:.2f} GB'.format(float(meminfo['MemAvailable'].value)/1024/1024), curses.color_pair(4))
 
     mem_total = float(meminfo['MemTotal'].value)
@@ -47,7 +47,7 @@ def system_memory():
     curses.init_pair(14, 0, 1)
     curses.init_pair(15, 0, 7)
 
-    sysmemory.addstr(3, 2, 'MemUsed  : ', curses.color_pair(1))
+    sysmemory.addstr(3, 2, 'Mem Used', curses.color_pair(1))
 
     for x in range(25):
         sysmemory.addstr(3,13+x,' ', curses.color_pair(6))
@@ -202,9 +202,33 @@ class EventTask:
                                 try:
                                     era_end = json_str[key]['block']['header']['era_end']
                                     if era_end:
-                                        global_events['Last Reward'] = '{}'.format(era_end['era_report']['rewards']['{}'.format(public_key)])
+                                        reward = era_end['era_report']['rewards']['{}'.format(public_key)]
+                                        if (reward > 1000000000):
+                                            global_events['Last Reward'] = '{:,.4f} CSPR'.format(reward / 1000000000)
+                                        else:
+                                            global_events['Last Reward'] = '{:,} mote'.format(int(reward))
                                 except:
                                     global_events['Last Reward'] = 'Not Found'
+
+                                try:
+                                    deploy_hashs = json_str[key]['block']['body']['deploy_hashes']
+                                    if deploy_hashs:
+                                        if 'Deploys' in global_events:
+                                            global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
+                                        else:
+                                            global_events['Deploys'] = len(deploy_hashs)
+                                except:
+                                    pass
+
+                                try:
+                                    transfer_hashs = json_str[key]['block']['body']['transfer_hashes']
+                                    if transfer_hashs:
+                                        if 'Transfers' in global_events:
+                                            global_events['Transfers'] = global_events['Transfers'] + len(transfer_hashs)
+                                        else:
+                                            global_events['Transfers'] = len(transfer_hashs)
+                                except:
+                                    pass
 
                             if key in global_events:
                                 global_events[key] = global_events[key] + 1
@@ -233,7 +257,7 @@ def casper_events():
         events.addstr(1, 2, 'Waiting for first Event', curses.color_pair(5))
     else:
         index = 0
-        for key in list(local_events.keys()):
+        for key in list(sorted(local_events.keys())):
             events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
             events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
             index = index + 1
@@ -241,7 +265,7 @@ def casper_events():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(5, 70, 32, 0)
+    peers = curses.newwin(6, 70, 32, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -264,6 +288,12 @@ def casper_peers():
     peers.addstr(3, 2, 'In Blacklist : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
     peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
+
+    peers.addstr(4, 2, 'Bad Chainspec: ', curses.color_pair(1))
+    peers.addstr('{}'.format(len(peer_wrong_chain)), curses.color_pair(4))
+    peers.addstr('\t<- Not on our Chainspec (', curses.color_pair(1))
+    peers.addstr('{}'.format(local_chainspec), curses.color_pair(4))
+    peers.addstr(')', curses.color_pair(1))
 
 #    peers.addstr(4, 2,'{}'.format(peer_blacklist)[:347], curses.color_pair(4))
 
@@ -340,6 +370,9 @@ def casper_block_info():
         global local_status
         local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
 
+        global local_chainspec
+        local_chainspec = local_status['chainspec_name']
+
         last_added_block_info = local_status['last_added_block_info']
         try:
             local_height = last_added_block_info['height']
@@ -383,29 +416,39 @@ def casper_block_info():
         api_version = 'null'
         local_era = 'null'
 
+    global peer_address
+    previous_peer = peer_address
 
     try:
         peer_to_use_as_global = random.choice(local_status['peers'])
         peer_address = peer_to_use_as_global['address'].split(':')[0]
-        if peer_address in peer_blacklist: # then do it again (but don't loop forever, just do it once)
-            peer_to_use_as_global = random.choice(local_status['peers'])
-            peer_address = peer_to_use_as_global['address'].split(':')[0]
-
+        if peer_address in peer_blacklist or peer_address in peer_wrong_chain:
+            peer_address = previous_peer
     except:
-        peer_address = 'null'
+        peer_address = previous_peer
 
-    if peer_address != 'null':
+    if peer_address:
         try:
             try:
-                global_status = json.loads(os.popen('curl -m 2 -s {}:8888/status | jq -r .last_added_block_info'.format(peer_address)).read())
+                peer_status = json.loads(os.popen('curl -m 2 -s {}:8888/status'.format(peer_address)).read())
+                peer_chainspec = peer_status['chainspec_name']
+                if peer_chainspec != local_chainspec:
+                    peer_address = previous_peer
+                    if peer_address not in peer_wrong_chain:
+                        peer_wrong_chain.append(peer_address)
+                    
             except:
                 if peer_address not in peer_blacklist:
                     peer_blacklist.append(peer_address)
-            global_height = global_status['height']
+                if previous_peer:
+                    peer_address = previous_peer
+                    peer_status = json.loads(os.popen('curl -m 2 -s {}:8888/status'.format(peer_address)).read())
+
+            peer_height = peer_status['last_added_block_info']['height']
         except:
-            global_height = 'null'
+            peer_height = 'null'
     else:
-        global_height = 'null'
+        peer_height = 'null'
 
 
     index = 1
@@ -414,7 +457,7 @@ def casper_block_info():
 
     index += 1
     block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
-    block_info.addstr('{}\t\t'.format(global_height), curses.color_pair(4))
+    block_info.addstr('{}\t\t'.format(peer_height), curses.color_pair(4))
 
     block_info.addstr('<- From Peer : ', curses.color_pair(1))
     block_info.addstr('{}'.format(peer_address), curses.color_pair(4))
@@ -457,7 +500,7 @@ def casper_public_key():
 
     pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(1))
 
-    pub_key_win.addstr(2, 2, 'Balance  : ', curses.color_pair(1))
+    pub_key_win.addstr(2, 2, 'Balance      : ', curses.color_pair(1))
 
     try:
         block_info = json.loads(os.popen('casper-client get-block').read())
@@ -505,18 +548,18 @@ def casper_validator():
         era_current_weight = 0;
         era_future_weight = 0;
 
-    validator.addstr(1, 2, 'ERA {:<7} : '.format(local_era), curses.color_pair(1))
-    validator.addstr('{:>26,.9f} CSPR'.format(era_current_weight/1000000000), curses.color_pair(4))
+    validator.addstr(1, 2, 'ERA {} : '.format(str(local_era).ljust(8, ' ')), curses.color_pair(1))
+    validator.addstr('{:,.9f} CSPR'.format(era_current_weight/1000000000), curses.color_pair(4))
 
-    validator.addstr(2, 2, 'ERA {:<7} : '.format(local_era+1), curses.color_pair(1))
-    validator.addstr('{:>26,.9f} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
+    validator.addstr(2, 2, 'ERA {} : '.format(str(local_era+1).ljust(8, ' ')), curses.color_pair(1))
+    validator.addstr('{:,.9f} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
 
-    validator.addstr(4, 2, 'Last Reward : ', curses.color_pair(1))
+    validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
     reward = float(era_future_weight - era_current_weight)
     if (reward > 1000000000):
-        validator.addstr('{:>26,.9f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
+        validator.addstr('{:,.4f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
     else:
-        validator.addstr('{:>26,} mote'.format(int(reward)), curses.color_pair(4))
+        validator.addstr('{:,} mote'.format(int(reward)), curses.color_pair(4))
 
 
 def draw_menu(casper):
