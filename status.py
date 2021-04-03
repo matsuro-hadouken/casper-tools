@@ -516,9 +516,11 @@ def casper_public_key():
         balance = float(balance_json['result']['balance_value'].strip("\""))
 
         if (balance > 1000000000):
-            pub_key_win.addstr('{:,.4f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
+            pub_key_win.addstr('{:>26,.9f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
         else:
-            pub_key_win.addstr('{:,} mote'.format(int(balance)), curses.color_pair(4))
+
+            pub_key_win.addstr('{:>26,} mote'.format(balance), curses.color_pair(4))
+
     except:
         pub_key_win.addstr('Not available yet', curses.color_pair(2))
 
@@ -596,22 +598,22 @@ def casper_validator():
 
     validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
     validator.addstr('{:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators,validator_slots), curses.color_pair(4))
-    validator.addstr('\t\t<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
+    validator.addstr(1, 49, '<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
 
     validator.addstr(2, 2, 'ERA {} : '.format(str(current_era).ljust(8, ' ')), curses.color_pair(1))
-    validator.addstr('{:,.9f} CSPR'.format(current_weight/1000000000), curses.color_pair(4))
-    validator.addstr('\t<- Position {}'.format(current_index), curses.color_pair(1))
+    validator.addstr('{:>26,.9f} CSPR'.format(current_weight/1000000000), curses.color_pair(4))
+    validator.addstr(2, 49, '<- Position {}'.format(current_index), curses.color_pair(1))
 
     validator.addstr(3, 2, 'ERA {} : '.format(str(future_era).ljust(8, ' ')), curses.color_pair(1))
-    validator.addstr('{:,.9f} CSPR'.format(future_weight/1000000000), curses.color_pair(4))
-    validator.addstr('\t<- Position {}'.format(future_index), curses.color_pair(1))
+    validator.addstr('{:26,.9f} CSPR'.format(future_weight/1000000000), curses.color_pair(4))
+    validator.addstr(3, 49, '<- Position {}'.format(future_index), curses.color_pair(1))
 
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
     reward = float(future_weight - current_weight)
     if (reward > 1000000000):
-        validator.addstr('{:,.4f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
+        validator.addstr('{:>26,.9f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
     else:
-        validator.addstr('{:,} mote'.format(int(reward)), curses.color_pair(4))
+        validator.addstr('{:>26,} mote'.format(int(reward)), curses.color_pair(4))
 
 
 def draw_menu(casper):
