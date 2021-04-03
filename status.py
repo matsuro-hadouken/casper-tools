@@ -99,24 +99,27 @@ def casper_bonds():
     text_width = box_width - 17 # length of the Text before it gets printed
     bonds.addstr(0, 2, 'Casper Bond Info', curses.color_pair(4))
 
-#    casper-client get-auction-info --node-address http://13.58.71.180:7777 | jq -r '.result.auction_state.bids[] | select(.public_key=="01cb70f16e5dbfc0c0601cd6fe3d9e04e815eaebfe3e563f3d48e8035a4b8f18e2")'
-
     try:
-        bond_info = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.bids[]? | select(.public_key=="{}")\''.format(public_key)).read())
+        bids = auction_info['bids']
+        for item in bids:
+            if item['public_key'].strip("\"") == public_key:
+                bond_info = item['bid']
+                break
+
         try:
-            staked = float(bond_info['bid']['staked_amount'].strip("\""))
+            staked = float(bond_info['staked_amount'].strip("\""))
         except:
             staked = 0
         try:
-            inactive = bond_info['bid']['inactive']
+            inactive = bond_info['inactive']
         except:
             inactive = False
         try:
-            delegation = bond_info['bid']['delegation_rate']
+            delegation = bond_info['delegation_rate']
         except:
             delegation = 0
         try:
-            delegates = bond_info['bid']['delegators']
+            delegates = bond_info['delegators']
             num_delegates = len(delegates)
         except:
             num_delegates = 0
@@ -160,12 +163,8 @@ class EventTask:
         self._running = False
 
     def run(self):
-        user_agent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'
-
         url = 'http://localhost:9999/events'
-        headers = {'User-Agent': user_agent}
-
-        self._request = urllib.request.Request(url, None, headers)
+        self._request = urllib.request.Request(url)
         self._reader = urllib.request.urlopen(self._request)
         CHUNK = 6 * 1024
         partial_line = ""
@@ -173,9 +172,14 @@ class EventTask:
 
         try:
             while self._running:
+                time_before_read = datetime.now()
                 chunk = self._reader.read(CHUNK)
                 if not chunk:
                     break
+
+                timestamp = datetime.now() - time_before_read
+                if timestamp.seconds > 10 and 'FinalitySignature' in global_events:
+                    global_events['FinalitySignature'] = 0
 
                 data = chunk.decode().split('\n')
                 first = True
@@ -265,7 +269,7 @@ def casper_events():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(6, 70, 32, 0)
+    peers = curses.newwin(5, 70, 32, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -282,14 +286,11 @@ def casper_peers():
     config.read('/etc/casper/1_0_0/chainspec.toml')
     validator_slots = config.get('core', 'validator_slots').strip('\'')
 
-    peers.addstr(2, 2, 'Num Val Slots: ', curses.color_pair(1))
-    peers.addstr('{}'.format(validator_slots), curses.color_pair(4))
-
-    peers.addstr(3, 2, 'In Blacklist : ', curses.color_pair(1))
+    peers.addstr(2, 2, 'In Blacklist : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
     peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
 
-    peers.addstr(4, 2, 'Bad Chainspec: ', curses.color_pair(1))
+    peers.addstr(3, 2, 'Bad Chainspec: ', curses.color_pair(1))
     peers.addstr('{}'.format(len(peer_wrong_chain)), curses.color_pair(4))
     peers.addstr('\t<- Not on our Chainspec (', curses.color_pair(1))
     peers.addstr('{}'.format(local_chainspec), curses.color_pair(4))
@@ -542,20 +543,71 @@ def casper_validator():
         local_era = 0
 
     try:
-        era_current_weight = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[0].validator_weights[]? | select(.public_key=="{}")| .weight\''.format(public_key)).read())
-        era_future_weight  = json.loads(os.popen('casper-client get-auction-info | jq -r \'.result.auction_state.era_validators | .[1].validator_weights[]? | select(.public_key=="{}")| .weight\''.format(public_key)).read())
+        global auction_info
+        auction_info = json.loads(os.popen('casper-client get-auction-info').read())
+        auction_info = auction_info['result']['auction_state']        
+        current = dict()
+        future = dict()
+    
+        current_validators = auction_info['era_validators'][0]['validator_weights']
+        current_era = auction_info['era_validators'][0]['era_id']
+        for item in current_validators:
+            key = item['public_key'].strip("\"");
+            value = int(item['weight'].strip("\""))
+            current[key] = value
+            if key  == public_key:
+                current_weight = value
+
+        future_validators = auction_info['era_validators'][1]['validator_weights']
+        future_era = auction_info['era_validators'][1]['era_id']
+        for item in future_validators:
+            key = item['public_key'].strip("\"");
+            value = int(item['weight'].strip("\""))
+            future[key] = value
+            if key  == public_key:
+                future_weight = value
+
+        #arg... indexing a sorted is not working... so I'll just iterate for now...
+        index = 1
+        for item in sorted(current.items(), key=lambda x: x[1], reverse=True):
+            if item[0] == public_key:
+                current_index = index
+                break
+            index = index + 1
+
+        index = 1
+        for item in sorted(future.items(), key=lambda x: x[1], reverse=True):
+            if item[0] == public_key:
+                future_index = index
+                break
+            index = index + 1
+
+        num_cur_validators = len(current_validators)
+        num_fut_validators = len(current_validators)
+
     except:
-        era_current_weight = 0;
-        era_future_weight = 0;
+        current_era = future_era = 0
+        current_weight = future_weight = 0
+        num_cur_validators = num_fut_validators = 0
+        current_index = future_index = 0
 
-    validator.addstr(1, 2, 'ERA {} : '.format(str(local_era).ljust(8, ' ')), curses.color_pair(1))
-    validator.addstr('{:,.9f} CSPR'.format(era_current_weight/1000000000), curses.color_pair(4))
+    config.read('/etc/casper/1_0_0/chainspec.toml')
+    validator_slots = config.get('core', 'validator_slots').strip('\'')
 
-    validator.addstr(2, 2, 'ERA {} : '.format(str(local_era+1).ljust(8, ' ')), curses.color_pair(1))
-    validator.addstr('{:,.9f} CSPR'.format(era_future_weight/1000000000), curses.color_pair(4))
+    validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
+    validator.addstr('{:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators,validator_slots), curses.color_pair(4))
+    validator.addstr('\t\t<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
+
+    validator.addstr(2, 2, 'ERA {} : '.format(str(current_era).ljust(8, ' ')), curses.color_pair(1))
+    validator.addstr('{:,.9f} CSPR'.format(current_weight/1000000000), curses.color_pair(4))
+    validator.addstr('\t<- Position {}'.format(current_index), curses.color_pair(1))
+
+    validator.addstr(3, 2, 'ERA {} : '.format(str(future_era).ljust(8, ' ')), curses.color_pair(1))
+    validator.addstr('{:,.9f} CSPR'.format(future_weight/1000000000), curses.color_pair(4))
+    validator.addstr('\t<- Position {}'.format(future_index), curses.color_pair(1))
 
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
-    reward = float(era_future_weight - era_current_weight)
+    reward = float(future_weight - current_weight)
     if (reward > 1000000000):
         validator.addstr('{:,.4f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
     else:
