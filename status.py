@@ -651,10 +651,6 @@ def draw_menu(casper):
     curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
-#    global public_key
-#    public_key=os.popen('curl -s localhost:8888/status | jq -r .our_public_signing_key').read().split('\n')[0]
-
-
     # Loop where k is the last character pressed
     while (k != ord('q')):
 
@@ -719,7 +715,8 @@ def main():
     random = random.SystemRandom()
 
     global public_key
-    public_key=os.popen('curl -s localhost:8888/status | jq -r .our_public_signing_key').read().split('\n')[0]
+    local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+    public_key = local_status['our_public_signing_key']
 
     global thread_ptr
     global event_ptr
