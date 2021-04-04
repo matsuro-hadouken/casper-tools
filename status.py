@@ -497,10 +497,9 @@ def casper_public_key():
     pub_key_win.box()
     box_height, box_width = pub_key_win.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
+
     pub_key_win.addstr(0, 2, 'Public Key', curses.color_pair(4))
-
     pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(1))
-
     pub_key_win.addstr(2, 2, 'Balance      : ', curses.color_pair(1))
 
     try:
@@ -513,13 +512,12 @@ def casper_public_key():
             purse_uref = query_state['result']['stored_value']['Account']['main_purse']
 
         balance_json = json.loads(os.popen('casper-client get-balance --purse-uref "{}" --state-root-hash "{}"'.format(purse_uref, lfb_root)).read())
-        balance = float(balance_json['result']['balance_value'].strip("\""))
+        balance = int(balance_json['result']['balance_value'].strip("\""))
 
         if (balance > 1000000000):
-            pub_key_win.addstr('{:>26,.9f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
+            pub_key_win.addstr('{:,.9f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
         else:
-
-            pub_key_win.addstr('{:>26,} mote'.format(balance), curses.color_pair(4))
+            pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
 
     except:
         pub_key_win.addstr('Not available yet', curses.color_pair(2))
@@ -598,22 +596,39 @@ def casper_validator():
 
     validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
     validator.addstr('{:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators,validator_slots), curses.color_pair(4))
-    validator.addstr(1, 49, '<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
+    validator.addstr(1, 42, '<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
+
+    # get the length of the printed string so we can right justify and not leave blank spaces
+    if current_weight > 100000000000000:
+        current_str = '{:,.4f} CSPR'.format(current_weight/1000000000)
+    else:
+        current_str = '{:,.9f} CSPR'.format(current_weight/1000000000)
+
+    if future_weight > 100000000000000:
+        future_str = '{:,.4f} CSPR'.format(future_weight/1000000000)
+    else:
+        future_str = '{:,.9f} CSPR'.format(future_weight/1000000000)
+
+    longest_len = max(len(current_str), len(future_str))
+
+    global money_string_length
+    money_string_length = longest_len
 
     validator.addstr(2, 2, 'ERA {} : '.format(str(current_era).ljust(8, ' ')), curses.color_pair(1))
-    validator.addstr('{:>26,.9f} CSPR'.format(current_weight/1000000000), curses.color_pair(4))
-    validator.addstr(2, 49, '<- Position {}'.format(current_index), curses.color_pair(1))
+    validator.addstr('{}'.format(current_str.rjust(longest_len, ' ')), curses.color_pair(4))
+    validator.addstr(2, 42, '<- Position {}'.format(current_index), curses.color_pair(1))
 
     validator.addstr(3, 2, 'ERA {} : '.format(str(future_era).ljust(8, ' ')), curses.color_pair(1))
-    validator.addstr('{:26,.9f} CSPR'.format(future_weight/1000000000), curses.color_pair(4))
-    validator.addstr(3, 49, '<- Position {}'.format(future_index), curses.color_pair(1))
+    validator.addstr('{}'.format(future_str.rjust(longest_len, ' ')), curses.color_pair(4))
+    validator.addstr(3, 42, '<- Position {}'.format(future_index), curses.color_pair(1))
 
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
     reward = float(future_weight - current_weight)
     if (reward > 1000000000):
-        validator.addstr('{:>26,.9f} CSPR'.format(reward / 1000000000), curses.color_pair(4))
+        this_str = '{:,.4f} CSPR'.format(reward / 1000000000)
     else:
-        validator.addstr('{:>26,} mote'.format(int(reward)), curses.color_pair(4))
+        this_str = '{:,} mote'.format(int(reward))
+    validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
 
 
 def draw_menu(casper):
@@ -635,10 +650,6 @@ def draw_menu(casper):
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-
-#    global public_key
-#    public_key=os.popen('curl -s localhost:8888/status | jq -r .our_public_signing_key').read().split('\n')[0]
-
 
     # Loop where k is the last character pressed
     while (k != ord('q')):
@@ -704,7 +715,8 @@ def main():
     random = random.SystemRandom()
 
     global public_key
-    public_key=os.popen('curl -s localhost:8888/status | jq -r .our_public_signing_key').read().split('\n')[0]
+    local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+    public_key = local_status['our_public_signing_key']
 
     global thread_ptr
     global event_ptr
