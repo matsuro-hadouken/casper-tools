@@ -9,6 +9,8 @@ peer_wrong_chain = []
 purse_uref = 0;
 global_events = dict()
 peer_address = None
+finality_signatures = []
+missing_validators = []
 
 def system_memory():
     global sysmemory
@@ -133,7 +135,7 @@ def casper_bonds():
 
         bonds.addstr(1, 2, 'Active       : ', curses.color_pair(1))
         if inactive:
-            bonds.addstr('Not Active', curses.color_pair(2))
+            bonds.addstr('Not Active', curses.color_pair(2 if blink else 20))
         else:
             bonds.addstr('True', curses.color_pair(4))
 
@@ -162,24 +164,31 @@ class EventTask:
         global_events['terminating'] = 1
         self._running = False
 
+    def has_finality(self):
+        timestamp = datetime.now() - self._time_before_read
+        if timestamp.seconds > 10 and 'FinalitySignature' in global_events:
+            return True
+
+        return False
+
     def run(self):
         url = 'http://localhost:9999/events'
         self._request = urllib.request.Request(url)
         self._reader = urllib.request.urlopen(self._request)
-        CHUNK = 6 * 1024
+        CHUNK = 2 * 1024
         partial_line = ""
         last_block_time = ""
 
         try:
             while self._running:
-                time_before_read = datetime.now()
+                self._time_before_read = datetime.now()
                 chunk = self._reader.read(CHUNK)
                 if not chunk:
                     break
 
-                timestamp = datetime.now() - time_before_read
-                if timestamp.seconds > 10 and 'FinalitySignature' in global_events:
+                if self.has_finality():
                     global_events['FinalitySignature'] = 0
+                    finality_signatures.clear()
 
                 data = chunk.decode().split('\n')
                 first = True
@@ -234,6 +243,14 @@ class EventTask:
                                 except:
                                     pass
 
+                            try:
+                                if key == 'FinalitySignature':
+                                    pub_key = json_str[key]['public_key'].strip("\"")
+                                    finality_signatures.append(pub_key)
+                            except:
+                                pass
+
+
                             if key in global_events:
                                 global_events[key] = global_events[key] + 1
                             else:
@@ -258,12 +275,40 @@ def casper_events():
     events.addstr(0, 2, 'Casper Events', curses.color_pair(4))
 
     if length < 1:
-        events.addstr(1, 2, 'Waiting for first Event', curses.color_pair(5))
+        events.addstr(1, 2, 'Waiting for next Event', curses.color_pair(5))
     else:
         index = 0
         for key in list(sorted(local_events.keys())):
             events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
             events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
+            index = index + 1
+
+
+def casper_finality():
+    global finality
+
+    local_events = global_events    # make a copy in case our thread tries to stomp
+    length = len(local_events.keys())
+    starty = 18+ 2 + (1 if length < 1 else length)
+
+    missing_val = len(missing_validators)
+    finality= curses.newwin(20, 40, starty, 71)
+    finality.erase()
+    finality.noutrefresh()
+
+    finality= curses.newwin(2 + (1 if missing_val < 1 else missing_val), 40, starty, 71)
+
+    finality.box()
+    box_height, box_width = finality.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    finality.addstr(0, 2, 'Validators Not Finalized', curses.color_pair(4))
+    
+    index = 1
+    if not len(missing_validators):
+        finality.addstr(index, 2, 'Checking Finality Signatures' if length > 0 else 'Waiting for next Event', curses.color_pair(5))
+    else:
+        for missing in missing_validators:
+            finality.addstr(index, 2, '{}....{}'.format(missing[:16], missing[-16:]), curses.color_pair(1 if missing != public_key else 2 if blink else 20))
             index = index + 1
 
 
@@ -558,6 +603,12 @@ def casper_validator():
             if key  == public_key:
                 current_weight = value
 
+        missing_validators.clear()
+        if event_ptr.has_finality():
+            for key in current.keys():
+                if key not in finality_signatures:
+                    missing_validators.append(key)
+
         future_validators = auction_info['era_validators'][1]['validator_weights']
         future_era = auction_info['era_validators'][1]['era_id']
         for item in future_validators:
@@ -651,14 +702,21 @@ def draw_menu(casper):
     curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
+    curses.init_pair(20, curses.COLOR_RED, curses.COLOR_WHITE)
+
+    global blink
+    blink = False
+
     # Loop where k is the last character pressed
     while (k != ord('q')):
 
         # Initialization
-#        casper.clear()
+#        casper.erase()
         global main_height
         global main_width
         main_height, main_width = casper.getmaxyx()
+
+        blink = blink ^ True
 
         cursor_x = main_width-1
         cursor_y = main_height-1
@@ -671,7 +729,8 @@ def draw_menu(casper):
         system_memory()
         system_disk()
         casper_bonds()
-        casper_events();
+        casper_events()
+        casper_finality()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -682,16 +741,19 @@ def draw_menu(casper):
 
         # Refresh the screen
 
-        launcher.refresh()
-        block_info.refresh()
-        pub_key_win.refresh()
-        validator.refresh()
-        sysmemory.refresh()
-        peers.refresh()
-        sysdisk.refresh()
-        bonds.refresh()
-        events.refresh()
-        casper.refresh()
+        launcher.noutrefresh()
+        block_info.noutrefresh()
+        pub_key_win.noutrefresh()
+        validator.noutrefresh()
+        sysmemory.noutrefresh()
+        peers.noutrefresh()
+        sysdisk.noutrefresh()
+        bonds.noutrefresh()
+        events.noutrefresh()
+        finality.noutrefresh()
+        casper.noutrefresh()
+
+        curses.doupdate()
 
         try:
             time.sleep(1)
