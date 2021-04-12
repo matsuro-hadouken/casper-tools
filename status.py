@@ -292,9 +292,6 @@ def casper_finality():
     starty = 18+ 2 + (1 if length < 1 else length)
 
     missing_val = len(missing_validators)
-    finality= curses.newwin(20, 40, starty, 71)
-    finality.erase()
-    finality.noutrefresh()
 
     finality= curses.newwin(2 + (1 if missing_val < 1 else missing_val), 40, starty, 71)
 
@@ -711,7 +708,8 @@ def draw_menu(casper):
     while (k != ord('q')):
 
         # Initialization
-#        casper.erase()
+        casper.erase()
+        casper.noutrefresh()
         global main_height
         global main_width
         main_height, main_width = casper.getmaxyx()
