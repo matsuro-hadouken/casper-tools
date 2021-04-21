@@ -215,6 +215,7 @@ def getEraInfo(block, currentEra):
         num_era_rewards[currentEra] = 0
         era_block_start[currentEra] = block
 
+        my_val_reward = 0
         for info in eraInfo:
             if 'Delegator' in info:
                 amount = int(info['Delegator']['amount'])
@@ -224,6 +225,11 @@ def getEraInfo(block, currentEra):
                     era_rewards_dict[currentEra] = amount
 
                 num_era_rewards[currentEra] += 1
+
+                # now check if it was us
+                val = info['Delegator']['validator_public_key'].strip("\"")
+                if val == public_key:
+                    my_val_reward += amount
 
             elif 'Validator' in info:
                 amount = int(info['Validator']['amount'])
@@ -237,7 +243,9 @@ def getEraInfo(block, currentEra):
                 # now check if it was us
                 val = info['Validator']['validator_public_key'].strip("\"")
                 if val == public_key:
-                    our_rewards.append(amount)
+                    my_val_reward += amount
+
+        our_rewards.append(my_val_reward)
 
 
     return currentEra
@@ -457,7 +465,7 @@ def casper_proposers():
         proposers.addstr(index, 2, 'Waiting for next Event', curses.color_pair(5))
     else:
         for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
-            proposers.addstr(index, 2, '{}....{} : '.format(proposer[0][:10], proposer[0][-10:]), curses.color_pair(1 if proposer[0] != public_key else 2 if blink else 20))
+            proposers.addstr(index, 2, '{}....{} : '.format(proposer[0][:10], proposer[0][-10:]), curses.color_pair(1 if proposer[0] != public_key else 5))
             proposers.addstr('{:8.2f}%'.format(100*proposer[1]/blocks), curses.color_pair(4))
 
             index = index + 1
@@ -550,9 +558,6 @@ def casper_peers():
 
     peers.addstr(1, 2, 'Peers        : ', curses.color_pair(1))
     peers.addstr('{}'.format(num_peers), curses.color_pair(4))
-
-    config.read('/etc/casper/1_0_0/chainspec.toml')
-    validator_slots = config.get('core', 'validator_slots').strip('\'')
 
     peers.addstr(2, 2, 'In Blacklist : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
@@ -874,9 +879,6 @@ def casper_validator():
     except:
         pass
 
-    config.read('/etc/casper/1_0_0/chainspec.toml')
-    validator_slots = config.get('core', 'validator_slots').strip('\'')
-
     validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
     validator.addstr('{:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators,validator_slots), curses.color_pair(4))
     validator.addstr(1, 42, '<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
@@ -950,6 +952,11 @@ def draw_menu(casper):
 
     global blink
     blink = False
+    
+    config.read('/etc/casper/1_0_0/chainspec.toml')
+    global validator_slots
+    validator_slots = config.get('core', 'validator_slots').strip('\'')
+
 
     # Loop where k is the last character pressed
     while (k != ord('q')):
