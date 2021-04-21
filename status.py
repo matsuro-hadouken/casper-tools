@@ -11,10 +11,17 @@ global_events = dict()
 peer_address = None
 finality_signatures = []
 missing_validators = []
+proposers_dict = dict()
+currentProposerBlock = 0
+blocks_start = 0
+era_rewards_dict = dict()
+num_era_rewards = dict()
+era_block_start = dict()
+our_rewards = []
 
 def system_memory():
     global sysmemory
-    sysmemory = curses.newwin(5, 40, 0, 71)
+    sysmemory = curses.newwin(5, 40, 0, 70)
     sysmemory.box()
     box_height, box_width = sysmemory.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -61,7 +68,7 @@ def system_memory():
 
 def system_disk():
     global sysdisk
-    sysdisk = curses.newwin(5, 40, 5, 71)
+    sysdisk = curses.newwin(5, 40, 5, 70)
     sysdisk.box()
     box_height, box_width = sysdisk.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -95,7 +102,7 @@ def system_disk():
 
 def casper_bonds():
     global bonds
-    bonds = curses.newwin(8, 40, 10, 71)
+    bonds = curses.newwin(8, 40, 0, 110)
     bonds.box()
     box_height, box_width = bonds.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -156,6 +163,127 @@ def casper_bonds():
     except:
         bonds.addstr(1, 2, 'No Bond Info Found', curses.color_pair(1))
 
+class ProposerTask:
+    def __init__(self):
+        self._running = True
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        loaded1stBlock = False
+        global currentProposerBlock
+        global blocks_start
+
+        while not loaded1stBlock:
+            time.sleep(1)
+
+            try:
+                block_info = json.loads(os.popen('casper-client get-block').read())
+                currentProposerBlock = int(block_info['result']['block']['header']['height'])
+                loaded1stBlock = True
+            except:
+                global_events['1st block error'] = 1
+                pass
+
+        # now that we have the 1st block... loop back X blocks to get a brief history
+        xBlocks = 100
+        lastBlock = currentProposerBlock - xBlocks
+        while currentProposerBlock > lastBlock:
+            try:
+                block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
+                proposer = block_info['result']['block']['body']['proposer'].strip("\"")
+                if proposer in proposers_dict:
+                    proposers_dict[proposer] = proposers_dict[proposer] + 1
+                else:
+                    proposers_dict[proposer] = 1
+
+                currentProposerBlock = currentProposerBlock - 1
+                blocks_start = blocks_start + 1
+            except:
+                global_events['proposer loop error'] = 1
+                time.sleep(2)
+                pass
+
+def getEraInfo(block, currentEra):
+    block_info = json.loads(os.popen('casper-client get-era-info-by-switch-block -b {}'.format(block)).read())
+    summary = block_info['result']['era_summary']
+    if summary != None:
+        eraInfo = summary['stored_value']['EraInfo']['seigniorage_allocations']
+        currentEra = int(summary['era_id'])
+        num_era_rewards[currentEra] = 0
+        era_block_start[currentEra] = block
+
+        for info in eraInfo:
+            if 'Delegator' in info:
+                amount = int(info['Delegator']['amount'])
+                if currentEra in era_rewards_dict:
+                    era_rewards_dict[currentEra] = era_rewards_dict[currentEra] + amount
+                else:
+                    era_rewards_dict[currentEra] = amount
+
+                num_era_rewards[currentEra] += 1
+
+            elif 'Validator' in info:
+                amount = int(info['Validator']['amount'])
+                if currentEra in era_rewards_dict:
+                    era_rewards_dict[currentEra] = era_rewards_dict[currentEra] + amount
+                else:
+                    era_rewards_dict[currentEra] = amount
+    
+                num_era_rewards[currentEra] += 1
+
+                # now check if it was us
+                val = info['Validator']['validator_public_key'].strip("\"")
+                if val == public_key:
+                    our_rewards.append(amount)
+
+
+    return currentEra
+
+
+class EraTask:
+    def __init__(self):
+        self._running = True
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        loaded1stBlock = False
+
+        while not loaded1stBlock:
+            time.sleep(1)
+
+            try:
+                block_info = json.loads(os.popen('casper-client get-block').read())
+                currentBlock = int(block_info['result']['block']['header']['height'])
+                currentEra = int(block_info['result']['block']['header']['era_id'])
+                era_block_start[currentEra] = currentBlock
+
+                loaded1stBlock = True
+            except:
+                global_events['era 1st block error'] = 1
+                pass
+
+        # now that we have the current era... loop back X eras to get a brief history
+        xEras = 10
+        lastEra = currentEra - xEras
+        while currentBlock > 0 and currentEra > lastEra:
+            try:
+                currentEra = getEraInfo(currentBlock, currentEra)
+
+                currentBlock = currentBlock - 1
+            except:
+                global_events['era loop error'] = 1
+                global_events['era block '] = currentBlock
+
+                time.sleep(2)
+                pass
+
+
 class EventTask:
     def __init__(self):
         self._running = True
@@ -175,7 +303,7 @@ class EventTask:
         url = 'http://localhost:9999/events'
         self._request = urllib.request.Request(url)
         self._reader = urllib.request.urlopen(self._request)
-        CHUNK = 2 * 1024
+        CHUNK = 6 * 1024
         partial_line = ""
         last_block_time = ""
 
@@ -224,6 +352,16 @@ class EventTask:
                                     global_events['Last Reward'] = 'Not Found'
 
                                 try:
+                                    proposer = json_str[key]['block']['body']['proposer'].strip("\"")
+                                    if proposer in proposers_dict:
+                                        proposers_dict[proposer] = proposers_dict[proposer] + 1
+                                    else:
+                                        proposers_dict[proposer] = 1
+
+                                except:
+                                    pass
+
+                                try:
                                     deploy_hashs = json_str[key]['block']['body']['deploy_hashes']
                                     if deploy_hashs:
                                         if 'Deploys' in global_events:
@@ -242,6 +380,16 @@ class EventTask:
                                             global_events['Transfers'] = len(transfer_hashs)
                                 except:
                                     pass
+
+                                try:
+                                    era_height = json_str[key]['block']['header']['height']
+                                    era_id = json_str[key]['block']['header']['era_id']
+
+                                    if era_height:
+                                        getEraInfo(era_height, era_id)
+                                except:
+                                    pass
+
 
                             try:
                                 if key == 'FinalitySignature':
@@ -268,7 +416,7 @@ def casper_events():
 
     local_events = global_events    # make a copy in case our thread tries to stomp
     length = len(local_events.keys())
-    events = curses.newwin(2 + (1 if length < 1 else length), 40, 18, 71)
+    events = curses.newwin(2 + (1 if length < 1 else length), 40, 10, 70)
     events.box()
     box_height, box_width = events.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -283,6 +431,84 @@ def casper_events():
             events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
             index = index + 1
 
+def casper_proposers():
+    global proposers
+
+    local_proposers = proposers_dict    # make a copy in case our thread tries to stomp
+    length = len(local_proposers.keys())
+    starty = 18+ 2 + (1 if len(global_events.keys()) < 1 else len(global_events.keys()))
+
+    proposers= curses.newwin(2 + (1 if length < 1 else length), 40, 8, 110)
+
+    proposers.box()
+    box_height, box_width = proposers.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    proposers.addstr(0, 2, 'Proposer % : Since Block ', curses.color_pair(4))
+    proposers.addstr('{}'.format(currentProposerBlock), curses.color_pair(5))
+
+
+    index = 1
+    try:
+        blocks = global_events['BlockAdded'] + blocks_start
+    except:
+        blocks = 1 if blocks_start < 1 else blocks_start
+
+    if not length:
+        proposers.addstr(index, 2, 'Waiting for next Event', curses.color_pair(5))
+    else:
+        for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
+            proposers.addstr(index, 2, '{}....{} : '.format(proposer[0][:10], proposer[0][-10:]), curses.color_pair(1 if proposer[0] != public_key else 2 if blink else 20))
+            proposers.addstr('{:8.2f}%'.format(100*proposer[1]/blocks), curses.color_pair(4))
+
+            index = index + 1
+
+def casper_era_rewards():
+    global era_rewards
+
+    events_box_y, events_box_x = events.getbegyx()
+    events_box_height, events_box_width = events.getmaxyx()
+
+    max_print = 10
+
+    length = min(len(era_rewards_dict), max_print)
+    era_rewards = curses.newwin(2 + (length*2)+1, events_box_width, events_box_y+events_box_height, events_box_x)
+
+    era_rewards.box()
+    box_height, box_width = era_rewards.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    era_rewards.addstr(0, 2, 'Average Era Rewards / Blocks', curses.color_pair(4))
+
+    current_print = 0
+    index = 1
+    for era in sorted(era_rewards_dict.items(), key=lambda x: x[0], reverse=True):
+        era_rewards.addstr(index, 2, '{} Reward : '.format(era[0]), curses.color_pair(1))
+        era_rewards.addstr('{:10,.4f} CSPR'.format((era[1]/num_era_rewards[era[0]]) / 1000000000), curses.color_pair(4))
+        index += 1
+        current_print += 1
+
+        if current_print >= max_print:
+            break
+
+    era_rewards.addstr(index, 2, '--------', curses.color_pair(5))
+    index += 1
+
+    current_print = 0
+    for era in sorted(era_block_start.items(), key=lambda x: x[0], reverse=True):
+        diff = 0
+        next_era = era[0]-1
+
+        if next_era in era_block_start:
+            diff = era[1] - era_block_start[next_era]
+
+        if diff != 0:
+            era_rewards.addstr(index, 2, '{} Blocks : '.format(era[0]), curses.color_pair(1))
+            era_rewards.addstr('{:5}'.format(diff), curses.color_pair(4))
+            index += 1
+            current_print += 1
+
+        if current_print >= max_print:
+            break
+
 
 def casper_finality():
     global finality
@@ -293,7 +519,7 @@ def casper_finality():
 
     missing_val = len(missing_validators)
 
-    finality= curses.newwin(2 + (1 if missing_val < 1 else missing_val), 40, starty, 71)
+    finality= curses.newwin(2 + (1 if missing_val < 1 else missing_val), 40, starty, 70)
 
     finality.box()
     box_height, box_width = finality.getmaxyx()
@@ -311,7 +537,7 @@ def casper_finality():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(5, 70, 32, 0)
+    peers = curses.newwin(5, 70, 33, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -458,6 +684,7 @@ def casper_block_info():
         root_hash = 'null'
         api_version = 'null'
         local_era = 'null'
+        local_chainspe = 'null'
 
     global peer_address
     previous_peer = peer_address
@@ -535,6 +762,7 @@ def casper_block_info():
 
 def casper_public_key():
     global pub_key_win
+    global current_era_global
     pub_key_win = curses.newwin(4, 70, 22, 0)
     pub_key_win.box()
     box_height, box_width = pub_key_win.getmaxyx()
@@ -546,7 +774,11 @@ def casper_public_key():
 
     try:
         block_info = json.loads(os.popen('casper-client get-block').read())
-        lfb_root = block_info['result']['block']['header']['state_root_hash']
+        header_info = block_info['result']['block']['header']
+        lfb_root = header_info['state_root_hash']
+        currentBlock = int(header_info['height'])
+        current_era_global = int(header_info['era_id'])
+        era_block_start[current_era_global] = currentBlock
 
         global purse_uref   # we only need to get this ref the first time
         if purse_uref == 0:
@@ -562,12 +794,13 @@ def casper_public_key():
             pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
 
     except:
+        current_era_global = 0
         pub_key_win.addstr('Not available yet', curses.color_pair(2))
 
 
 def casper_validator():
     global validator
-    validator = curses.newwin(6, 70, 26, 0)
+    validator = curses.newwin(7, 70, 26, 0)
     validator.box()
     box_height, box_width = validator.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -583,6 +816,11 @@ def casper_validator():
             local_era = 0
     except:
         local_era = 0
+
+    current_era = future_era = 0
+    current_weight = future_weight = 0
+    num_cur_validators = num_fut_validators = 0
+    current_index = future_index = 0
 
     try:
         global auction_info
@@ -634,10 +872,7 @@ def casper_validator():
         num_fut_validators = len(current_validators)
 
     except:
-        current_era = future_era = 0
-        current_weight = future_weight = 0
-        num_cur_validators = num_fut_validators = 0
-        current_index = future_index = 0
+        pass
 
     config.read('/etc/casper/1_0_0/chainspec.toml')
     validator_slots = config.get('core', 'validator_slots').strip('\'')
@@ -677,6 +912,18 @@ def casper_validator():
     else:
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
+
+    validator.addstr(5, 2, 'Avg Reward   : ', curses.color_pair(1))
+    reward = 0
+    if len(our_rewards):
+        reward = float(sum(our_rewards) / len(our_rewards))
+    if reward > 1000000000:
+        this_str = '{:,.4f} CSPR'.format(reward / 1000000000)
+    else:
+        this_str = '{:,} mote'.format(int(reward))
+    validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
+    validator.addstr(5, 42, '<- Last {} reward{}'.format(len(our_rewards), 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
+
 
 
 def draw_menu(casper):
@@ -728,7 +975,8 @@ def draw_menu(casper):
         system_disk()
         casper_bonds()
         casper_events()
-        casper_finality()
+        casper_era_rewards()
+        casper_proposers()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -748,7 +996,8 @@ def draw_menu(casper):
         sysdisk.noutrefresh()
         bonds.noutrefresh()
         events.noutrefresh()
-        finality.noutrefresh()
+        era_rewards.noutrefresh()
+        proposers.noutrefresh()
         casper.noutrefresh()
 
         curses.doupdate()
@@ -775,8 +1024,16 @@ def main():
     random = random.SystemRandom()
 
     global public_key
-    local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
-    public_key = local_status['our_public_signing_key']
+
+    try:
+        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+        public_key = local_status['our_public_signing_key']
+    except:
+        reader = open('/etc/casper/validator_keys/public_key_hex')
+        try:
+            public_key= reader.read().strip()
+        finally:
+            reader.close()
 
     global thread_ptr
     global event_ptr
@@ -784,6 +1041,20 @@ def main():
     thread_ptr = threading.Thread(target=event_ptr.run)
     thread_ptr.daemon = True
     thread_ptr.start()
+
+    global proposer_thread_ptr
+    global proposer_ptr
+    proposer_ptr = ProposerTask()
+    proposer_thread_ptr = threading.Thread(target=proposer_ptr.run)
+    proposer_thread_ptr.daemon = True
+    proposer_thread_ptr.start()
+
+    global era_thread_ptr
+    global era_ptr
+    era_ptr = EraTask()
+    era_thread_ptr = threading.Thread(target=era_ptr.run)
+    era_thread_ptr.daemon = True
+    era_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
