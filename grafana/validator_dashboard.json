@@ -771,6 +771,43 @@
       }
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                0.016,
+                0.014
+              ],
+              "type": "outside_range"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "B",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "5m",
+        "frequency": "1m",
+        "handler": 1,
+        "message": "[ Block Time Average ] in suspicious range. [ Not Critical ] Attention required.",
+        "name": "Block Time Average alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
       "aliasColors": {
         "rate 24h": "rgba(196, 22, 42, 0.62)",
         "{instance=\"127.0.0.1:8888\", job=\"casper\"}": "rgba(196, 22, 42, 0.74)"
@@ -840,7 +877,24 @@
           "refId": "C"
         }
       ],
-      "thresholds": [],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 0.016,
+          "yaxis": "left"
+        },
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 0.014,
+          "yaxis": "left"
+        }
+      ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -866,7 +920,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": false
+          "show": true
         },
         {
           "format": "short",
@@ -1898,6 +1952,42 @@
       }
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                100000000
+              ],
+              "type": "lt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "C",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "5m",
+        "frequency": "1m",
+        "handler": 1,
+        "message": "Mem Total below [ 100 MB ]",
+        "name": "Mem Total alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -1974,7 +2064,7 @@
           "fill": true,
           "line": true,
           "op": "lt",
-          "value": 0.5,
+          "value": 100000000,
           "yaxis": "left"
         }
       ],
@@ -2238,7 +2328,7 @@
         "max": false,
         "min": false,
         "rightSide": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -3233,15 +3323,15 @@
       "hiddenSeries": false,
       "id": 41,
       "legend": {
-        "alignAsTable": false,
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
         "rightSide": false,
         "show": true,
         "total": false,
-        "values": false
+        "values": true
       },
       "lines": true,
       "linewidth": 3,
@@ -3320,6 +3410,43 @@
       }
     },
     {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                42,
+                60
+              ],
+              "type": "outside_range"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "1m",
+        "frequency": "1m",
+        "handler": 1,
+        "message": "Finalization time range alert. [ Not Critical ]",
+        "name": "Finalization Time alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
       "aliasColors": {
         " ": "rgb(31, 252, 0)"
       },
@@ -3351,7 +3478,7 @@
       "fill": 0,
       "fillGradient": 1,
       "gridPos": {
-        "h": 5,
+        "h": 6,
         "w": 24,
         "x": 0,
         "y": 41
@@ -3359,11 +3486,11 @@
       "hiddenSeries": false,
       "id": 35,
       "legend": {
-        "alignAsTable": false,
-        "avg": false,
+        "alignAsTable": true,
+        "avg": true,
         "current": true,
-        "max": false,
-        "min": false,
+        "max": true,
+        "min": true,
         "rightSide": false,
         "show": true,
         "sort": "current",
@@ -3399,7 +3526,24 @@
           "refId": "A"
         }
       ],
-      "thresholds": [],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 42,
+          "yaxis": "left"
+        },
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 60,
+          "yaxis": "left"
+        }
+      ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -3448,7 +3592,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 47
       },
       "id": 63,
       "panels": [],
@@ -3476,7 +3620,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 48
       },
       "hiddenSeries": false,
       "id": 61,
@@ -3586,7 +3730,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 53
+        "y": 54
       },
       "hiddenSeries": false,
       "id": 53,
@@ -3688,7 +3832,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 53
+        "y": 54
       },
       "hiddenSeries": false,
       "id": 55,
@@ -3791,7 +3935,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 60
+        "y": 61
       },
       "hiddenSeries": false,
       "id": 57,
@@ -3896,7 +4040,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 60
+        "y": 61
       },
       "hiddenSeries": false,
       "id": 59,
@@ -3984,7 +4128,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 68
       },
       "id": 123,
       "panels": [],
@@ -4048,7 +4192,7 @@
         "h": 6,
         "w": 4,
         "x": 0,
-        "y": 68
+        "y": 69
       },
       "hiddenSeries": false,
       "id": 121,
@@ -4207,7 +4351,7 @@
         "h": 6,
         "w": 4,
         "x": 4,
-        "y": 68
+        "y": 69
       },
       "hiddenSeries": false,
       "id": 125,
@@ -4374,7 +4518,7 @@
         "h": 6,
         "w": 4,
         "x": 8,
-        "y": 68
+        "y": 69
       },
       "hiddenSeries": false,
       "id": 127,
@@ -4473,9 +4617,10 @@
           {
             "evaluator": {
               "params": [
-                1
+                1,
+                6
               ],
-              "type": "lt"
+              "type": "outside_range"
             },
             "operator": {
               "type": "and"
@@ -4498,7 +4643,7 @@
         "for": "5m",
         "frequency": "1m",
         "handler": 1,
-        "message": "Chain flow doesn't progress since last 5 minutes. Possibility of network halt.",
+        "message": "Delta Chain Blocks Flow [ 5m ] RANGE STATE [ 1 to 6 ]",
         "name": "Delta Chain Flow Halt Alert alert",
         "noDataState": "no_data",
         "notifications": []
@@ -4529,7 +4674,7 @@
         "h": 6,
         "w": 4,
         "x": 12,
-        "y": 68
+        "y": 69
       },
       "hiddenSeries": false,
       "id": 129,
@@ -4576,13 +4721,22 @@
           "fill": true,
           "line": true,
           "op": "lt",
-          "value": 1
+          "value": 1,
+          "yaxis": "left"
+        },
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 6,
+          "yaxis": "left"
         }
       ],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Delta Chain Flow Halt Alert",
+      "title": "Delta Blocks Flow Halt Alert",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -4603,7 +4757,7 @@
           "format": "short",
           "label": "",
           "logBase": 1,
-          "max": "9",
+          "max": "7",
           "min": "0",
           "show": true
         },
@@ -4620,6 +4774,164 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                0.98,
+                2.01
+              ],
+              "type": "outside_range"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "1m",
+        "frequency": "1m",
+        "handler": 1,
+        "message": "ERA DELTA RANGE 1 to 2 [ 3h ]",
+        "name": "Alert Delta Era [ 3h ] alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
+      "aliasColors": {
+        "Delta Era 3h": "dark-green",
+        "Delta Era [ 3h ]": "dark-green",
+        "{instance=\"127.0.0.1:8888\", job=\"casper\"}": "dark-green"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "decimals": 0,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 69
+      },
+      "hiddenSeries": false,
+      "id": 131,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "hideEmpty": false,
+        "max": true,
+        "min": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "expr": "delta(current_era{job=\"casper\"}[3h])",
+          "interval": "30m",
+          "intervalFactor": 1,
+          "legendFormat": "Delta Era [ 3h ]",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 0.98,
+          "yaxis": "left"
+        },
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 2.01,
+          "yaxis": "left"
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Alert Delta Era Flow [ 3h ]",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "none",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
   "refresh": "10s",
@@ -4630,7 +4942,7 @@
     "list": []
   },
   "time": {
-    "from": "2021-04-07T07:52:56.000Z",
+    "from": "2021-04-07T07:58:41.000Z",
     "to": "now"
   },
   "timepicker": {
@@ -4649,5 +4961,5 @@
   "timezone": "utc",
   "title": "CASPER VALIDATOR ALPHA BOARD",
   "uid": "33xOXdB8",
-  "version": 38
+  "version": 51
 }
