@@ -80,7 +80,7 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "last"
           ],
           "fields": "",
           "values": false
@@ -186,8 +186,16 @@
                 "value": null
               },
               {
-                "color": "dark-green",
+                "color": "dark-red",
                 "value": 25
+              },
+              {
+                "color": "#EAB839",
+                "value": 35
+              },
+              {
+                "color": "dark-green",
+                "value": 50
               }
             ]
           }
@@ -196,7 +204,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 2,
+        "w": 1,
         "x": 2,
         "y": 4
       },
@@ -252,8 +260,8 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 2,
-        "x": 4,
+        "w": 3,
+        "x": 3,
         "y": 4
       },
       "id": 103,
@@ -353,6 +361,8 @@
           },
           "custom": {},
           "mappings": [],
+          "max": 160,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -366,10 +376,11 @@
               },
               {
                 "color": "dark-red",
-                "value": 100
+                "value": 120
               }
             ]
-          }
+          },
+          "unit": "short"
         },
         "overrides": []
       },
@@ -381,9 +392,6 @@
       },
       "id": 109,
       "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -392,8 +400,8 @@
           "fields": "",
           "values": false
         },
-        "text": {},
-        "textMode": "auto"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
       },
       "pluginVersion": "7.0.6",
       "targets": [
@@ -410,7 +418,7 @@
       "timeFrom": null,
       "timeShift": null,
       "title": "Block Time(s)",
-      "type": "stat"
+      "type": "gauge"
     },
     {
       "datasource": null,
@@ -655,7 +663,8 @@
     },
     {
       "aliasColors": {
-        "127.0.0.1:8888": "rgba(0, 255, 56, 0.52)"
+        "127.0.0.1:8888": "rgba(0, 255, 56, 0.52)",
+        "Finalization Time": "dark-yellow"
       },
       "bars": false,
       "dashLength": 10,
@@ -683,12 +692,12 @@
       "id": 111,
       "legend": {
         "alignAsTable": true,
-        "avg": false,
+        "avg": true,
         "current": true,
         "hideEmpty": true,
         "hideZero": true,
-        "max": false,
-        "min": false,
+        "max": true,
+        "min": true,
         "rightSide": false,
         "show": true,
         "total": false,
@@ -835,7 +844,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Block Rate Time Average (Bogus, need input)",
+      "title": "Block Time Average",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -857,7 +866,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         },
         {
           "format": "short",
@@ -1053,7 +1062,7 @@
         "current": true,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": true
       },
@@ -1158,6 +1167,7 @@
         "current": true,
         "max": false,
         "min": false,
+        "rightSide": false,
         "show": true,
         "total": false,
         "values": true
@@ -1221,7 +1231,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -4036,7 +4046,7 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 6,
-        "w": 5,
+        "w": 4,
         "x": 0,
         "y": 68
       },
@@ -4087,7 +4097,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Validator state alert",
+      "title": "Validator State Alert",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -4169,6 +4179,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
+      "decimals": 0,
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -4195,19 +4206,20 @@
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 5,
+        "x": 4,
         "y": 68
       },
       "hiddenSeries": false,
       "id": 125,
       "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "show": true,
         "total": false,
-        "values": false
+        "values": true
       },
       "lines": true,
       "linewidth": 5,
@@ -4229,7 +4241,7 @@
           "expr": "casper_exporter_peer_count",
           "instant": false,
           "interval": "1m",
-          "legendFormat": "Lack Of Peers Alert Tool",
+          "legendFormat": "Amount of peers:",
           "queryType": "randomWalk",
           "refId": "A"
         }
@@ -4303,7 +4315,7 @@
             "query": {
               "params": [
                 "A",
-                "5m",
+                "10m",
                 "now"
               ]
             },
@@ -4324,10 +4336,11 @@
         "notifications": []
       },
       "aliasColors": {},
-      "bars": false,
+      "bars": true,
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
+      "decimals": 2,
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4355,24 +4368,25 @@
         },
         "overrides": []
       },
-      "fill": 1,
+      "fill": 0,
       "fillGradient": 0,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 9,
+        "x": 8,
         "y": 68
       },
       "hiddenSeries": false,
       "id": 127,
       "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "show": true,
         "total": false,
-        "values": false
+        "values": true
       },
       "lines": true,
       "linewidth": 1,
@@ -4395,7 +4409,7 @@
           "expr": "time() - max_over_time(timestamp(changes(amount_of_blocks{job=\"casper\"}[30s]) > 0)[1h:15s])",
           "instant": true,
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "Block Time:",
           "queryType": "randomWalk",
           "refId": "A"
         }
@@ -4432,14 +4446,169 @@
         {
           "decimals": 2,
           "format": "s",
-          "label": "Block Time",
+          "label": "",
           "logBase": 1,
-          "max": "180",
+          "max": "200",
           "min": "0",
           "show": true
         },
         {
           "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "alert": {
+        "alertRuleTags": {},
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                1
+              ],
+              "type": "lt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "5m",
+        "frequency": "1m",
+        "handler": 1,
+        "message": "Chain flow doesn't progress since last 5 minutes. Possibility of network halt.",
+        "name": "Delta Chain Flow Halt Alert alert",
+        "noDataState": "no_data",
+        "notifications": []
+      },
+      "aliasColors": {
+        "127.0.0.1:8888": "dark-orange",
+        "Delta Chain Flow:": "dark-green"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "decimals": 0,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": []
+          }
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 3,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 68
+      },
+      "hiddenSeries": false,
+      "id": 129,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": true,
+        "min": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true,
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pluginVersion": "7.0.6",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "delta(amount_of_blocks{job=\"casper\"}[5m])",
+          "interval": "",
+          "legendFormat": "Delta Chain Flow:",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Delta Chain Flow Halt Alert",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "max": "9",
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "none",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -4461,7 +4630,7 @@
     "list": []
   },
   "time": {
-    "from": "2021-03-31T15:00:00.000Z",
+    "from": "2021-04-07T07:52:56.000Z",
     "to": "now"
   },
   "timepicker": {
@@ -4479,6 +4648,6 @@
   },
   "timezone": "utc",
   "title": "CASPER VALIDATOR ALPHA BOARD",
-  "uid": "90VdVXUMkssdf111",
-  "version": 20
+  "uid": "33xOXdB8",
+  "version": 38
 }
