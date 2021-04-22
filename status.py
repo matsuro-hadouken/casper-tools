@@ -43,19 +43,6 @@ def system_memory():
     mem_total = float(meminfo['MemTotal'].value)
     mem_percent = 100*(mem_total-float(meminfo['MemAvailable'].value))/mem_total
 
-    curses.start_color()
-    curses.init_pair( 6, 2, 7)
-    curses.init_pair( 7, 7, 6)
-    curses.init_pair( 8, 7, 3)
-    curses.init_pair( 9, 7, 1)
-    curses.init_pair(10, 0, 7)
-
-    curses.init_pair(11, 0, 7)
-    curses.init_pair(12, 0, 6)
-    curses.init_pair(13, 0, 3)
-    curses.init_pair(14, 0, 1)
-    curses.init_pair(15, 0, 7)
-
     sysmemory.addstr(3, 2, 'Mem Used', curses.color_pair(1))
 
     for x in range(25):
@@ -184,7 +171,6 @@ class ProposerTask:
                 currentProposerBlock = int(block_info['result']['block']['header']['height'])
                 loaded1stBlock = True
             except:
-                global_events['1st block error'] = 1
                 pass
 
         # now that we have the 1st block... loop back X blocks to get a brief history
@@ -215,6 +201,7 @@ def getEraInfo(block, currentEra):
         num_era_rewards[currentEra] = 0
         era_block_start[currentEra] = block
 
+        my_val_reward = 0
         for info in eraInfo:
             if 'Delegator' in info:
                 amount = int(info['Delegator']['amount'])
@@ -224,6 +211,11 @@ def getEraInfo(block, currentEra):
                     era_rewards_dict[currentEra] = amount
 
                 num_era_rewards[currentEra] += 1
+
+                # now check if it was us
+                val = info['Delegator']['validator_public_key'].strip("\"")
+                if val == public_key:
+                    my_val_reward += amount
 
             elif 'Validator' in info:
                 amount = int(info['Validator']['amount'])
@@ -237,7 +229,9 @@ def getEraInfo(block, currentEra):
                 # now check if it was us
                 val = info['Validator']['validator_public_key'].strip("\"")
                 if val == public_key:
-                    our_rewards.append(amount)
+                    my_val_reward += amount
+
+        our_rewards.append(my_val_reward)
 
 
     return currentEra
@@ -265,7 +259,6 @@ class EraTask:
 
                 loaded1stBlock = True
             except:
-                global_events['era 1st block error'] = 1
                 pass
 
         # now that we have the current era... loop back X eras to get a brief history
@@ -301,8 +294,15 @@ class EventTask:
 
     def run(self):
         url = 'http://localhost:9999/events'
-        self._request = urllib.request.Request(url)
-        self._reader = urllib.request.urlopen(self._request)
+        localhost_active = False
+        while not localhost_active:
+            try:
+                self._request = urllib.request.Request(url)
+                self._reader = urllib.request.urlopen(self._request)
+                localhost_active = True
+            except:
+                time.sleep(10)
+
         CHUNK = 6 * 1024
         partial_line = ""
         last_block_time = ""
@@ -435,16 +435,26 @@ def casper_proposers():
     global proposers
 
     local_proposers = proposers_dict    # make a copy in case our thread tries to stomp
-    length = len(local_proposers.keys())
+
+    max_proposers = 20
+    we_are_included = False
+    for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
+        if proposer[0] == public_key:
+            we_are_included = True
+            break
+
+    length = min(len(local_proposers.keys()), max_proposers)
+    window_length = length + (0 if we_are_included else 1)
     starty = 18+ 2 + (1 if len(global_events.keys()) < 1 else len(global_events.keys()))
 
-    proposers= curses.newwin(2 + (1 if length < 1 else length), 40, 8, 110)
+    proposers= curses.newwin(2 + (1 if window_length < 1 else window_length), 40, 8, 110)
 
     proposers.box()
     box_height, box_width = proposers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
-    proposers.addstr(0, 2, 'Proposer % : Since Block ', curses.color_pair(4))
-    proposers.addstr('{}'.format(currentProposerBlock), curses.color_pair(5))
+    proposers.addstr(0, 2, 'Last', curses.color_pair(4))
+    proposers.addstr(' {:6} '.format((global_height-currentProposerBlock) if global_height > 0 and currentProposerBlock > 0 else 0), curses.color_pair(5))
+    proposers.addstr('Blks / Stk Wgt / Prpsr %', curses.color_pair(4))
 
 
     index = 1
@@ -456,11 +466,37 @@ def casper_proposers():
     if not length:
         proposers.addstr(index, 2, 'Waiting for next Event', curses.color_pair(5))
     else:
-        for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
-            proposers.addstr(index, 2, '{}....{} : '.format(proposer[0][:10], proposer[0][-10:]), curses.color_pair(1 if proposer[0] != public_key else 2 if blink else 20))
-            proposers.addstr('{:8.2f}%'.format(100*proposer[1]/blocks), curses.color_pair(4))
+        total_staked = 0
+        for item in current_weights.items():
+            total_staked += item[1] 
 
-            index = index + 1
+        we_are_included = False
+        for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
+            proposers.addstr(index, 2, '{}....{} : '.format(proposer[0][:6], proposer[0][-6:]), curses.color_pair(1 if proposer[0] != public_key else 5))
+#           proposers.addstr('{:6.2f}%'.format(current_weights[proposer[0]]/3500000000000000000*100), curses.color_pair(4))
+            proposers.addstr('{:6.2f}%'.format(current_weights[proposer[0]]/total_staked*100), curses.color_pair(4))
+            proposers.addstr(' / ', curses.color_pair(1))
+            proposers.addstr('{:6.2f}%'.format(100*proposer[1]/blocks), curses.color_pair(4))
+
+            index += 1
+
+            if proposer[0] == public_key:
+                we_are_included = True
+
+            if index > max_proposers:
+                break
+
+
+        if not we_are_included and public_key in current_weights:            
+            proposers.addstr(index, 2, '{}....{} : '.format(public_key[:6], public_key[-6:]), curses.color_pair(5))
+            if public_key in local_proposers:
+                proposers.addstr('{:6.2f}%'.format(current_weights[public_key]/3500000000000000000*100), curses.color_pair(4))
+                proposers.addstr(' / ', curses.color_pair(1))
+                proposers.addstr('{:6.2f}%'.format(100*local_proposers[public_key]/blocks), curses.color_pair(4))
+            else:
+                proposers.addstr('{:6.2f}%'.format(current_weights[public_key]/3500000000000000000*100), curses.color_pair(4))
+                proposers.addstr(' / ', curses.color_pair(1))
+                proposers.addstr('{:6.2f}%'.format(0), curses.color_pair(4))
 
 def casper_era_rewards():
     global era_rewards
@@ -551,9 +587,6 @@ def casper_peers():
     peers.addstr(1, 2, 'Peers        : ', curses.color_pair(1))
     peers.addstr('{}'.format(num_peers), curses.color_pair(4))
 
-    config.read('/etc/casper/1_0_0/chainspec.toml')
-    validator_slots = config.get('core', 'validator_slots').strip('\'')
-
     peers.addstr(2, 2, 'In Blacklist : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
     peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
@@ -629,23 +662,28 @@ def casper_launcher():
 
 def casper_block_info():
     global block_info
+    global global_height
     block_info = curses.newwin(15, 70, 7, 0)
     block_info.box()
     box_height, box_width = block_info.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     block_info.addstr(0, 2, 'Casper Block Info', curses.color_pair(4))
 
-    try:
-        global local_status
-        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+    global local_status
+    local_status = 'null'
 
-        global local_chainspec
+    global local_chainspec
+    local_chainspec = 'null'
+
+    try:
+        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
         local_chainspec = local_status['chainspec_name']
 
         last_added_block_info = local_status['last_added_block_info']
         try:
-            local_height = last_added_block_info['height']
+            global_height = local_height = last_added_block_info['height']
         except:
+            global_height = 0
             local_height = 'null'
         try:
             round_length = local_status['round_length']
@@ -653,6 +691,8 @@ def casper_block_info():
             round_length = 'null'
         try:
             next_upgrade = local_status['next_upgrade']
+            if next_upgrade != None:
+                next_upgrade = 'Era: {} - Version: {}'.format(next_upgrade['activation_point'], next_upgrade['protocol_version'])
         except:
             next_upgrade = 'null'
         try:
@@ -676,6 +716,7 @@ def casper_block_info():
         except:
             local_era = 'null'
     except:
+        global_height = 0
         local_height = 'null'
         round_length = 'null'
         next_upgrade = 'null'
@@ -737,7 +778,7 @@ def casper_block_info():
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
     index += 1
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
-    block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4))
+    block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
     index += 1
     block_info.addstr(index, 2, 'Build Version: ', curses.color_pair(1))
     block_info.addstr('{}'.format(build_version), curses.color_pair(4))
@@ -755,6 +796,23 @@ def casper_block_info():
     index += 1
     block_info.addstr(index, 2, 'Local ERA    : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
+
+    avg_num_blocks = 110
+    bar_length = 40
+    block_percent = 1
+
+    if local_era in era_block_start and  local_era-1 in era_block_start:
+        block_percent = int((era_block_start[local_era]-era_block_start[local_era-1])/avg_num_blocks*100)
+
+    if block_percent > 99:
+        block_percent = 100
+
+    for x in range(bar_length):
+        block_info.addstr(index,28+x,' ', curses.color_pair(6))
+
+    num_blocks = int(float(block_percent/(100/bar_length)))
+    for x in range(num_blocks):
+        block_info.addstr(index,28+x,' ', curses.color_pair(16))
 
     index += 2
     block_info.addstr(index, 2, 'Storage Path : ', curses.color_pair(1))
@@ -824,23 +882,25 @@ def casper_validator():
 
     try:
         global auction_info
+        global current_weights
+        current_weights = dict()
+        future = dict()
+
         auction_info = json.loads(os.popen('casper-client get-auction-info').read())
         auction_info = auction_info['result']['auction_state']        
-        current = dict()
-        future = dict()
     
         current_validators = auction_info['era_validators'][0]['validator_weights']
         current_era = auction_info['era_validators'][0]['era_id']
         for item in current_validators:
             key = item['public_key'].strip("\"");
             value = int(item['weight'].strip("\""))
-            current[key] = value
-            if key  == public_key:
+            current_weights[key] = value
+            if key == public_key:
                 current_weight = value
 
         missing_validators.clear()
         if event_ptr.has_finality():
-            for key in current.keys():
+            for key in current_weights.keys():
                 if key not in finality_signatures:
                     missing_validators.append(key)
 
@@ -850,32 +910,33 @@ def casper_validator():
             key = item['public_key'].strip("\"");
             value = int(item['weight'].strip("\""))
             future[key] = value
-            if key  == public_key:
+            if key == public_key:
                 future_weight = value
 
         #arg... indexing a sorted is not working... so I'll just iterate for now...
         index = 1
-        for item in sorted(current.items(), key=lambda x: x[1], reverse=True):
+        for item in sorted(current_weights.items(), key=lambda x: x[1], reverse=True):
             if item[0] == public_key:
                 current_index = index
                 break
-            index = index + 1
+            index += 1
 
         index = 1
         for item in sorted(future.items(), key=lambda x: x[1], reverse=True):
             if item[0] == public_key:
                 future_index = index
                 break
-            index = index + 1
+            index += 1
 
         num_cur_validators = len(current_validators)
         num_fut_validators = len(current_validators)
 
     except:
+        current_weight = 0
+        future_weight = 0
+        current_validators = 0
+        current_era = 0
         pass
-
-    config.read('/etc/casper/1_0_0/chainspec.toml')
-    validator_slots = config.get('core', 'validator_slots').strip('\'')
 
     validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
     validator.addstr('{:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators,validator_slots), curses.color_pair(4))
@@ -940,16 +1001,35 @@ def draw_menu(casper):
 
     # Start colors in curses
     curses.start_color()
-    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair( 1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair( 2, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair( 3, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair( 4, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair( 5, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+
+    curses.init_pair( 6, curses.COLOR_GREEN, curses.COLOR_WHITE)
+    curses.init_pair( 7, curses.COLOR_WHITE, curses.COLOR_CYAN)
+    curses.init_pair( 8, curses.COLOR_WHITE, curses.COLOR_YELLOW)
+    curses.init_pair( 9, curses.COLOR_WHITE, curses.COLOR_RED)
+    curses.init_pair(10, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
+    curses.init_pair(11, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(12, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(13, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+    curses.init_pair(14, curses.COLOR_BLACK, curses.COLOR_RED)
+    curses.init_pair(15, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
+    curses.init_pair(16, curses.COLOR_BLACK, curses.COLOR_GREEN)
 
     curses.init_pair(20, curses.COLOR_RED, curses.COLOR_WHITE)
 
     global blink
     blink = False
+    
+    config.read('/etc/casper/1_0_0/chainspec.toml')
+    global validator_slots
+    validator_slots = config.get('core', 'validator_slots').strip('\'')
+
 
     # Loop where k is the last character pressed
     while (k != ord('q')):
