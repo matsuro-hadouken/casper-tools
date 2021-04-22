@@ -487,7 +487,7 @@ def casper_proposers():
                 break
 
 
-        if not we_are_included:            
+        if not we_are_included and public_key in current_weights:            
             proposers.addstr(index, 2, '{}....{} : '.format(public_key[:6], public_key[-6:]), curses.color_pair(5))
             if public_key in local_proposers:
                 proposers.addstr('{:6.2f}%'.format(current_weights[public_key]/3500000000000000000*100), curses.color_pair(4))
