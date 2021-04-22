@@ -778,7 +778,7 @@ def casper_block_info():
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
     index += 1
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
-    block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4))
+    block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
     index += 1
     block_info.addstr(index, 2, 'Build Version: ', curses.color_pair(1))
     block_info.addstr('{}'.format(build_version), curses.color_pair(4))
