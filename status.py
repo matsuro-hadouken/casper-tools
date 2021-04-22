@@ -691,6 +691,8 @@ def casper_block_info():
             round_length = 'null'
         try:
             next_upgrade = local_status['next_upgrade']
+            if next_upgrade != None:
+                next_upgrade = 'Era: {} - Version: {}'.format(next_upgrade['activation_point'], next_upgrade['protocol_version'])
         except:
             next_upgrade = 'null'
         try:
