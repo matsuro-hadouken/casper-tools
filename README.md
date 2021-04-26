@@ -1,6 +1,6 @@
  - Auction tool, show data related to bonds and bids
 ``` bash
-active_validators.sh
+active_validators.sh <CAN_ACCEPT_PUB_HEX if empty parse from $public_hex_path path variable by default>
 ```
  - check HEX balance
  ``` bash
