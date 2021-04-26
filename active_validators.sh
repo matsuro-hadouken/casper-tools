@@ -1,14 +1,19 @@
 #!/bin/bash
 
-# DELTA 10
+# Tested MAIN NET && TEST NET && DELTA 11
 
 # Query active validators list, can accept input pub key: './active_validators.sh <validator_pub_key>' will output position and bond if active.
 # If no input provided will check '$public_hex_path' path for 'public_key_hex'
 
 # Requirements: 'apt install jq'
+# Requirements: 'apt install bc'
+
 # Requirements: Should run from active node with 'casper-client' available, used method 'get-auction-info'
 
 public_hex_path='/etc/casper/validator_keys/public_key_hex'
+
+trusted_cap="3"		# how many trusted IP we validate, since is to many of them in config now.
+show_decimals="0"	# CSPR decimals ( 0 = no decimals )
 
 HTTP_PORT="8888"
 RPC_PORT="7777"
@@ -23,8 +28,6 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 
 numba='^[0-9]+$'
-
-trusted_cap="3"
 
 function GetPublicHEX() {
 
@@ -121,7 +124,7 @@ function BrowseTroughEras() {
 
     for era in "${VisibleEras[@]}"; do
 
-		validator_era=$(echo $era_section | jq -r 'select(.era_id=='$era')')
+	validator_era=$(echo $era_section | jq -r 'select(.era_id=='$era')')
         validators_in_era=$(echo $validator_era | jq -r '.validator_weights | length')
 
         echo && echo -e "---> ${YELLOW}Crawling era: ${CYAN}$era${YELLOW} amount of bonds: ${CYAN}$validators_in_era${NC}" && echo
@@ -144,8 +147,8 @@ function PrittyPrint() {
 
     while IFS= read -r validator; do
 
-        XValidator_pub_key=$(echo -e "$validator" | cut -d ' ' -f 1)
-        Xbond_amount=$(echo -e "$validator" | cut -d ' ' -f 2)
+        XValidator_pub_key=$(echo -e $validator | cut -d ' ' -f 1)
+        Xbond_amount=$(echo "scale=$show_decimals; $(echo -e $validator | cut -d ' ' -f 2) / 1000000000" | bc -l)
 
         KeyColor='\033[0;32m'
         BondColor='\033[0;33m'
@@ -187,7 +190,7 @@ function EraConditionReport() {
     if [[ "$MyValidatorStatus" =~ true ]]; then
 
         echo -e "Key is in ${GREEN}active${NC} validators list !" >>"$TMPDIR/report.txt"
-        echo -e "Position ${GREEN}$MyValidatorPosition${NC}, bond amount: ${YELLOW}$MyValidatorBidAmount${NC}" >>"$TMPDIR/report.txt"
+        echo -e "Position ${GREEN}$MyValidatorPosition${NC}, validator weight: ${YELLOW}$MyValidatorBidAmount${NC}" >>"$TMPDIR/report.txt"
         echo -e "Active bonds: ${GREEN}$(($ActiveValidatorsNow - 1))${NC}" >>"$TMPDIR/report.txt"
         echo >>"$TMPDIR/report.txt"
 
@@ -234,7 +237,7 @@ function CheckAuction() {
         BondColor='\033[0;33m'
 
         bid_pub_key=$(echo "$line" | cut -d ' ' -f 1)
-        bid_amount=$(echo "$line" | cut -d ' ' -f 2)
+        bid_amount=$(echo "scale=$show_decimals; $(echo "$line" | cut -d ' ' -f 2) / 1000000000" | bc -l)
 
         # if key present in bid list
         if [[ "$MyValidatorPubKey" =~ $bid_pub_key ]]; then
@@ -257,7 +260,7 @@ function CheckAuction() {
 
     if ! [[ "$Is_validator_in_bid_list" =~ false ]]; then
 
-        echo -e "${CYAN}Bid ${GREEN}registered${NC}${CYAN}, position ${GREEN}$validator_position_In_BidList${CYAN}, bond amount: ${YELLOW}$validator_bid_list_amount${NC}" >>"$TMPDIR/report.txt"
+        echo -e "${CYAN}Bid ${GREEN}registered${NC}${CYAN}, position ${GREEN}$validator_position_In_BidList${CYAN}, bid amount: ${YELLOW}$validator_bid_list_amount${NC}" >>"$TMPDIR/report.txt"
 
     else
 
@@ -269,8 +272,11 @@ function CheckAuction() {
     echo -e "${CYAN}Total bids made in to acution house: ${GREEN}$total_bids${NC}" >>"$TMPDIR/report.txt"
     echo >>"$TMPDIR/report.txt"
 
-    echo -e "${CYAN}Best bid:${NC}   $(cat "$TMPDIR/tmp.bids" | head -n1 | cut -d ' ' -f 2)" >>"$TMPDIR/report.txt"
-    echo -e "${CYAN}Bottom bid:${NC} $(cat "$TMPDIR/tmp.bids" | tail -n1 | cut -d ' ' -f 2)" >>"$TMPDIR/report.txt"
+    auction_best_bid=$(echo "scale=$show_decimals; $(cat $TMPDIR/tmp.bids | head -n1 | cut -d ' ' -f 2) / 1000000000" | bc -l)
+    auction_bottom_b=$(echo "scale=$show_decimals; $(cat $TMPDIR/tmp.bids | tail -n1 | cut -d ' ' -f 2) / 1000000000" | bc -l)
+
+    echo -e "${CYAN}Best bid:${NC}   $auction_best_bid" >>"$TMPDIR/report.txt"
+    echo -e "${CYAN}Bottom bid:${NC} $auction_bottom_b" >>"$TMPDIR/report.txt"
     echo >>"$TMPDIR/report.txt"
 
 }
