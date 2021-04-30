@@ -113,7 +113,7 @@ def system_cpu():
     syscpu.addstr(0, 2, 'CPU Usage - ', curses.color_pair(4))
     syscpu.addstr('{} Cores'.format(cpu_cores), curses.color_pair(5))
     syscpu.addstr(' /', curses.color_pair(4))
-    syscpu.addstr('{:15}'.format(cpu_name), curses.color_pair(5))
+    syscpu.addstr('{}'.format(cpu_name[:14]), curses.color_pair(5))
 
     result=os.statvfs(node_path)
     block_size=result.f_frsize
