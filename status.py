@@ -3,6 +3,7 @@ import sys,os,curses,json,time,select,random,threading,urllib.request,contextlib
 from datetime import datetime
 from collections import namedtuple
 from configparser import ConfigParser
+import platform,subprocess,re
 
 peer_blacklist = []
 peer_wrong_chain = []
@@ -18,6 +19,7 @@ era_rewards_dict = dict()
 num_era_rewards = dict()
 era_block_start = dict()
 our_rewards = []
+cpu_usage = dict()
 
 def system_memory():
     global sysmemory
@@ -48,9 +50,9 @@ def system_memory():
     for x in range(25):
         sysmemory.addstr(3,13+x,' ', curses.color_pair(6))
     for x in range(int(mem_percent/4)):
-        sysmemory.addstr(3,13+x,' ', curses.color_pair(6+int(mem_percent/25)))
+        sysmemory.addstr(3,13+x,' ', curses.color_pair(7+int(mem_percent/25)))
 
-    sysmemory.addstr(3, 13, '{:.2f} %'.format(mem_percent), curses.color_pair(11+int(mem_percent/25)))
+    sysmemory.addstr(3, 13, '{:.2f} %'.format(mem_percent), curses.color_pair(7+int(mem_percent/25)))
 
 
 def system_disk():
@@ -83,9 +85,80 @@ def system_disk():
     for x in range(25):
         sysdisk.addstr(3,13+x,' ', curses.color_pair(6))
     for x in range(int(disk_percent/4)):
-        sysdisk.addstr(3,13+x,' ', curses.color_pair(6+int(disk_percent/25)))
+        sysdisk.addstr(3,13+x,' ', curses.color_pair(7+int(disk_percent/25)))
 
-    sysdisk.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
+    sysdisk.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(7+int(disk_percent/25)))
+
+def get_processor_name():
+    if platform.system() == "Windows":
+        return platform.processor()
+    elif platform.system() == "Darwin":
+        os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
+        command ="sysctl -n machdep.cpu.brand_string"
+        return subprocess.check_output(command).strip()
+    elif platform.system() == "Linux":
+        command = "cat /proc/cpuinfo"
+        all_info = subprocess.check_output(command, shell=True).strip()
+        for line in all_info.decode('utf-8').split("\n"):
+            if "model name" in line:
+                return re.sub( ".*model name.*:", "", line,1)
+    return ""
+
+def system_cpu():
+    global syscpu
+    syscpu = curses.newwin(6, 40, 10, 70)
+    syscpu.box()
+    box_height, box_width = syscpu.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    syscpu.addstr(0, 2, 'CPU Usage - ', curses.color_pair(4))
+    syscpu.addstr('{} Cores'.format(cpu_cores), curses.color_pair(5))
+    syscpu.addstr(' /', curses.color_pair(4))
+    syscpu.addstr('{:15}'.format(cpu_name), curses.color_pair(5))
+
+    result=os.statvfs(node_path)
+    block_size=result.f_frsize
+    total_blocks=result.f_blocks
+    free_blocks=result.f_bfree
+    # giga=1024*1024*1024
+    giga=1000*1000*1000
+    total_size=total_blocks*block_size/giga
+    free_size=free_blocks*block_size/giga
+
+    index = 1
+    for key in list(sorted(cpu_usage.keys())):
+        m, s = divmod(key, 60)
+        h, s = divmod(m, 60)
+        d, s = divmod(h, 24)
+
+        interval = '{}{}'.format(d if d > 0 else h if h > 0 else m if m > 0 else key, 'd' if d > 0 else 'h' if h > 0 else 'm' if m > 0 else 's')
+
+        syscpu.addstr(index, 2, 'Polling {} : '.format(interval), curses.color_pair(1))
+        if isinstance(cpu_usage[key], str):
+            syscpu.addstr('{}'.format(cpu_usage[key]), curses.color_pair(4))
+        else:
+            usage = cpu_usage[key]
+            for x in range(25):
+                syscpu.addstr(index,13+x,' ', curses.color_pair(6))
+            for x in range(int(usage/4)):
+                syscpu.addstr(index,13+x,' ', curses.color_pair(7+int(usage/25)))
+
+            syscpu.addstr(index, 13, '{:.2f}%'.format(cpu_usage[key]), curses.color_pair(7+int(usage/25)))
+
+        index += 1
+
+#    syscpu.addstr(2, 2, 'Free Space : ', curses.color_pair(1))
+#    syscpu.addstr('{:.2f} GB'.format(float(free_size)), curses.color_pair(4))
+
+    disk_percent = 100*float(total_size-free_size)/float(total_size)
+
+#    syscpu.addstr(3, 2, 'Disk Used  : ', curses.color_pair(1))
+
+#   for x in range(25):
+#       syscpu.addstr(3,13+x,' ', curses.color_pair(6))
+#   for x in range(int(disk_percent/4)):
+#       syscpu.addstr(3,13+x,' ', curses.color_pair(6+int(disk_percent/25)))
+
+#    syscpu.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
 
 def casper_bonds():
     global bonds
@@ -277,6 +350,30 @@ class EraTask:
                 pass
 
 
+class CpuTask:
+    def __init__(self, time_interval):
+        self._running = True
+        self._time = int(time_interval)
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        last_idle = last_total = 0
+        calculating = True
+    
+        while True:
+            with open('/proc/stat') as f:
+                fields = [float(column) for column in f.readline().strip().split()[1:]]
+            idle, total = fields[3], sum(fields)
+            idle_delta, total_delta = idle - last_idle, total - last_total
+            last_idle, last_total = idle, total
+            utilisation = 100.0 * (1.0 - idle_delta / total_delta)
+            cpu_usage[self._time] = utilisation if not calculating else 'Calculating'
+            time.sleep(self._time)
+            calculating = False
+
 class EventTask:
     def __init__(self):
         self._running = True
@@ -414,9 +511,12 @@ class EventTask:
 def casper_events():
     global events
 
+    events_box_y, events_box_x = proposers.getbegyx()
+    events_box_height, events_box_width = proposers.getmaxyx()
+
     local_events = global_events    # make a copy in case our thread tries to stomp
     length = len(local_events.keys())
-    events = curses.newwin(2 + (1 if length < 1 else length), 40, 10, 70)
+    events = curses.newwin(2 + (1 if length < 1 else length), events_box_width, events_box_y+events_box_height, events_box_x)
     events.box()
     box_height, box_width = events.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -501,8 +601,8 @@ def casper_proposers():
 def casper_era_rewards():
     global era_rewards
 
-    events_box_y, events_box_x = events.getbegyx()
-    events_box_height, events_box_width = events.getmaxyx()
+    events_box_y, events_box_x = syscpu.getbegyx()
+    events_box_height, events_box_width = syscpu.getmaxyx()
 
     max_print = 10
 
@@ -800,8 +900,10 @@ def casper_block_info():
     avg_num_blocks = 110
     bar_length = 40
     block_percent = 1
+    number_blocks = 0
 
     if local_era in era_block_start and  local_era-1 in era_block_start:
+        number_blocks = era_block_start[local_era]-era_block_start[local_era-1]
         block_percent = int((era_block_start[local_era]-era_block_start[local_era-1])/avg_num_blocks*100)
 
     if block_percent > 99:
@@ -813,6 +915,9 @@ def casper_block_info():
     num_blocks = int(float(block_percent/(100/bar_length)))
     for x in range(num_blocks):
         block_info.addstr(index,28+x,' ', curses.color_pair(16))
+
+    if number_blocks > 0:
+        block_info.addstr(index, 28 if num_blocks < 2 else 29, '{}'.format(number_blocks), curses.color_pair(16))
 
     index += 2
     block_info.addstr(index, 2, 'Storage Path : ', curses.color_pair(1))
@@ -1008,10 +1113,10 @@ def draw_menu(casper):
     curses.init_pair( 5, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
     curses.init_pair( 6, curses.COLOR_GREEN, curses.COLOR_WHITE)
-    curses.init_pair( 7, curses.COLOR_WHITE, curses.COLOR_CYAN)
-    curses.init_pair( 8, curses.COLOR_WHITE, curses.COLOR_YELLOW)
-    curses.init_pair( 9, curses.COLOR_WHITE, curses.COLOR_RED)
-    curses.init_pair(10, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair( 7, curses.COLOR_BLACK, curses.COLOR_GREEN)
+    curses.init_pair( 8, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair( 9, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+    curses.init_pair(10, curses.COLOR_BLACK, curses.COLOR_RED)
 
     curses.init_pair(11, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(12, curses.COLOR_BLACK, curses.COLOR_CYAN)
@@ -1030,6 +1135,11 @@ def draw_menu(casper):
     global validator_slots
     validator_slots = config.get('core', 'validator_slots').strip('\'')
 
+    global cpu_cores
+    cpu_cores = os.cpu_count()
+
+    global cpu_name
+    cpu_name = get_processor_name()
 
     # Loop where k is the last character pressed
     while (k != ord('q')):
@@ -1053,10 +1163,11 @@ def draw_menu(casper):
         casper_peers()
         system_memory()
         system_disk()
+        system_cpu()
         casper_bonds()
-        casper_events()
         casper_era_rewards()
         casper_proposers()
+        casper_events()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -1074,10 +1185,12 @@ def draw_menu(casper):
         sysmemory.noutrefresh()
         peers.noutrefresh()
         sysdisk.noutrefresh()
+        syscpu.noutrefresh()
         bonds.noutrefresh()
-        events.noutrefresh()
         era_rewards.noutrefresh()
         proposers.noutrefresh()
+        events.noutrefresh()
+
         casper.noutrefresh()
 
         curses.doupdate()
@@ -1135,6 +1248,34 @@ def main():
     era_thread_ptr = threading.Thread(target=era_ptr.run)
     era_thread_ptr.daemon = True
     era_thread_ptr.start()
+
+    global cpu_thread_ptr
+    global cpu_ptr
+    cpu_ptr = CpuTask(1)
+    cpu_thread_ptr = threading.Thread(target=cpu_ptr.run)
+    cpu_thread_ptr.daemon = True
+    cpu_thread_ptr.start()
+
+    global cpu5_thread_ptr
+    global cpu5_ptr
+    cpu5_ptr = CpuTask(300)
+    cpu5_thread_ptr = threading.Thread(target=cpu5_ptr.run)
+    cpu5_thread_ptr.daemon = True
+    cpu5_thread_ptr.start()
+
+    global cpu1h_thread_ptr
+    global cpu1h_ptr
+    cpu1h_ptr = CpuTask(3600)
+    cpu1h_thread_ptr = threading.Thread(target=cpu1h_ptr.run)
+    cpu1h_thread_ptr.daemon = True
+    cpu1h_thread_ptr.start()
+
+    global cpu1d_thread_ptr
+    global cpu1d_ptr
+    cpu1d_ptr = CpuTask(86400)
+    cpu1d_thread_ptr = threading.Thread(target=cpu1d_ptr.run)
+    cpu1d_thread_ptr.daemon = True
+    cpu1d_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
