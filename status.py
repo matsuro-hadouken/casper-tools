@@ -20,7 +20,7 @@ era_rewards_dict = dict()
 num_era_rewards = dict()
 era_block_start = dict()
 our_rewards = []
-cpu_usage = dict()
+cpu_usage = []
 
 def system_memory():
     global sysmemory
@@ -125,8 +125,10 @@ def system_cpu():
     total_size=total_blocks*block_size/giga
     free_size=free_blocks*block_size/giga
 
+    cpu_checks = [1, 300, 3600, 86400]
+
     index = 1
-    for key in list(sorted(cpu_usage.keys())):
+    for key in cpu_checks:
         m, s = divmod(key, 60)
         h, s = divmod(m, 60)
         d, s = divmod(h, 24)
@@ -134,16 +136,33 @@ def system_cpu():
         interval = '{}{}'.format(d if d > 0 else h if h > 0 else m if m > 0 else key, 'd' if d > 0 else 'h' if h > 0 else 'm' if m > 0 else 's')
 
         syscpu.addstr(index, 2, 'Polling {} : '.format(interval), curses.color_pair(1))
-        if isinstance(cpu_usage[key], str):
-            syscpu.addstr('{}'.format(cpu_usage[key]), curses.color_pair(4))
-        else:
-            usage = cpu_usage[key]
-            for x in range(25):
-                syscpu.addstr(index,13+x,' ', curses.color_pair(6))
-            for x in range(int(usage/4)):
-                syscpu.addstr(index,13+x,' ', curses.color_pair(7+int(usage/25)))
+        usage = 0
+        local_usage = cpu_usage[::-1]
+        items = 0
 
-            syscpu.addstr(index, 13, '{:.2f}%'.format(cpu_usage[key]), curses.color_pair(7+int(usage/25)))
+        if len(local_usage) > 0:
+            if key == 86400:
+                usage = sum(local_usage)
+                items = len(local_usage)
+            else:
+                for cpu in local_usage:
+                    usage += cpu
+                    items += 1
+                    if items >= key:
+                        break;
+
+        if usage > 0:
+            usage /= items
+        for x in range(25):
+            syscpu.addstr(index,13+x,' ', curses.color_pair(6))
+        for x in range(int(usage/4)):
+            syscpu.addstr(index,13+x,' ', curses.color_pair(7+int(usage/25)))
+
+        syscpu.addstr(index, 13, '{:.2f}%'.format(usage), curses.color_pair(7+int(usage/25)))
+
+#        if len(local_usage) > 0:
+#            for i in local_usage:
+#                syscpu.addstr('{},'.format(int(i)), curses.color_pair(5))
 
         index += 1
 
@@ -359,9 +378,9 @@ class EraTask:
 
 
 class CpuTask:
-    def __init__(self, time_interval):
+    def __init__(self, max_time_interval):
         self._running = True
-        self._time = int(time_interval)
+        self._max_time = int(max_time_interval)
 
     def terminate(self):
         global_events['terminating'] = 1
@@ -369,7 +388,7 @@ class CpuTask:
 
     def run(self):
         last_idle = last_total = 0
-        calculating = True
+        initialized = False
     
         while True:
             with open('/proc/stat') as f:
@@ -378,9 +397,16 @@ class CpuTask:
             idle_delta, total_delta = idle - last_idle, total - last_total
             last_idle, last_total = idle, total
             utilisation = 100.0 * (1.0 - idle_delta / total_delta)
-            cpu_usage[self._time] = utilisation if not calculating else 'Calculating'
-            time.sleep(self._time)
-            calculating = False
+            if not initialized:
+                initialized = True
+                for _ in range(self._max_time):
+                     cpu_usage.append(utilisation)
+
+            cpu_usage.append(utilisation)
+            if len(cpu_usage) > self._max_time:
+                cpu_usage.pop(0)
+
+            time.sleep(1)
 
 class EventTask:
     def __init__(self):
@@ -1284,31 +1310,10 @@ def main():
 
     global cpu_thread_ptr
     global cpu_ptr
-    cpu_ptr = CpuTask(1)
+    cpu_ptr = CpuTask(86400)
     cpu_thread_ptr = threading.Thread(target=cpu_ptr.run)
     cpu_thread_ptr.daemon = True
     cpu_thread_ptr.start()
-
-    global cpu5_thread_ptr
-    global cpu5_ptr
-    cpu5_ptr = CpuTask(300)
-    cpu5_thread_ptr = threading.Thread(target=cpu5_ptr.run)
-    cpu5_thread_ptr.daemon = True
-    cpu5_thread_ptr.start()
-
-    global cpu1h_thread_ptr
-    global cpu1h_ptr
-    cpu1h_ptr = CpuTask(3600)
-    cpu1h_thread_ptr = threading.Thread(target=cpu1h_ptr.run)
-    cpu1h_thread_ptr.daemon = True
-    cpu1h_thread_ptr.start()
-
-    global cpu1d_thread_ptr
-    global cpu1d_ptr
-    cpu1d_ptr = CpuTask(86400)
-    cpu1d_thread_ptr = threading.Thread(target=cpu1d_ptr.run)
-    cpu1d_thread_ptr.daemon = True
-    cpu1d_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
