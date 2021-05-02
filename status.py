@@ -1261,8 +1261,6 @@ def main():
         finally:
             reader.close()
 
-    public_key = '0163e03c3aa2b383f9d1b2f7c69498d339dcd1061059792ce51afda49135ff7876'
-
     global thread_ptr
     global event_ptr
     event_ptr = EventTask()
