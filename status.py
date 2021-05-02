@@ -13,6 +13,7 @@ peer_address = None
 finality_signatures = []
 missing_validators = []
 proposers_dict = dict()
+our_blocks = dict()
 currentProposerBlock = 0
 blocks_start = 0
 era_rewards_dict = dict()
@@ -247,7 +248,7 @@ class ProposerTask:
                 pass
 
         # now that we have the 1st block... loop back X blocks to get a brief history
-        xBlocks = 100
+        xBlocks = 700
         lastBlock = currentProposerBlock - xBlocks
         while currentProposerBlock > lastBlock:
             try:
@@ -257,6 +258,13 @@ class ProposerTask:
                     proposers_dict[proposer] = proposers_dict[proposer] + 1
                 else:
                     proposers_dict[proposer] = 1
+
+                if proposer == public_key:
+                    era_id = block_info['result']['block']['header']['era_id']
+                    if era_id in our_blocks:
+                        our_blocks[era_id] = our_blocks[era_id] + 1
+                    else:
+                        our_blocks[era_id] = 1
 
                 currentProposerBlock = currentProposerBlock - 1
                 blocks_start = blocks_start + 1
@@ -673,7 +681,7 @@ def casper_finality():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(5, 70, 33, 0)
+    peers = curses.newwin(5, 70, 34, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -932,7 +940,7 @@ def casper_public_key():
     text_width = box_width - 17 # length of the Text before it gets printed
 
     pub_key_win.addstr(0, 2, 'Public Key', curses.color_pair(4))
-    pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(1))
+    pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(5))
     pub_key_win.addstr(2, 2, 'Balance      : ', curses.color_pair(1))
 
     try:
@@ -963,7 +971,7 @@ def casper_public_key():
 
 def casper_validator():
     global validator
-    validator = curses.newwin(7, 70, 26, 0)
+    validator = curses.newwin(8, 70, 26, 0)
     validator.box()
     box_height, box_width = validator.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -1090,6 +1098,31 @@ def casper_validator():
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
     validator.addstr(5, 42, '<- Last {} reward{}'.format(len(our_rewards), 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
 
+    validator.addstr(6, 2, 'Blks Propsed : ', curses.color_pair(1))
+    this_block = 0
+    last_block = 0
+    prev_block = 0
+    avg_blocks = 0
+    if current_era_global in our_blocks:
+        this_block = our_blocks[current_era_global]
+    if current_era_global-1 in our_blocks:
+        last_block= our_blocks[current_era_global-1]
+    if current_era_global-2 in our_blocks:
+        prev_block = our_blocks[current_era_global-2]
+    for era in our_blocks:
+        avg_blocks += our_blocks[era]
+    if len(our_blocks):
+        avg_blocks /= len(our_blocks)
+
+    validator.addstr('{}'.format(this_block), curses.color_pair(2 if this_block < int(avg_blocks) else 5 if this_block > int(avg_blocks) else 4))
+    validator.addstr(' / ', curses.color_pair(4))
+    validator.addstr('{}'.format(last_block), curses.color_pair(2 if last_block < int(avg_blocks) else 5 if last_block > int(avg_blocks) else 4))
+    validator.addstr(' / ', curses.color_pair(4))
+    validator.addstr('{}'.format(prev_block), curses.color_pair(2 if prev_block < int(avg_blocks) else 5 if prev_block > int(avg_blocks) else 4))
+    validator.addstr(' / ', curses.color_pair(4))
+    validator.addstr('{:.2f}'.format(avg_blocks), curses.color_pair(4))
+
+    validator.addstr(6, 42, '<- ERA {}/{}/{}/Avg'.format(current_era_global,current_era_global-1,current_era_global-2), curses.color_pair(1))
 
 
 def draw_menu(casper):
@@ -1227,6 +1260,8 @@ def main():
             public_key= reader.read().strip()
         finally:
             reader.close()
+
+    public_key = '0163e03c3aa2b383f9d1b2f7c69498d339dcd1061059792ce51afda49135ff7876'
 
     global thread_ptr
     global event_ptr
