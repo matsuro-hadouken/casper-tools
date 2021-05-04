@@ -21,6 +21,8 @@ num_era_rewards = dict()
 era_block_start = dict()
 our_rewards = []
 cpu_usage = []
+transfer_dict = dict()
+
 
 def system_memory():
     global sysmemory
@@ -180,6 +182,46 @@ def system_cpu():
 
 #    syscpu.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
 
+def casper_transfers():
+    global transfers
+
+    local_events = transfer_dict    # make a copy in case our thread tries to stomp
+    length = len(transfer_dict.keys())
+    transfers = curses.newwin(3 + (1 if length < 1 else length), 64, 0, 150)
+    transfers.box()
+    box_height, box_width = transfers.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    transfers.addstr(0, 2, 'Casper Transfers', curses.color_pair(4))
+
+    transfers.addstr(1, 2, 'Block  /    From    /     To     / Amount', curses.color_pair(4))
+
+    if length < 1:
+        transfers.addstr(2, 2, 'Waiting for next Transfer', curses.color_pair(5))
+    else:
+        index = 1
+        for key in list(local_events):
+            transfer = local_events[key]
+            transfers.addstr(1+index, 2,'{}'.format(str(transfer[0]).ljust(6, ' ')), curses.color_pair(4))
+            transfers.addstr(' / ', curses.color_pair(4))
+            source = transfer[2][5:69]
+            target = transfer[3][5:69]
+            transfers.addstr('{}..{}'.format(source[:4],source[-4:]), curses.color_pair(1))
+            transfers.addstr(' / ', curses.color_pair(4))
+            transfers.addstr('{}..{}'.format(target[:4],target[-4:]), curses.color_pair(1))
+
+            transfers.addstr(' / ', curses.color_pair(4))
+            amount = int(transfer[1])
+            if (amount > 1000000000):
+                transfers.addstr('{:,.4f} CSPR'.format(amount / 1000000000), curses.color_pair(5))
+            else:
+                transfers.addstr('{:,} mote'.format(amount), curses.color_pair(5))
+
+            index += 1
+
+            if index > 40:
+                break
+
+
 def casper_bonds():
     global bonds
     bonds = curses.newwin(8, 40, 0, 110)
@@ -273,6 +315,8 @@ class ProposerTask:
             try:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
                 proposer = block_info['result']['block']['body']['proposer'].strip("\"")
+                transfers = block_info['result']['block']['body']['transfer_hashes']
+
                 if proposer in proposers_dict:
                     proposers_dict[proposer] = proposers_dict[proposer] + 1
                 else:
@@ -284,6 +328,17 @@ class ProposerTask:
                         our_blocks[era_id] = our_blocks[era_id] + 1
                     else:
                         our_blocks[era_id] = 1
+
+                if transfers:
+                    transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
+                    transfers = transfer['result']['transfers']
+                    block_hash = transfer['result']['block_hash'].strip("\"")
+                    root_hash = block_info['result']['block']['header']['state_root_hash']
+                    for transfer in transfers:
+                        amount = transfer['amount']
+                        source = transfer['source'].strip("\"")
+                        target = transfer['target'].strip("\"")
+                        transfer_dict['{}-{}-{}'.format(block_hash,source,target)] = [currentProposerBlock,amount,source,target]
 
                 currentProposerBlock = currentProposerBlock - 1
                 blocks_start = blocks_start + 1
@@ -977,6 +1032,18 @@ def casper_public_key():
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
 
+        transfers = block_info['result']['block']['body']['transfer_hashes']
+        if transfers:
+            transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
+            transfers = transfer['result']['transfers']
+            block_hash = transfer['result']['block_hash'].strip("\"")
+            root_hash = block_info['result']['block']['header']['state_root_hash']
+            for transfer in transfers:
+                amount = transfer['amount']
+                source = transfer['source'].strip("\"")
+                target = transfer['target'].strip("\"")
+                transfer_dict['{}-{}-{}'.format(block_hash,source,target)] = [currentProposerBlock,amount,source,target]
+
         global purse_uref   # we only need to get this ref the first time
         if purse_uref == 0:
             query_state = json.loads(os.popen('casper-client query-state -k "{}" -s "{}"'.format(public_key, lfb_root)).read())
@@ -1227,6 +1294,7 @@ def draw_menu(casper):
         casper_era_rewards()
         casper_proposers()
         casper_events()
+        casper_transfers()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -1249,6 +1317,7 @@ def draw_menu(casper):
         era_rewards.noutrefresh()
         proposers.noutrefresh()
         events.noutrefresh()
+        transfers.noutrefresh()
 
         casper.noutrefresh()
 
