@@ -13,13 +13,16 @@ peer_address = None
 finality_signatures = []
 missing_validators = []
 proposers_dict = dict()
+our_blocks = dict()
 currentProposerBlock = 0
 blocks_start = 0
 era_rewards_dict = dict()
 num_era_rewards = dict()
 era_block_start = dict()
 our_rewards = []
-cpu_usage = dict()
+cpu_usage = []
+transfer_dict = dict()
+
 
 def system_memory():
     global sysmemory
@@ -124,8 +127,10 @@ def system_cpu():
     total_size=total_blocks*block_size/giga
     free_size=free_blocks*block_size/giga
 
+    cpu_checks = [1, 300, 3600, 86400]
+
     index = 1
-    for key in list(sorted(cpu_usage.keys())):
+    for key in cpu_checks:
         m, s = divmod(key, 60)
         h, s = divmod(m, 60)
         d, s = divmod(h, 24)
@@ -133,16 +138,33 @@ def system_cpu():
         interval = '{}{}'.format(d if d > 0 else h if h > 0 else m if m > 0 else key, 'd' if d > 0 else 'h' if h > 0 else 'm' if m > 0 else 's')
 
         syscpu.addstr(index, 2, 'Polling {} : '.format(interval), curses.color_pair(1))
-        if isinstance(cpu_usage[key], str):
-            syscpu.addstr('{}'.format(cpu_usage[key]), curses.color_pair(4))
-        else:
-            usage = cpu_usage[key]
-            for x in range(25):
-                syscpu.addstr(index,13+x,' ', curses.color_pair(6))
-            for x in range(int(usage/4)):
-                syscpu.addstr(index,13+x,' ', curses.color_pair(7+int(usage/25)))
+        usage = 0
+        local_usage = cpu_usage[::-1]
+        items = 0
 
-            syscpu.addstr(index, 13, '{:.2f}%'.format(cpu_usage[key]), curses.color_pair(7+int(usage/25)))
+        if len(local_usage) > 0:
+            if key == 86400:
+                usage = sum(local_usage)
+                items = len(local_usage)
+            else:
+                for cpu in local_usage:
+                    usage += cpu
+                    items += 1
+                    if items >= key:
+                        break;
+
+        if usage > 0:
+            usage /= items
+        for x in range(25):
+            syscpu.addstr(index,13+x,' ', curses.color_pair(6))
+        for x in range(int(usage/4)):
+            syscpu.addstr(index,13+x,' ', curses.color_pair(7+int(usage/25)))
+
+        syscpu.addstr(index, 13, '{:.2f}%'.format(usage), curses.color_pair(7+int(usage/25)))
+
+#        if len(local_usage) > 0:
+#            for i in local_usage:
+#                syscpu.addstr('{},'.format(int(i)), curses.color_pair(5))
 
         index += 1
 
@@ -159,6 +181,46 @@ def system_cpu():
 #       syscpu.addstr(3,13+x,' ', curses.color_pair(6+int(disk_percent/25)))
 
 #    syscpu.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
+
+def casper_transfers():
+    global transfers
+
+    local_events = transfer_dict    # make a copy in case our thread tries to stomp
+    length = len(transfer_dict.keys())
+    transfers = curses.newwin(3 + (1 if length < 1 else length), 64, 0, 150)
+    transfers.box()
+    box_height, box_width = transfers.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    transfers.addstr(0, 2, 'Casper Transfers', curses.color_pair(4))
+
+    transfers.addstr(1, 2, 'Block  /    From    /     To     / Amount', curses.color_pair(4))
+
+    if length < 1:
+        transfers.addstr(2, 2, 'Waiting for next Transfer', curses.color_pair(5))
+    else:
+        index = 1
+        for key in list(local_events):
+            transfer = local_events[key]
+            transfers.addstr(1+index, 2,'{}'.format(str(transfer[0]).ljust(6, ' ')), curses.color_pair(4))
+            transfers.addstr(' / ', curses.color_pair(4))
+            source = transfer[2][5:69]
+            target = transfer[3][5:69]
+            transfers.addstr('{}..{}'.format(source[:4],source[-4:]), curses.color_pair(1))
+            transfers.addstr(' / ', curses.color_pair(4))
+            transfers.addstr('{}..{}'.format(target[:4],target[-4:]), curses.color_pair(1))
+
+            transfers.addstr(' / ', curses.color_pair(4))
+            amount = int(transfer[1])
+            if (amount > 1000000000):
+                transfers.addstr('{:,.4f} CSPR'.format(amount / 1000000000), curses.color_pair(5))
+            else:
+                transfers.addstr('{:,} mote'.format(amount), curses.color_pair(5))
+
+            index += 1
+
+            if index > 40:
+                break
+
 
 def casper_bonds():
     global bonds
@@ -247,16 +309,36 @@ class ProposerTask:
                 pass
 
         # now that we have the 1st block... loop back X blocks to get a brief history
-        xBlocks = 100
+        xBlocks = 700
         lastBlock = currentProposerBlock - xBlocks
         while currentProposerBlock > lastBlock:
             try:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
                 proposer = block_info['result']['block']['body']['proposer'].strip("\"")
+                transfers = block_info['result']['block']['body']['transfer_hashes']
+
                 if proposer in proposers_dict:
                     proposers_dict[proposer] = proposers_dict[proposer] + 1
                 else:
                     proposers_dict[proposer] = 1
+
+                if proposer == public_key:
+                    era_id = block_info['result']['block']['header']['era_id']
+                    if era_id in our_blocks:
+                        our_blocks[era_id] = our_blocks[era_id] + 1
+                    else:
+                        our_blocks[era_id] = 1
+
+                if transfers:
+                    transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
+                    transfers = transfer['result']['transfers']
+                    block_hash = transfer['result']['block_hash'].strip("\"")
+                    root_hash = block_info['result']['block']['header']['state_root_hash']
+                    for transfer in transfers:
+                        amount = transfer['amount']
+                        source = transfer['source'].strip("\"")
+                        target = transfer['target'].strip("\"")
+                        transfer_dict['{}-{}-{}'.format(block_hash,source,target)] = [currentProposerBlock,amount,source,target]
 
                 currentProposerBlock = currentProposerBlock - 1
                 blocks_start = blocks_start + 1
@@ -351,9 +433,9 @@ class EraTask:
 
 
 class CpuTask:
-    def __init__(self, time_interval):
+    def __init__(self, max_time_interval):
         self._running = True
-        self._time = int(time_interval)
+        self._max_time = int(max_time_interval)
 
     def terminate(self):
         global_events['terminating'] = 1
@@ -361,7 +443,7 @@ class CpuTask:
 
     def run(self):
         last_idle = last_total = 0
-        calculating = True
+        initialized = False
     
         while True:
             with open('/proc/stat') as f:
@@ -370,9 +452,16 @@ class CpuTask:
             idle_delta, total_delta = idle - last_idle, total - last_total
             last_idle, last_total = idle, total
             utilisation = 100.0 * (1.0 - idle_delta / total_delta)
-            cpu_usage[self._time] = utilisation if not calculating else 'Calculating'
-            time.sleep(self._time)
-            calculating = False
+            if not initialized:
+                initialized = True
+                for _ in range(self._max_time):
+                     cpu_usage.append(utilisation)
+
+            cpu_usage.append(utilisation)
+            if len(cpu_usage) > self._max_time:
+                cpu_usage.pop(0)
+
+            time.sleep(1)
 
 class EventTask:
     def __init__(self):
@@ -673,7 +762,7 @@ def casper_finality():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(5, 70, 33, 0)
+    peers = curses.newwin(5, 70, 34, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -932,7 +1021,7 @@ def casper_public_key():
     text_width = box_width - 17 # length of the Text before it gets printed
 
     pub_key_win.addstr(0, 2, 'Public Key', curses.color_pair(4))
-    pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(1))
+    pub_key_win.addstr(1, 2, '{}'.format(public_key), curses.color_pair(5))
     pub_key_win.addstr(2, 2, 'Balance      : ', curses.color_pair(1))
 
     try:
@@ -942,6 +1031,18 @@ def casper_public_key():
         currentBlock = int(header_info['height'])
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
+
+        transfers = block_info['result']['block']['body']['transfer_hashes']
+        if transfers:
+            transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
+            transfers = transfer['result']['transfers']
+            block_hash = transfer['result']['block_hash'].strip("\"")
+            root_hash = block_info['result']['block']['header']['state_root_hash']
+            for transfer in transfers:
+                amount = transfer['amount']
+                source = transfer['source'].strip("\"")
+                target = transfer['target'].strip("\"")
+                transfer_dict['{}-{}-{}'.format(block_hash,source,target)] = [currentProposerBlock,amount,source,target]
 
         global purse_uref   # we only need to get this ref the first time
         if purse_uref == 0:
@@ -963,7 +1064,7 @@ def casper_public_key():
 
 def casper_validator():
     global validator
-    validator = curses.newwin(7, 70, 26, 0)
+    validator = curses.newwin(8, 70, 26, 0)
     validator.box()
     box_height, box_width = validator.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -1090,6 +1191,31 @@ def casper_validator():
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
     validator.addstr(5, 42, '<- Last {} reward{}'.format(len(our_rewards), 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
 
+    validator.addstr(6, 2, 'Blks Propsed : ', curses.color_pair(1))
+    this_block = 0
+    last_block = 0
+    prev_block = 0
+    avg_blocks = 0
+    if current_era_global in our_blocks:
+        this_block = our_blocks[current_era_global]
+    if current_era_global-1 in our_blocks:
+        last_block= our_blocks[current_era_global-1]
+    if current_era_global-2 in our_blocks:
+        prev_block = our_blocks[current_era_global-2]
+    for era in our_blocks:
+        avg_blocks += our_blocks[era]
+    if len(our_blocks):
+        avg_blocks /= len(our_blocks)
+
+    validator.addstr('{}'.format(this_block), curses.color_pair(2 if this_block < int(avg_blocks) else 5 if this_block > int(avg_blocks) else 4))
+    validator.addstr(' / ', curses.color_pair(4))
+    validator.addstr('{}'.format(last_block), curses.color_pair(2 if last_block < int(avg_blocks) else 5 if last_block > int(avg_blocks) else 4))
+    validator.addstr(' / ', curses.color_pair(4))
+    validator.addstr('{}'.format(prev_block), curses.color_pair(2 if prev_block < int(avg_blocks) else 5 if prev_block > int(avg_blocks) else 4))
+    validator.addstr(' / ', curses.color_pair(4))
+    validator.addstr('{:.2f}'.format(avg_blocks), curses.color_pair(4))
+
+    validator.addstr(6, 42, '<- ERA {}/{}/{}/Avg'.format(current_era_global,current_era_global-1,current_era_global-2), curses.color_pair(1))
 
 
 def draw_menu(casper):
@@ -1168,6 +1294,7 @@ def draw_menu(casper):
         casper_era_rewards()
         casper_proposers()
         casper_events()
+        casper_transfers()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -1190,6 +1317,7 @@ def draw_menu(casper):
         era_rewards.noutrefresh()
         proposers.noutrefresh()
         events.noutrefresh()
+        transfers.noutrefresh()
 
         casper.noutrefresh()
 
@@ -1251,31 +1379,10 @@ def main():
 
     global cpu_thread_ptr
     global cpu_ptr
-    cpu_ptr = CpuTask(1)
+    cpu_ptr = CpuTask(86400)
     cpu_thread_ptr = threading.Thread(target=cpu_ptr.run)
     cpu_thread_ptr.daemon = True
     cpu_thread_ptr.start()
-
-    global cpu5_thread_ptr
-    global cpu5_ptr
-    cpu5_ptr = CpuTask(300)
-    cpu5_thread_ptr = threading.Thread(target=cpu5_ptr.run)
-    cpu5_thread_ptr.daemon = True
-    cpu5_thread_ptr.start()
-
-    global cpu1h_thread_ptr
-    global cpu1h_ptr
-    cpu1h_ptr = CpuTask(3600)
-    cpu1h_thread_ptr = threading.Thread(target=cpu1h_ptr.run)
-    cpu1h_thread_ptr.daemon = True
-    cpu1h_thread_ptr.start()
-
-    global cpu1d_thread_ptr
-    global cpu1d_ptr
-    cpu1d_ptr = CpuTask(86400)
-    cpu1d_thread_ptr = threading.Thread(target=cpu1d_ptr.run)
-    cpu1d_thread_ptr.daemon = True
-    cpu1d_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
