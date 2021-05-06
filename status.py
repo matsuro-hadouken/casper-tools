@@ -3,7 +3,7 @@ import sys,os,curses,json,time,select,random,threading,urllib.request,contextlib
 from datetime import datetime
 from collections import namedtuple
 from configparser import ConfigParser
-import platform,subprocess,re
+import platform,subprocess,re,getopt
 
 peer_blacklist = []
 peer_wrong_chain = []
@@ -1367,6 +1367,14 @@ def main():
             public_key= reader.read().strip()
         finally:
             reader.close()
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "k:")
+        for opt, arg in opts:
+            if opt == '-k':
+                public_key = arg
+    except:
+        pass
 
     global thread_ptr
     global event_ptr
