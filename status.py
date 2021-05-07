@@ -22,7 +22,7 @@ era_block_start = dict()
 our_rewards = []
 cpu_usage = []
 transfer_dict = dict()
-
+trusted_blocked = []
 
 def system_memory():
     global sysmemory
@@ -441,6 +441,53 @@ class EraTask:
                 time.sleep(2)
                 pass
 
+def getPeerInfo(ip):
+    status = None
+    try:
+        status = json.loads(os.popen('curl -m 2 -s {}:8888/status'.format(ip)).read())
+    except:
+        pass
+
+    return status
+
+class PeersTask:
+    def __init__(self):
+        self._running = True
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        global testing_trusted
+
+        while True:
+            working = []
+            for ip in trusted_blocked:
+                status = getPeerInfo(ip)
+                if status:
+                    working.append(ip)
+
+            not_working = []
+            for ip in trusted_ips:
+                status = getPeerInfo(ip)
+                if not status:
+                    not_working.append(ip)
+
+            for ip in working:
+                if ip in trusted_blocked:
+                    trusted_blocked.remove(ip)
+                if ip not in trusted_ips:
+                    trusted_ips.append(ip)
+
+            for ip in not_working:
+                if ip in trusted_ips:
+                    trusted_ips.remove(ip)
+                if ip not in trusted_blocked:
+                    trusted_blocked.append(ip)
+
+            testing_trusted = False
+            time.sleep(300)
 
 class CpuTask:
     def __init__(self, max_time_interval):
@@ -774,7 +821,7 @@ def casper_finality():
 
 def casper_peers():
     global peers
-    peers = curses.newwin(5, 70, 34, 0)
+    peers = curses.newwin(6, 70, 34, 0)
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -788,11 +835,22 @@ def casper_peers():
     peers.addstr(1, 2, 'Peers        : ', curses.color_pair(1))
     peers.addstr('{}'.format(num_peers), curses.color_pair(4))
 
-    peers.addstr(2, 2, 'In Blacklist : ', curses.color_pair(1))
+    peers.addstr(2, 2, 'Trusted Open : ', curses.color_pair(1))
+    if not testing_trusted:
+        peers.addstr('{}'.format(len(trusted_ips)), curses.color_pair(4))
+        peers.addstr('\tClosed : ', curses.color_pair(1))
+        peers.addstr('{}'.format(len(trusted_blocked)), curses.color_pair(4))
+    else:
+        peers.addstr('Testing', curses.color_pair(5))
+
+    peers.addstr('{}\tTotal Trusted : '.format('\t' if testing_trusted else ''), curses.color_pair(1))
+    peers.addstr('{}'.format(len(trusted_ips)+len(trusted_blocked)), curses.color_pair(4))
+
+    peers.addstr(3, 2, 'In Blacklist : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
     peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
 
-    peers.addstr(3, 2, 'Bad Chainspec: ', curses.color_pair(1))
+    peers.addstr(4, 2, 'Bad Chainspec: ', curses.color_pair(1))
     peers.addstr('{}'.format(len(peer_wrong_chain)), curses.color_pair(4))
     peers.addstr('\t<- Not on our Chainspec (', curses.color_pair(1))
     peers.addstr('{}'.format(local_chainspec), curses.color_pair(4))
@@ -937,7 +995,10 @@ def casper_block_info():
         if peer_address in peer_blacklist or peer_address in peer_wrong_chain:
             peer_address = previous_peer
     except:
-        peer_address = previous_peer
+        try:
+            peer_address = random.choice(trusted_ips)
+        except:
+            peer_address = previous_peer
 
     if peer_address:
         try:
@@ -971,8 +1032,8 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
     block_info.addstr('{}\t\t'.format(peer_height), curses.color_pair(4))
 
-    block_info.addstr('<- From Peer : ', curses.color_pair(1))
-    block_info.addstr('{}'.format(peer_address), curses.color_pair(4))
+    block_info.addstr('<- {} Peer : '.format('   From' if peer_address not in trusted_ips else 'Trusted'), curses.color_pair(1))
+    block_info.addstr('{}'.format(peer_address), curses.color_pair(4 if peer_address not in trusted_ips else 5))
 
     index += 1
     block_info.addstr(index, 2, 'Round Length : ', curses.color_pair(1))
@@ -987,8 +1048,7 @@ def casper_block_info():
     index += 2
     block_info.addstr(index, 2, 'Chain Name   : ', curses.color_pair(1))
     block_info.addstr('{}'.format(chain_name), curses.color_pair(4))
-    index += 1
-    block_info.addstr(index, 2, 'Starting Hash: ', curses.color_pair(1))
+    block_info.addstr(index, 28, 'Starting Hash: ', curses.color_pair(1))
     block_info.addstr('{}'.format(root_hash), curses.color_pair(4))
 
     index += 2
@@ -1021,6 +1081,10 @@ def casper_block_info():
         block_info.addstr(index, 28 if num_blocks < 2 else 29, '{}'.format(number_blocks), curses.color_pair(16))
 
     index += 2
+    block_info.addstr(index, 2, 'Config File  : ', curses.color_pair(1))
+    block_info.addstr('{}'.format(config_file), curses.color_pair(4))
+
+    index += 1
     block_info.addstr(index, 2, 'Storage Path : ', curses.color_pair(1))
     block_info.addstr('{}'.format(node_path), curses.color_pair(4))
 
@@ -1349,10 +1413,33 @@ def main():
 
     global config
     config = ConfigParser()
-    config.read('/etc/casper/1_0_0/config.toml')
+
     global node_path
+    global config_file
+    config_file = '/etc/casper/1_0_0/config.toml'
+
+    try:
+        subfolders = [ f.path for f in os.scandir('/etc/casper/') if f.is_dir() and re.match(r'\d{0,255}_\d{0,255}_\d{0,255}', f.name) ]
+        for folder in sorted(subfolders, reverse=True):
+            config_file = '{}/config.toml'.format(folder)
+            break;
+    except:
+        pass
+
+    config.read(config_file)
     node_path = config.get('storage', 'path').strip('\'')
-    
+
+    global trusted_ips
+    global testing_trusted
+    testing_trusted = True
+
+    trusted_ips = []
+    known = config.get('network', 'known_addresses').strip('[]').split(',')
+    for ip in known:
+        clean_ip = ip.strip('\'') if ':' not in ip else ip.strip('\'').split(':')[0]
+        if clean_ip not in trusted_ips:
+            trusted_ips.append(clean_ip)
+
     global random
     random = random.SystemRandom()
 
@@ -1403,6 +1490,13 @@ def main():
     cpu_thread_ptr = threading.Thread(target=cpu_ptr.run)
     cpu_thread_ptr.daemon = True
     cpu_thread_ptr.start()
+
+    global peers_thread_ptr
+    global peers_ptr
+    peers_ptr = PeersTask()
+    peers_thread_ptr = threading.Thread(target=peers_ptr.run)
+    peers_thread_ptr.daemon = True
+    peers_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
