@@ -607,7 +607,6 @@ class EventTask:
                                 try:
                                     deploy_hashs = json_str[key]['block']['body']['deploy_hashes']
                                     if deploy_hashs:
-                                        global_events['Deploys-{}'.format(json_str[key]['block']['header']['height'])] = 1
                                         if 'Deploys' in global_events:
                                             global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
                                         else:
