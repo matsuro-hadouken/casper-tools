@@ -607,6 +607,7 @@ class EventTask:
                                 try:
                                     deploy_hashs = json_str[key]['block']['body']['deploy_hashes']
                                     if deploy_hashs:
+                                        global_events['Deploys-{}'.format(json_str[key]['block']['header']['height'])] = 1
                                         if 'Deploys' in global_events:
                                             global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
                                         else:
@@ -1048,7 +1049,7 @@ def casper_block_info():
     index += 2
     block_info.addstr(index, 2, 'Chain Name   : ', curses.color_pair(1))
     block_info.addstr('{}'.format(chain_name), curses.color_pair(4))
-    block_info.addstr(index, 28, 'Starting Hash: ', curses.color_pair(1))
+    block_info.addstr(index, 32, 'Starting Hash: ', curses.color_pair(1))
     block_info.addstr('{}'.format(root_hash), curses.color_pair(4))
 
     index += 2
