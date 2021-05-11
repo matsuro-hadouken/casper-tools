@@ -16,90 +16,337 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 21,
+  "id": 24,
   "links": [],
   "panels": [
     {
+      "alignNumbersToRightEnabled": false,
+      "columnAliases": [
+        {
+          "alias": "Data Source",
+          "name": "__name__"
+        },
+        {
+          "alias": "Instance",
+          "name": "instance"
+        },
+        {
+          "alias": "next upgrade info",
+          "name": "next_upgrade_activation_point"
+        },
+        {
+          "alias": "next upgrade protocol version",
+          "name": "next_upgrade_protocol_version"
+        }
+      ],
+      "columnFiltersEnabled": false,
+      "columnWidthHints": [],
+      "columns": [],
+      "compactRowsEnabled": true,
       "datasource": null,
+      "datatablePagingType": "full",
+      "datatableTheme": "basic_theme",
+      "emptyData": false,
       "fieldConfig": {
         "defaults": {
-          "custom": {},
-          "mappings": [
-            {
-              "from": "",
-              "id": 0,
-              "operator": "",
-              "text": "☘️ Active Validator ☘️",
-              "to": "",
-              "type": 1,
-              "value": "1"
-            },
-            {
-              "from": "",
-              "id": 1,
-              "operator": "",
-              "text": "☠️ NOT VALIDATOR ☠️",
-              "to": "",
-              "type": 1,
-              "value": "0"
-            }
-          ],
-          "noValue": "NO DATA",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(255, 255, 255)",
-                "value": null
-              },
-              {
-                "color": "dark-red",
-                "value": 0
-              },
-              {
-                "color": "dark-green",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "short"
+          "custom": {}
         },
         "overrides": []
       },
+      "fontSize": "100%",
       "gridPos": {
         "h": 3,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 0
       },
-      "id": 119,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
+      "hoverEnabled": true,
+      "id": 134,
+      "infoEnabled": false,
+      "lengthChangeEnabled": true,
+      "orderColumnEnabled": false,
+      "pagingTypes": [
+        {
+          "text": "Page number buttons only",
+          "value": "numbers"
+        },
+        {
+          "text": "'Previous' and 'Next' buttons only",
+          "value": "simple"
+        },
+        {
+          "text": "'Previous' and 'Next' buttons, plus page numbers",
+          "value": "simple_numbers"
+        },
+        {
+          "text": "'First', 'Previous', 'Next' and 'Last' buttons",
+          "value": "full"
+        },
+        {
+          "text": "'First', 'Previous', 'Next' and 'Last' buttons, plus page numbers",
+          "value": "full_numbers"
+        },
+        {
+          "text": "'First' and 'Last' buttons, plus page numbers",
+          "value": "first_last_numbers"
         }
+      ],
+      "panelHeight": null,
+      "rowNumbersEnabled": false,
+      "rowsPerPage": 1,
+      "scroll": false,
+      "scrollHeight": "default",
+      "searchEnabled": false,
+      "searchHighlightingEnabled": false,
+      "showCellBorders": false,
+      "showHeader": true,
+      "showRowBorders": false,
+      "sort": {
+        "col": 0,
+        "desc": true
       },
-      "pluginVersion": "7.0.6",
+      "sortByColumns": [
+        {
+          "columnData": "timestamp",
+          "sortMethod": "desc"
+        }
+      ],
+      "sortByColumnsData": [
+        [
+          6,
+          "desc"
+        ]
+      ],
+      "stripedRowsEnabled": true,
+      "styles": [],
       "targets": [
         {
-          "expr": "casper_exporter_is_validator",
-          "interval": "",
+          "expr": "casper_exporter_next_upgrade_info{job=\"chain\"}",
+          "format": "table",
+          "hide": false,
+          "interval": "1s",
           "legendFormat": "",
           "refId": "A"
+        }
+      ],
+      "themeOptions": {
+        "dark": "./styles/dark.scss",
+        "light": "./styles/light.scss"
+      },
+      "themes": [
+        {
+          "disabled": false,
+          "text": "Basic",
+          "value": "basic_theme"
+        },
+        {
+          "disabled": true,
+          "text": "Bootstrap",
+          "value": "bootstrap_theme"
+        },
+        {
+          "disabled": true,
+          "text": "Foundation",
+          "value": "foundation_theme"
+        },
+        {
+          "disabled": true,
+          "text": "ThemeRoller",
+          "value": "themeroller_theme"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
       "title": "",
+      "transform": "table",
+      "transformations": [],
       "transparent": true,
-      "type": "stat"
+      "type": "briangann-datatable-panel"
+    },
+    {
+      "alignNumbersToRightEnabled": true,
+      "columnAliases": [
+        {
+          "alias": "API VERSION",
+          "name": "api_version"
+        },
+        {
+          "alias": "BUILD VERSION",
+          "name": "build_version"
+        },
+        {
+          "alias": "CHAIN NAME",
+          "name": "chainspec_name"
+        },
+        {
+          "alias": "ROUND LENGHT",
+          "name": "round_length"
+        },
+        {
+          "alias": "STATE RUN HASH",
+          "name": "starting_state_root_hash"
+        },
+        {
+          "alias": "TIMESTANP",
+          "name": "timestamp"
+        }
+      ],
+      "columnFiltersEnabled": false,
+      "columnWidthHints": [],
+      "columns": [],
+      "compactRowsEnabled": true,
+      "datasource": "Prometheus",
+      "datatablePagingType": "full",
+      "datatableTheme": "basic_theme",
+      "emptyData": false,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "displayMode": "color-text"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "fontSize": "100%",
+      "gridPos": {
+        "h": 3,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "hoverEnabled": true,
+      "id": 117,
+      "infoEnabled": false,
+      "lengthChangeEnabled": true,
+      "orderColumnEnabled": true,
+      "pagingTypes": [
+        {
+          "text": "Page number buttons only",
+          "value": "numbers"
+        },
+        {
+          "text": "'Previous' and 'Next' buttons only",
+          "value": "simple"
+        },
+        {
+          "text": "'Previous' and 'Next' buttons, plus page numbers",
+          "value": "simple_numbers"
+        },
+        {
+          "text": "'First', 'Previous', 'Next' and 'Last' buttons",
+          "value": "full"
+        },
+        {
+          "text": "'First', 'Previous', 'Next' and 'Last' buttons, plus page numbers",
+          "value": "full_numbers"
+        },
+        {
+          "text": "'First' and 'Last' buttons, plus page numbers",
+          "value": "first_last_numbers"
+        }
+      ],
+      "panelHeight": null,
+      "pluginVersion": "7.0.6",
+      "rowNumbersEnabled": false,
+      "rowsPerPage": 1,
+      "scroll": false,
+      "scrollHeight": "default",
+      "searchEnabled": false,
+      "searchHighlightingEnabled": false,
+      "showCellBorders": false,
+      "showHeader": true,
+      "showRowBorders": true,
+      "sort": {
+        "col": 0,
+        "desc": true
+      },
+      "sortByColumns": [
+        {
+          "columnData": "timestamp",
+          "sortMethod": "desc"
+        }
+      ],
+      "sortByColumnsData": [
+        [
+          5,
+          "desc"
+        ]
+      ],
+      "stripedRowsEnabled": true,
+      "styles": [],
+      "targets": [
+        {
+          "expr": "casper_exporter_general_info_info",
+          "format": "table",
+          "instant": false,
+          "interval": "1m",
+          "legendFormat": "api version",
+          "refId": "A"
+        }
+      ],
+      "themeOptions": {
+        "dark": "./styles/dark.scss",
+        "light": "./styles/light.scss"
+      },
+      "themes": [
+        {
+          "disabled": false,
+          "text": "Basic",
+          "value": "basic_theme"
+        },
+        {
+          "disabled": true,
+          "text": "Bootstrap",
+          "value": "bootstrap_theme"
+        },
+        {
+          "disabled": true,
+          "text": "Foundation",
+          "value": "foundation_theme"
+        },
+        {
+          "disabled": true,
+          "text": "ThemeRoller",
+          "value": "themeroller_theme"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "",
+      "transform": "table",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "build_version": false,
+              "chainspec_name": false,
+              "instance": true,
+              "job": true,
+              "starting_state_root_hash": false,
+              "timestamp": false
+            },
+            "indexByName": {},
+            "renameByName": {}
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "briangann-datatable-panel"
     },
     {
       "collapsed": false,
@@ -425,6 +672,7 @@
       "fieldConfig": {
         "defaults": {
           "custom": {},
+          "decimals": 0,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -456,7 +704,7 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "mean"
+            "last"
           ],
           "fields": "",
           "values": false
@@ -473,193 +721,174 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "pending_deploy",
+      "title": "Pending Deploy",
       "type": "stat"
     },
     {
-      "alignNumbersToRightEnabled": true,
-      "columnAliases": [
-        {
-          "alias": "API VERSION",
-          "name": "api_version"
-        },
-        {
-          "alias": "BUILD VERSION",
-          "name": "build_version"
-        },
-        {
-          "alias": "CHAIN NAME",
-          "name": "chainspec_name"
-        },
-        {
-          "alias": "ROUND LENGHT",
-          "name": "round_length"
-        },
-        {
-          "alias": "STATE RUN HASH",
-          "name": "starting_state_root_hash"
-        },
-        {
-          "alias": "TIMESTANP",
-          "name": "timestamp"
-        }
-      ],
-      "columnFiltersEnabled": false,
-      "columnWidthHints": [],
-      "columns": [],
-      "compactRowsEnabled": true,
       "datasource": null,
-      "datatablePagingType": "full",
-      "datatableTheme": "basic_theme",
-      "emptyData": false,
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "displayMode": "color-text"
-          },
-          "mappings": [],
+          "custom": {},
+          "mappings": [
+            {
+              "from": "",
+              "id": 0,
+              "operator": "",
+              "text": "☘️ Active Validator ☘️",
+              "to": "",
+              "type": 1,
+              "value": "1"
+            },
+            {
+              "from": "",
+              "id": 1,
+              "operator": "",
+              "text": "☠️ NOT VALIDATOR ☠️",
+              "to": "",
+              "type": 1,
+              "value": "0"
+            }
+          ],
+          "noValue": "NO DATA",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "rgb(255, 255, 255)",
                 "value": null
+              },
+              {
+                "color": "dark-red",
+                "value": 0
+              },
+              {
+                "color": "dark-green",
+                "value": 1
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": []
       },
-      "fontSize": "100%",
       "gridPos": {
         "h": 3,
-        "w": 12,
+        "w": 6,
         "x": 12,
         "y": 4
       },
-      "hoverEnabled": true,
-      "id": 117,
-      "infoEnabled": false,
-      "lengthChangeEnabled": true,
-      "orderColumnEnabled": true,
-      "pagingTypes": [
-        {
-          "text": "Page number buttons only",
-          "value": "numbers"
-        },
-        {
-          "text": "'Previous' and 'Next' buttons only",
-          "value": "simple"
-        },
-        {
-          "text": "'Previous' and 'Next' buttons, plus page numbers",
-          "value": "simple_numbers"
-        },
-        {
-          "text": "'First', 'Previous', 'Next' and 'Last' buttons",
-          "value": "full"
-        },
-        {
-          "text": "'First', 'Previous', 'Next' and 'Last' buttons, plus page numbers",
-          "value": "full_numbers"
-        },
-        {
-          "text": "'First' and 'Last' buttons, plus page numbers",
-          "value": "first_last_numbers"
+      "id": 119,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
         }
-      ],
-      "panelHeight": null,
-      "pluginVersion": "7.0.6",
-      "rowNumbersEnabled": false,
-      "rowsPerPage": 1,
-      "scroll": false,
-      "scrollHeight": "default",
-      "searchEnabled": false,
-      "searchHighlightingEnabled": false,
-      "showCellBorders": false,
-      "showHeader": true,
-      "showRowBorders": true,
-      "sort": {
-        "col": 0,
-        "desc": true
       },
-      "sortByColumns": [
-        {
-          "columnData": "timestamp",
-          "sortMethod": "desc"
-        }
-      ],
-      "sortByColumnsData": [
-        [
-          5,
-          "desc"
-        ]
-      ],
-      "stripedRowsEnabled": true,
-      "styles": [],
+      "pluginVersion": "7.0.6",
       "targets": [
         {
-          "expr": "casper_exporter_general_info_info",
-          "format": "table",
-          "instant": false,
-          "interval": "1m",
-          "legendFormat": "api version",
+          "expr": "casper_exporter_is_validator",
+          "interval": "",
+          "legendFormat": "",
           "refId": "A"
-        }
-      ],
-      "themeOptions": {
-        "dark": "./styles/dark.scss",
-        "light": "./styles/light.scss"
-      },
-      "themes": [
-        {
-          "disabled": false,
-          "text": "Basic",
-          "value": "basic_theme"
-        },
-        {
-          "disabled": true,
-          "text": "Bootstrap",
-          "value": "bootstrap_theme"
-        },
-        {
-          "disabled": true,
-          "text": "Foundation",
-          "value": "foundation_theme"
-        },
-        {
-          "disabled": true,
-          "text": "ThemeRoller",
-          "value": "themeroller_theme"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
       "title": "",
-      "transform": "table",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Value": true,
-              "__name__": true,
-              "build_version": false,
-              "chainspec_name": false,
-              "instance": true,
-              "job": true,
-              "starting_state_root_hash": false,
-              "timestamp": false
+      "transparent": true,
+      "type": "stat"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "mappings": [
+            {
+              "from": "",
+              "id": 0,
+              "operator": "",
+              "text": "☠️ UPGRADE ☠️",
+              "to": "",
+              "type": 1,
+              "value": "1"
             },
-            "indexByName": {},
-            "renameByName": {}
-          }
+            {
+              "from": "",
+              "id": 1,
+              "operator": "",
+              "text": "NO PLAN FOR UPGRADE",
+              "to": "",
+              "type": 1,
+              "value": "0"
+            }
+          ],
+          "max": 1,
+          "min": 0,
+          "noValue": "NO DATA",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "rgb(255, 255, 255)",
+                "value": null
+              },
+              {
+                "color": "dark-blue",
+                "value": 0
+              },
+              {
+                "color": "dark-red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 18,
+        "y": 4
+      },
+      "id": 132,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "7.0.6",
+      "targets": [
+        {
+          "expr": "casper_exporter_is_upgrade_pending",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
         }
       ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "",
       "transparent": true,
-      "type": "briangann-datatable-panel"
+      "type": "stat"
     },
     {
       "aliasColors": {
@@ -771,45 +1000,10 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                0.016,
-                0.014
-              ],
-              "type": "outside_range"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "B",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "5m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "[ Block Time Average ] in suspicious range. [ Not Critical ] Attention required.",
-        "name": "Block Time Average alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {
-        "rate 24h": "rgba(196, 22, 42, 0.62)",
+        "rate 1h": "rgba(192, 216, 255, 0.11)",
+        "rate 24h": "rgba(255, 0, 4, 0.67)",
+        "rate 6h": "rgba(31, 96, 196, 0.36)",
         "{instance=\"127.0.0.1:8888\", job=\"casper\"}": "rgba(196, 22, 42, 0.74)"
       },
       "bars": false,
@@ -877,24 +1071,7 @@
           "refId": "C"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 0.016,
-          "yaxis": "left"
-        },
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 0.014,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -920,7 +1097,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         },
         {
           "format": "short",
@@ -937,44 +1114,8 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                6000
-              ],
-              "type": "gt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "max"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "3m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "Pending Deploys threshold triggered.",
-        "name": "Pending Deploys alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {
-        "Pending deploys": "dark-red",
+        "Pending deploys": "rgba(250, 0, 0, 0.54)",
         "pending_deploy{instance=\"127.0.0.1:8888\", job=\"casper\"}": "dark-red"
       },
       "bars": false,
@@ -1007,7 +1148,7 @@
         "min": true,
         "rightSide": false,
         "show": true,
-        "total": true,
+        "total": false,
         "values": true
       },
       "lines": true,
@@ -1032,15 +1173,7 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 6000
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -1510,7 +1643,7 @@
           "expr": "casper_exporter_last_added_block_info_info",
           "format": "table",
           "instant": false,
-          "interval": "15s",
+          "interval": "1s",
           "legendFormat": "",
           "refId": "A"
         }
@@ -1569,6 +1702,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -1952,42 +2086,6 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                100000000
-              ],
-              "type": "lt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "C",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "5m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "Mem Total below [ 100 MB ]",
-        "name": "Mem Total alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {},
       "bars": false,
       "dashLength": 10,
@@ -2058,16 +2156,7 @@
           "refId": "C"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 100000000,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -2321,16 +2410,133 @@
         "y": 31
       },
       "hiddenSeries": false,
-      "id": 31,
+      "id": 11,
       "legend": {
+        "alignAsTable": false,
         "avg": false,
-        "current": false,
+        "current": true,
         "max": false,
         "min": false,
         "rightSide": false,
-        "show": false,
+        "show": true,
+        "sort": "current",
+        "sortDesc": true,
         "total": false,
-        "values": false
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "connected",
+      "options": {
+        "alertThreshold": true,
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pluginVersion": "7.3.6",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, contract_runtime_apply_commit_bucket)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": " ",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, contract_runtime_apply_commit_bucket)",
+          "hide": false,
+          "interval": "",
+          "legendFormat": " ",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.5, contract_runtime_apply_commit_bucketnet)",
+          "hide": true,
+          "interval": "",
+          "legendFormat": " ",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Run commit",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 1,
+          "format": "s",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 31
+      },
+      "hiddenSeries": false,
+      "id": 27,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
       "lines": true,
       "linewidth": 2,
@@ -2353,7 +2559,7 @@
           "expr": "contract_runtime_run_execute_count",
           "hide": false,
           "interval": "",
-          "legendFormat": "count {{instance}}",
+          "legendFormat": "Executes count",
           "refId": "E"
         }
       ],
@@ -2404,7 +2610,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2416,17 +2622,17 @@
       "gridPos": {
         "h": 5,
         "w": 4,
-        "x": 4,
+        "x": 8,
         "y": 31
       },
       "hiddenSeries": false,
-      "id": 5,
+      "id": 49,
       "legend": {
         "avg": false,
         "current": false,
         "max": false,
         "min": false,
-        "show": false,
+        "show": true,
         "total": false,
         "values": false
       },
@@ -2434,9 +2640,11 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "options": {
+        "alertThreshold": true,
         "dataLinks": []
       },
       "percentage": false,
+      "pluginVersion": "7.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2446,17 +2654,24 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "block_completion_duration",
+          "expr": "deploy_gossiper_times_ran_out_of_peers",
           "interval": "",
-          "legendFormat": "{{ instance }}",
+          "legendFormat": "deploy",
+          "queryType": "randomWalk",
           "refId": "A"
+        },
+        {
+          "expr": "address_gossiper_times_ran_out_of_peers",
+          "interval": "",
+          "legendFormat": "address",
+          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "block_completion_duration",
+      "title": "Ran out of Peers - Address vs Deploy",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2476,7 +2691,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": "0",
+          "min": null,
           "show": true
         },
         {
@@ -2510,7 +2725,7 @@
       "gridPos": {
         "h": 5,
         "w": 4,
-        "x": 8,
+        "x": 12,
         "y": 31
       },
       "hiddenSeries": false,
@@ -2575,105 +2790,6 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 0,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 5,
-        "w": 4,
-        "x": 12,
-        "y": 31
-      },
-      "hiddenSeries": false,
-      "id": 27,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 2,
-      "nullPointMode": "connected",
-      "options": {
-        "alertThreshold": true,
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.6",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": true,
-      "targets": [
-        {
-          "expr": "contract_runtime_run_execute_count",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "count {{instance}}",
-          "refId": "E"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Run execute cumulative count",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": 0,
-          "format": "none",
-          "label": "Count",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
           "show": true
         },
         {
@@ -2890,14 +3006,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": null,
       "fieldConfig": {
         "defaults": {
           "custom": {}
         },
         "overrides": []
       },
-      "fill": 0,
+      "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 5,
@@ -2906,64 +3022,43 @@
         "y": 36
       },
       "hiddenSeries": false,
-      "id": 11,
+      "id": 5,
       "legend": {
-        "alignAsTable": false,
         "avg": false,
-        "current": true,
+        "current": false,
         "max": false,
         "min": false,
-        "rightSide": false,
-        "show": true,
-        "sort": "current",
-        "sortDesc": true,
+        "show": false,
         "total": false,
-        "values": true
+        "values": false
       },
       "lines": true,
-      "linewidth": 2,
-      "nullPointMode": "connected",
+      "linewidth": 1,
+      "nullPointMode": "null",
       "options": {
-        "alertThreshold": true,
         "dataLinks": []
       },
       "percentage": false,
-      "pluginVersion": "7.3.6",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
-      "steppedLine": true,
+      "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, contract_runtime_apply_commit_bucket)",
-          "hide": true,
+          "expr": "block_completion_duration",
           "interval": "",
-          "legendFormat": " ",
+          "legendFormat": "{{ instance }}",
           "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.99, contract_runtime_apply_commit_bucket)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": " ",
-          "refId": "B"
-        },
-        {
-          "expr": "histogram_quantile(0.5, contract_runtime_apply_commit_bucketnet)",
-          "hide": true,
-          "interval": "",
-          "legendFormat": " ",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Run commit",
+      "title": "block_completion_duration",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2979,9 +3074,8 @@
       },
       "yaxes": [
         {
-          "decimals": 1,
-          "format": "s",
-          "label": "",
+          "format": "short",
+          "label": null,
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -3029,7 +3123,7 @@
         "max": false,
         "min": false,
         "rightSide": true,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -3100,7 +3194,9 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "127.0.0.1:8888": "rgb(0, 100, 255)"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -3115,111 +3211,8 @@
       "fillGradient": 0,
       "gridPos": {
         "h": 5,
-        "w": 4,
+        "w": 8,
         "x": 12,
-        "y": 36
-      },
-      "hiddenSeries": false,
-      "id": 49,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true,
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.6",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "deploy_gossiper_times_ran_out_of_peers",
-          "interval": "",
-          "legendFormat": "deploy",
-          "queryType": "randomWalk",
-          "refId": "A"
-        },
-        {
-          "expr": "address_gossiper_times_ran_out_of_peers",
-          "interval": "",
-          "legendFormat": "address",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Ran out of Peers - Address vs Deploy",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 5,
-        "w": 4,
-        "x": 16,
         "y": 36
       },
       "hiddenSeries": false,
@@ -3410,45 +3403,8 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                42,
-                60
-              ],
-              "type": "outside_range"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "1m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "Finalization time range alert. [ Not Critical ]",
-        "name": "Finalization Time alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {
-        " ": "rgb(31, 252, 0)"
+        " ": "rgba(55, 135, 45, 0.37)"
       },
       "bars": false,
       "dashLength": 10,
@@ -3526,24 +3482,7 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 42,
-          "yaxis": "left"
-        },
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 60,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -3601,118 +3540,7 @@
     },
     {
       "aliasColors": {
-        " ": "rgb(6, 169, 179)"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "Prometheus",
-      "decimals": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 0,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 6,
-        "w": 24,
-        "x": 0,
-        "y": 48
-      },
-      "hiddenSeries": false,
-      "id": 61,
-      "legend": {
-        "alignAsTable": false,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "sideWidth": null,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": false,
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.6",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": " ",
-          "yaxis": 1
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "pending_deploy",
-          "format": "time_series",
-          "instant": false,
-          "interval": "",
-          "legendFormat": " ",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Pending Deploys",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": 0,
-          "format": "none",
-          "label": "Deploy Count",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        " ": "rgb(6, 169, 179)"
+        " ": "rgb(145, 145, 145)"
       },
       "bars": false,
       "dashLength": 10,
@@ -3730,7 +3558,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 54
+        "y": 48
       },
       "hiddenSeries": false,
       "id": 53,
@@ -3814,7 +3642,7 @@
     },
     {
       "aliasColors": {
-        " ": "rgb(6, 169, 179)"
+        " ": "rgb(145, 145, 145)"
       },
       "bars": false,
       "dashLength": 10,
@@ -3832,7 +3660,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 54
+        "y": 48
       },
       "hiddenSeries": false,
       "id": 55,
@@ -3917,7 +3745,7 @@
     },
     {
       "aliasColors": {
-        " ": "rgb(6, 169, 179)"
+        " ": "rgb(145, 145, 145)"
       },
       "bars": false,
       "dashLength": 10,
@@ -3935,7 +3763,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 61
+        "y": 55
       },
       "hiddenSeries": false,
       "id": 57,
@@ -4022,7 +3850,7 @@
     },
     {
       "aliasColors": {
-        " ": "rgb(6, 169, 179)"
+        " ": "rgb(145, 145, 145)"
       },
       "bars": false,
       "dashLength": 10,
@@ -4040,7 +3868,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 61
+        "y": 55
       },
       "hiddenSeries": false,
       "id": 59,
@@ -4128,7 +3956,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 62
       },
       "id": 123,
       "panels": [],
@@ -4136,42 +3964,6 @@
       "type": "row"
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                1
-              ],
-              "type": "lt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "last"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "1m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "CRITICAL: Validation state change.",
-        "name": "Validator state alert utility alert",
-        "noDataState": "alerting",
-        "notifications": []
-      },
       "aliasColors": {
         "Validator Status": "dark-green",
         "casper_exporter_is_validator{instance=\"127.0.0.1:8123\", job=\"chain\"}": "dark-green"
@@ -4192,7 +3984,7 @@
         "h": 6,
         "w": 4,
         "x": 0,
-        "y": 69
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 121,
@@ -4228,16 +4020,7 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 1,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -4281,41 +4064,6 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                25
-              ],
-              "type": "lt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "last"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "10m",
-        "frequency": "1m",
-        "handler": 1,
-        "name": "Lack Of Peers Alert Tool alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {
         "casper_exporter_peer_count{instance=\"127.0.0.1:8123\", job=\"chain\"}": "dark-green"
       },
@@ -4351,7 +4099,7 @@
         "h": 6,
         "w": 4,
         "x": 4,
-        "y": 69
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 125,
@@ -4390,16 +4138,7 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 25,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -4443,42 +4182,6 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                120
-              ],
-              "type": "gt"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "10m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "10m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "Block Time is above 120 seconds.",
-        "name": "Block Time(s) Alert alert [ ALPHA BOARD ]",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {},
       "bars": true,
       "dashLength": 10,
@@ -4518,7 +4221,7 @@
         "h": 6,
         "w": 4,
         "x": 8,
-        "y": 69
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 127,
@@ -4558,16 +4261,7 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 120,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -4611,43 +4305,6 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                1,
-                6
-              ],
-              "type": "outside_range"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "5m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "Delta Chain Blocks Flow [ 5m ] RANGE STATE [ 1 to 6 ]",
-        "name": "Delta Chain Flow Halt Alert alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {
         "127.0.0.1:8888": "dark-orange",
         "Delta Chain Flow:": "dark-green"
@@ -4674,7 +4331,7 @@
         "h": 6,
         "w": 4,
         "x": 12,
-        "y": 69
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 129,
@@ -4715,24 +4372,7 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 1,
-          "yaxis": "left"
-        },
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 6,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -4776,43 +4416,6 @@
       }
     },
     {
-      "alert": {
-        "alertRuleTags": {},
-        "conditions": [
-          {
-            "evaluator": {
-              "params": [
-                0.98,
-                2.01
-              ],
-              "type": "outside_range"
-            },
-            "operator": {
-              "type": "and"
-            },
-            "query": {
-              "params": [
-                "A",
-                "5m",
-                "now"
-              ]
-            },
-            "reducer": {
-              "params": [],
-              "type": "avg"
-            },
-            "type": "query"
-          }
-        ],
-        "executionErrorState": "alerting",
-        "for": "1m",
-        "frequency": "1m",
-        "handler": 1,
-        "message": "ERA DELTA RANGE 1 to 2 [ 3h ]",
-        "name": "Alert Delta Era [ 3h ] alert",
-        "noDataState": "no_data",
-        "notifications": []
-      },
       "aliasColors": {
         "Delta Era 3h": "dark-green",
         "Delta Era [ 3h ]": "dark-green",
@@ -4835,7 +4438,7 @@
         "h": 6,
         "w": 4,
         "x": 16,
-        "y": 69
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 131,
@@ -4873,24 +4476,7 @@
           "refId": "A"
         }
       ],
-      "thresholds": [
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "lt",
-          "value": 0.98,
-          "yaxis": "left"
-        },
-        {
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 2.01,
-          "yaxis": "left"
-        }
-      ],
+      "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
@@ -4932,6 +4518,104 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "aliasColors": {
+        "casper_exporter_is_upgrade_pending{instance=\"127.0.0.1:8123\", job=\"chain\"}": "dark-green"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 63
+      },
+      "hiddenSeries": false,
+      "id": 136,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "expr": "casper_exporter_is_upgrade_pending{job=\"chain\"}",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Is Upgrade Staged",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": 0,
+          "format": "short",
+          "label": "Upgrade Staged",
+          "logBase": 1,
+          "max": "2",
+          "min": "-1",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
   "refresh": "10s",
@@ -4942,7 +4626,7 @@
     "list": []
   },
   "time": {
-    "from": "2021-04-07T07:58:41.000Z",
+    "from": "2021-05-11T08:12:24.000Z",
     "to": "now"
   },
   "timepicker": {
@@ -4959,7 +4643,7 @@
     ]
   },
   "timezone": "utc",
-  "title": "CASPER VALIDATOR ALPHA BOARD",
-  "uid": "33xOXdB8",
-  "version": 51
+  "title": "CASPER VALIDATOR  [ EXAMPLE ]",
+  "uid": "QvbXkJjMz",
+  "version": 1
 }
