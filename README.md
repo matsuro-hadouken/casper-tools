@@ -1,16 +1,16 @@
  - Auction tool, show data related to bonds and bids
 ``` bash
-active_validators.sh
+active_validators.sh <CAN_ACCEPT_PUB_HEX if empty parse from $public_hex_path by default>
 ```
  - check HEX balance
  ``` bash
 balance_check.sh <PUB_HEX>
 ```
- - deploy bonding transaction
+ - deploy bonding transaction ( _example, watch gas !_ )
  ``` bash
 bond.sh
 ```
- - chain explorer
+ - connected peers explorer
  ``` bash
 explorer.sh
 ```
@@ -19,20 +19,3 @@ explorer.sh
 status.py
 ```
 ![alt text](https://github.com/RapidMark/casper-tools/raw/master/images/status.PNG)
-
- - ping-pong spammer
- ``` bash
-rust-transactions-spam.sh
-```
-- go trough all active peers and process 'N' amount of transactions trough each.
-``` bash
-slightly_loader.sh 
-```
- - send funds from A to B
- ``` bash
-well_enough_spam.sh
-```
- - withdraw reward
- ``` bash
-withdraw-reward.sh
-```
