@@ -607,7 +607,6 @@ class CoinList(object):
 
     def request(self, method, path, params={}, body={}):
         timestamp = str(int(time.time()))
-        global_events['json'] = timestamp
         # build the request path with any GET params already included
         path_with_params = requests.Request(method, self.endpoint_url + path, params=params).prepare().path_url
         json_body = json.dumps(body, separators=(',', ':')).strip()
