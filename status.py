@@ -290,7 +290,9 @@ def casper_deploys():
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('{}: '.format(param[:20]), curses.color_pair(2 if result == 'Failure' else 4))
                     string = str(params[param])
-                    if len(string) > 60:
+                    if param == 'amount':
+                        deploy_view.addstr('{}'.format('{:,.4f} CSPR'.format(int(params[param]) / 1000000000)), curses.color_pair(2 if result == 'Failure' else 5))
+                    elif len(string) > 60:
                         deploy_view.addstr('{}..{}'.format(string[:4],string[-4:]), curses.color_pair(2 if result == 'Failure' else 5))
                     else:
                         deploy_view.addstr('{}'.format(string[:30]), curses.color_pair(2 if result == 'Failure' else 5))
@@ -399,7 +401,6 @@ class ProposerTask:
                 proposer = block_info['result']['block']['body']['proposer'].strip("\"")
                 transfers = block_info['result']['block']['body']['transfer_hashes']
                 deploys = block_info['result']['block']['body']['deploy_hashes']
-
 
                 if proposer in proposers_dict:
                     proposers_dict[proposer] = proposers_dict[proposer] + 1
@@ -1205,7 +1206,7 @@ def casper_block_info():
     index += 2
     block_info.addstr(index, 2, 'Chain Name   : ', curses.color_pair(1))
     block_info.addstr('{}'.format(chain_name), curses.color_pair(4))
-    block_info.addstr(index, 32, 'Starting Hash: ', curses.color_pair(1))
+    block_info.addstr(index, 34, 'Starting Hash : ', curses.color_pair(1))
     block_info.addstr('{}'.format(root_hash), curses.color_pair(4))
 
     index += 2
@@ -1294,7 +1295,7 @@ def casper_public_key():
                             for arg in args:
                                 params[arg[0]] = arg[1]['parsed']
 
-                            deploy_dict['{}-{}'.format(currentProposerBlock,deploy)] = [currentProposerBlock,key,params,name,entry,result,error_message]
+                            deploy_dict['{}-{}'.format(currentBlock,deploy)] = [currentBlock,key,params,name,entry,result,error_message]
 
         transfers = block_info['result']['block']['body']['transfer_hashes']
         if transfers:
@@ -1322,8 +1323,8 @@ def casper_public_key():
             pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
 
         coin_len = len(current_price)
-        pub_key_win.addstr(2, 70-coin_len-8-7, 'Price: ', curses.color_pair(1))
-        pub_key_win.addstr('${} CSPR'.format(current_price), curses.color_pair(4))
+        pub_key_win.addstr(2, 70-coin_len-8-7-4, 'Price: ', curses.color_pair(1))
+        pub_key_win.addstr('${} CSPR-USD'.format(current_price), curses.color_pair(4))
 
     except:
         current_era_global = 0
