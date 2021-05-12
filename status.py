@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import namedtuple
 from configparser import ConfigParser
 import platform,subprocess,re,getopt
+import requests,hmac,hashlib,base64
 
 peer_blacklist = []
 peer_wrong_chain = []
@@ -255,8 +256,6 @@ def casper_deploys():
     text_width = box_width - 17 # length of the Text before it gets printed
     deploy_view.addstr(0, 2, 'Casper Deploys', curses.color_pair(4))
 
-    items_2_remove = []
-
     if length < 1:
         deploy_view.addstr(1, 2, 'Waiting for next Deploy', curses.color_pair(5))
     else:
@@ -302,14 +301,7 @@ def casper_deploys():
                     deploy_view.addstr('{}'.format(error_message), curses.color_pair(2 if result == 'Failure' else 5))
 
 
-            else:
-                items_2_remove.append(key)
-
             index += 1
-
-        if items_2_remove:
-            for key in items_2_remove:
-                del deploy_dict[key]
 
 
 def casper_bonds():
@@ -602,6 +594,36 @@ class PeersTask:
             testing_trusted = False
             time.sleep(300)
 
+def sha265hmac(data, key):
+    h = hmac.new(key, data.encode('utf-8'), digestmod=hashlib.sha256)
+    return base64.b64encode(h.digest()).decode('utf-8')
+
+
+class CoinList(object):
+    def __init__(self, access_key, access_secret, endpoint_url='https://trade-api.coinlist.co'):
+        self.access_key = access_key
+        self.access_secret = access_secret
+        self.endpoint_url = endpoint_url
+
+    def request(self, method, path, params={}, body={}):
+        timestamp = str(int(time.time()))
+        global_events['json'] = timestamp
+        # build the request path with any GET params already included
+        path_with_params = requests.Request(method, self.endpoint_url + path, params=params).prepare().path_url
+        json_body = json.dumps(body, separators=(',', ':')).strip()
+        message = timestamp + method + path_with_params + ('' if not body else json_body)
+        secret = base64.b64decode(self.access_secret).strip()
+        signature = sha265hmac(message, secret)
+        headers = {
+            'Content-Type': 'application/json',
+            'CL-ACCESS-KEY': self.access_key,
+            'CL-ACCESS-SIG': signature,
+            'CL-ACCESS-TIMESTAMP': timestamp
+        }
+        url = self.endpoint_url + path_with_params
+        r = requests.request(method, url, headers=headers, data=json_body)
+        return r.json()
+
 class CpuTask:
     def __init__(self, max_time_interval):
         self._running = True
@@ -632,6 +654,28 @@ class CpuTask:
                 cpu_usage.pop(0)
 
             time.sleep(1)
+
+class CoinListTask:
+    def __init__(self):
+        self._running = True
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        global current_price
+        coinlist = CoinList('50883453-345b-4b11-ade9-105ca81c53fd', 'YTxYSY7lXzp7Uq26dXnnPeYSQ2g3JYG1nVP/hmJ9u5eGBS/XXf6OjnnnLr5Nr87GW1upSkVcLDDxxX5hnwaAGA==')
+
+        while True:
+            try:
+                coin_info = coinlist.request('GET', '/v1/symbols/CSPR-USD')
+                current_price = coin_info['symbol']['fair_price'][:-4]
+            except:
+                global_events['price_error'] = 1
+                pass
+
+            time.sleep(10)
 
 class EventTask:
     def __init__(self):
@@ -1278,6 +1322,10 @@ def casper_public_key():
         else:
             pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
 
+        coin_len = len(current_price)
+        pub_key_win.addstr(2, 70-coin_len-8-7, 'Price: ', curses.color_pair(1))
+        pub_key_win.addstr('${} CSPR'.format(current_price), curses.color_pair(4))
+
     except:
         current_era_global = 0
         pub_key_win.addstr('Not available yet', curses.color_pair(2))
@@ -1644,6 +1692,16 @@ def main():
     peers_thread_ptr = threading.Thread(target=peers_ptr.run)
     peers_thread_ptr.daemon = True
     peers_thread_ptr.start()
+
+    global current_price
+    current_price = "0"
+
+    global coinlist_thread_ptr
+    global coin_ptr
+    coin_ptr = CoinListTask()
+    coin_thread_ptr = threading.Thread(target=coin_ptr.run)
+    coin_thread_ptr.daemon = True
+    coin_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
