@@ -23,6 +23,7 @@ our_rewards = []
 cpu_usage = []
 transfer_dict = dict()
 trusted_blocked = []
+deploy_dict = dict()
 
 def system_memory():
     global sysmemory
@@ -185,7 +186,7 @@ def system_cpu():
 def casper_transfers():
     global transfers
 
-    max_display = 30
+    max_display = 35
 
     local_events = transfer_dict    # make a copy in case our thread tries to stomp
     length = len(transfer_dict.keys())
@@ -232,6 +233,77 @@ def casper_transfers():
             for key in items_2_remove:
                 del transfer_dict[key]
 
+def casper_deploys():
+    global deploy_view
+
+    max_display = 25
+
+    length = len(deploy_dict.keys())
+    if length > max_display:
+        length = max_display
+
+    box_height, box_width = peers.getmaxyx()
+    deploy_view = curses.newwin(2 + (1 if length < 1 else length), 180, 34+box_height, 0)
+    deploy_view.box()
+    box_height, box_width = deploy_view.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    deploy_view.addstr(0, 2, 'Casper Deploys', curses.color_pair(4))
+
+    items_2_remove = []
+
+    if length < 1:
+        deploy_view.addstr(1, 2, 'Waiting for next Deploy', curses.color_pair(5))
+    else:
+        index = 0
+        for key in list(sorted(deploy_dict.keys(), reverse=True)):
+            if index < length:
+                deploy = deploy_dict[key]
+                deploy_type = deploy[1]
+                params = deploy[2]
+                name = deploy[3]
+                entry = deploy[4]
+                result = deploy[5]
+                error_message = deploy[6]
+                deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).ljust(6, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
+                deploy_view.addstr(' / ', curses.color_pair(4))
+
+                deploy_view.addstr('{:22}'.format(deploy_type), curses.color_pair(2 if result == 'Failure' else 5))
+#                deploy_view.addstr(1+index, 32,'', curses.color_pair(2 if result == 'Failure' else 4))
+
+                if name:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('name: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(name), curses.color_pair(2 if result == 'Failure' else 5))
+
+                if entry:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('entry: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(entry), curses.color_pair(2 if result == 'Failure' else 5))
+
+
+                for param in params:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('{}: '.format(param[:20]), curses.color_pair(2 if result == 'Failure' else 4))
+                    string = str(params[param])
+                    if len(string) > 60:
+                        deploy_view.addstr('{}..{}'.format(string[:4],string[-4:]), curses.color_pair(2 if result == 'Failure' else 5))
+                    else:
+                        deploy_view.addstr('{}'.format(string[:30]), curses.color_pair(2 if result == 'Failure' else 5))
+
+                if error_message:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('error: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(error_message), curses.color_pair(2 if result == 'Failure' else 5))
+
+
+            else:
+                items_2_remove.append(key)
+
+            index += 1
+
+        if items_2_remove:
+            for key in items_2_remove:
+                del deploy_dict[key]
 
 
 def casper_bonds():
@@ -315,7 +387,7 @@ class ProposerTask:
 
             try:
                 block_info = json.loads(os.popen('casper-client get-block').read())
-                currentProposerBlock = int(block_info['result']['block']['header']['height'])
+                currentProposerBlock = int(block_info['result']['block']['header']['height']) 
                 loaded1stBlock = True
             except:
                 pass
@@ -328,6 +400,8 @@ class ProposerTask:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
                 proposer = block_info['result']['block']['body']['proposer'].strip("\"")
                 transfers = block_info['result']['block']['body']['transfer_hashes']
+                deploys = block_info['result']['block']['body']['deploy_hashes']
+
 
                 if proposer in proposers_dict:
                     proposers_dict[proposer] = proposers_dict[proposer] + 1
@@ -340,6 +414,37 @@ class ProposerTask:
                         our_blocks[era_id] = our_blocks[era_id] + 1
                     else:
                         our_blocks[era_id] = 1
+
+                if deploys:
+                    for deploy in deploys:
+                        deploy = deploy.strip("\"")
+                        d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
+                        session = d['result']['deploy']['session']
+                        results = d['result']['execution_results'][0]['result']
+                        result = None
+                        error_message = None
+                        for r in results:
+                            result = r
+                            if result == 'Failure':
+                                error_message = results[r]['error_message']
+                            break
+
+                        if session:
+                            for key in session:
+                                args = None
+                                index = 0
+                                name = None if 'name' not in session[key] else session[key]['name']
+                                entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
+
+                                args = session[key]['args']
+
+                                if args:
+                                    params = dict()
+                                    for arg in args:
+                                        params[arg[0]] = arg[1]['parsed']
+
+                                    deploy_dict['{}-{}'.format(currentProposerBlock,deploy)] = [currentProposerBlock,key,params,name,entry,result,error_message]
+
 
                 if transfers:
                     transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
@@ -608,21 +713,21 @@ class EventTask:
 
                                 try:
                                     deploy_hashs = json_str[key]['block']['body']['deploy_hashes']
-                                    if deploy_hashs:
-                                        if 'Deploys' in global_events:
-                                            global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
-                                        else:
-                                            global_events['Deploys'] = len(deploy_hashs)
+#                                    if deploy_hashs:
+#                                        if 'Deploys' in global_events:
+#                                            global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
+#                                        else:
+#                                            global_events['Deploys'] = len(deploy_hashs)
                                 except:
                                     pass
 
                                 try:
                                     transfer_hashs = json_str[key]['block']['body']['transfer_hashes']
-                                    if transfer_hashs:
-                                        if 'Transfers' in global_events:
-                                            global_events['Transfers'] = global_events['Transfers'] + len(transfer_hashs)
-                                        else:
-                                            global_events['Transfers'] = len(transfer_hashs)
+#                                    if transfer_hashs:
+#                                        if 'Transfers' in global_events:
+#                                            global_events['Transfers'] = global_events['Transfers'] + len(transfer_hashs)
+#                                        else:
+#                                            global_events['Transfers'] = len(transfer_hashs)
                                 except:
                                     pass
 
@@ -731,7 +836,7 @@ def casper_proposers():
                 if proposer[0] == public_key:
                     we_are_included = True
 
-                if index > max_proposers:
+                if index >= max_proposers:
                     break
 
 
@@ -1110,6 +1215,37 @@ def casper_public_key():
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
 
+        deploys = block_info['result']['block']['body']['deploy_hashes']
+        if deploys:
+            for deploy in deploys:
+                deploy = deploy.strip("\"")
+                d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
+                session = d['result']['deploy']['session']
+                results = d['result']['execution_results'][0]['result']
+                result = None
+                error_message = None
+                for r in results:
+                    result = r
+                    if result == 'Failure':
+                        error_message = results[r]['error_message']
+                    break
+
+                if session:
+                    for key in session:
+                        args = None
+                        index = 0
+                        name = None if 'name' not in session[key] else session[key]['name']
+                        entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
+
+                        args = session[key]['args']
+
+                        if args:
+                            params = dict()
+                            for arg in args:
+                                params[arg[0]] = arg[1]['parsed']
+
+                            deploy_dict['{}-{}'.format(currentProposerBlock,deploy)] = [currentProposerBlock,key,params,name,entry,result,error_message]
+
         transfers = block_info['result']['block']['body']['transfer_hashes']
         if transfers:
             transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentBlock)).read())
@@ -1373,6 +1509,7 @@ def draw_menu(casper):
         casper_proposers()
         casper_events()
         casper_transfers()
+        casper_deploys()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -1396,6 +1533,7 @@ def draw_menu(casper):
         proposers.noutrefresh()
         events.noutrefresh()
         transfers.noutrefresh()
+        deploy_view.noutrefresh()
 
         casper.noutrefresh()
 
