@@ -236,14 +236,20 @@ def casper_transfers():
 def casper_deploys():
     global deploy_view
 
-    max_display = 25
+    box_height, box_width = peers.getmaxyx()
+    starty = 34+box_height
+
+    max_display = main_height - starty - 3
 
     length = len(deploy_dict.keys())
     if length > max_display:
         length = max_display
 
+    if len(deploy_dict.keys()) and length < 1:
+        length = 1
+
     box_height, box_width = peers.getmaxyx()
-    deploy_view = curses.newwin(2 + (1 if length < 1 else length), 180, 34+box_height, 0)
+    deploy_view = curses.newwin(2 + (1 if length < 1 else length), 214, 34+box_height, 0)
     deploy_view.box()
     box_height, box_width = deploy_view.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -393,7 +399,7 @@ class ProposerTask:
                 pass
 
         # now that we have the 1st block... loop back X blocks to get a brief history
-        xBlocks = 700
+        xBlocks = 7000
         lastBlock = currentProposerBlock - xBlocks
         while currentProposerBlock > lastBlock:
             try:
@@ -769,7 +775,7 @@ def casper_events():
 
     local_events = global_events    # make a copy in case our thread tries to stomp
     length = len(local_events.keys())
-    events = curses.newwin(2 + (1 if length < 1 else length), events_box_width, events_box_y+events_box_height, events_box_x)
+    events = curses.newwin(2 + 5, events_box_width, events_box_y+events_box_height, events_box_x)
     events.box()
     box_height, box_width = events.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -782,14 +788,16 @@ def casper_events():
         for key in list(sorted(local_events.keys())):
             events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
             events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
-            index = index + 1
+            index += 1 
+            if index > 5:
+                break
 
 def casper_proposers():
     global proposers
 
     local_proposers = proposers_dict    # make a copy in case our thread tries to stomp
 
-    max_proposers = 20
+    max_proposers = 22
     we_are_included = False
     for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
         if proposer[0] == public_key:
@@ -798,9 +806,8 @@ def casper_proposers():
 
     length = min(len(local_proposers.keys()), max_proposers)
     window_length = length + (0 if we_are_included else 1)
-    starty = 18+ 2 + (1 if len(global_events.keys()) < 1 else len(global_events.keys()))
 
-    proposers= curses.newwin(2 + (1 if window_length < 1 else window_length), 40, 8, 110)
+    proposers= curses.newwin(2 + 23, 40, 8, 110)
 
     proposers.box()
     box_height, box_width = proposers.getmaxyx()
@@ -862,7 +869,7 @@ def casper_era_rewards():
     max_print = 10
 
     length = min(len(era_rewards_dict), max_print)
-    era_rewards = curses.newwin(2 + (length*2)+1, events_box_width, events_box_y+events_box_height, events_box_x)
+    era_rewards = curses.newwin(2 + (max_print*2)+2, events_box_width, events_box_y+events_box_height, events_box_x)
 
     era_rewards.box()
     box_height, box_width = era_rewards.getmaxyx()
