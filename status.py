@@ -269,6 +269,8 @@ def casper_deploys():
                 entry = deploy[4]
                 result = deploy[5]
                 error_message = deploy[6]
+                paid_cost = int(deploy[7])
+                actual_cost = int(deploy[8])
                 deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).ljust(6, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
                 deploy_view.addstr(' / ', curses.color_pair(4))
 
@@ -301,6 +303,16 @@ def casper_deploys():
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('error: ', curses.color_pair(2 if result == 'Failure' else 4))
                     deploy_view.addstr('{}'.format(error_message), curses.color_pair(2 if result == 'Failure' else 5))
+
+                deploy_view.addstr(' / ', curses.color_pair(4))
+                deploy_view.addstr('costs: (', curses.color_pair(2 if result == 'Failure' else 1))
+                deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(2 if result == 'Failure' else 5))
+                deploy_view.addstr(' - ', curses.color_pair(4))
+#                deploy_view.addstr('c: ', curses.color_pair(2 if result == 'Failure' else 4))
+                deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(2 if result == 'Failure' else 5))
+                deploy_view.addstr(') = ', curses.color_pair(1))
+                over_under = paid_cost - actual_cost
+                deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(2 if result == 'Failure' else 5))
 
 
             index += 1
@@ -414,36 +426,7 @@ class ProposerTask:
                     else:
                         our_blocks[era_id] = 1
 
-                if deploys:
-                    for deploy in deploys:
-                        deploy = deploy.strip("\"")
-                        d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
-                        session = d['result']['deploy']['session']
-                        results = d['result']['execution_results'][0]['result']
-                        result = None
-                        error_message = None
-                        for r in results:
-                            result = r
-                            if result == 'Failure':
-                                error_message = results[r]['error_message']
-                            break
-
-                        if session:
-                            for key in session:
-                                args = None
-                                index = 0
-                                name = None if 'name' not in session[key] else session[key]['name']
-                                entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
-
-                                args = session[key]['args']
-
-                                if args:
-                                    params = dict()
-                                    for arg in args:
-                                        params[arg[0]] = arg[1]['parsed']
-
-                                    deploy_dict['{}-{}'.format(currentProposerBlock,deploy)] = [currentProposerBlock,key,params,name,entry,result,error_message]
-
+                ProcessDeploy(deploys, currentProposerBlock)
 
                 if transfers:
                     transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
@@ -677,6 +660,46 @@ class CoinListTask:
 
             time.sleep(10)
 
+def ProcessDeploy(deploys, height):
+    if deploys:
+        for deploy in deploys:
+            deploy = deploy.strip("\"")
+            d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
+            payment = d['result']['deploy']['payment']
+            session = d['result']['deploy']['session']
+            results = d['result']['execution_results'][0]['result']
+            result = None
+            error_message = None
+            actual_cost = 0
+            for r in results:
+                result = r
+                actual_cost = results[r]['cost']
+                if result == 'Failure':
+                    error_message = results[r]['error_message']
+                break
+
+            if session:
+                for key in session:
+                    args = None
+                    name = None if 'name' not in session[key] else session[key]['name']
+                    entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
+
+                    paid_cost = 0
+                    args = payment['ModuleBytes']['args']
+                    if args:
+                        for arg in args:
+                            if arg[0] == 'amount':
+                                paid_cost = arg[1]['parsed']
+
+                    args = session[key]['args']
+                    if args:
+                        params = dict()
+                        for arg in args:
+                            params[arg[0]] = arg[1]['parsed']
+
+                        deploy_dict['{}-{}'.format(height,deploy)] = [height,key,params,name,entry,result,error_message,paid_cost,actual_cost]
+    
+
 class EventTask:
     def __init__(self):
         self._running = True
@@ -764,42 +787,7 @@ class EventTask:
                                 try:
                                     deploys = json_str[key]['block']['body']['deploy_hashes']
                                     height = int(json_str[key]['block']['header']['height'])
-
-                                    if deploys:
-                                        for deploy in deploys:
-                                            deploy = deploy.strip("\"")
-                                            d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
-                                            session = d['result']['deploy']['session']
-                                            results = d['result']['execution_results'][0]['result']
-                                            result = None
-                                            error_message = None
-                                            for r in results:
-                                                result = r
-                                                if result == 'Failure':
-                                                    error_message = results[r]['error_message']
-                                                break
-
-                                            if session:
-                                                for key in session:
-                                                    args = None
-                                                    index = 0
-                                                    name = None if 'name' not in session[key] else session[key]['name']
-                                                    entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
-
-                                                    args = session[key]['args']
-
-                                                    if args:
-                                                        params = dict()
-                                                        for arg in args:
-                                                            params[arg[0]] = arg[1]['parsed']
-
-                                                        deploy_dict['{}-{}'.format(height,deploy)] = [height,key,params,name,entry,result,error_message]
-
-#                                    if deploy_hashs:
-#                                        if 'Deploys' in global_events:
-#                                            global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
-#                                        else:
-#                                            global_events['Deploys'] = len(deploy_hashs)
+                                    ProcessDeploy(deploys, height)
                                 except:
                                     pass
 
@@ -1297,37 +1285,6 @@ def casper_public_key():
         currentBlock = int(header_info['height'])
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
-
-#        deploys = block_info['result']['block']['body']['deploy_hashes']
-#        if deploys:
-#            for deploy in deploys:
-#                deploy = deploy.strip("\"")
-#                d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
-#                session = d['result']['deploy']['session']
-#                results = d['result']['execution_results'][0]['result']
-#                result = None
-#                error_message = None
-#                for r in results:
-#                    result = r
-#                    if result == 'Failure':
-#                        error_message = results[r]['error_message']
-#                    break
-#
-#                if session:
-#                    for key in session:
-#                        args = None
-#                        index = 0
-#                        name = None if 'name' not in session[key] else session[key]['name']
-#                        entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
-#
-#                        args = session[key]['args']
-#
-#                        if args:
-#                            params = dict()
-#                            for arg in args:
-#                                params[arg[0]] = arg[1]['parsed']
-#
-#                            deploy_dict['{}-{}'.format(currentBlock,deploy)] = [currentBlock,key,params,name,entry,result,error_message]
 
         transfers = block_info['result']['block']['body']['transfer_hashes']
         if transfers:
