@@ -399,7 +399,7 @@ class ProposerTask:
                 pass
 
         # now that we have the 1st block... loop back X blocks to get a brief history
-        xBlocks = 7000
+        xBlocks = 700
         lastBlock = currentProposerBlock - xBlocks
         while currentProposerBlock > lastBlock:
             try:
