@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import namedtuple
 from configparser import ConfigParser
 import platform,subprocess,re,getopt
+import requests,hmac,hashlib,base64
 
 peer_blacklist = []
 peer_wrong_chain = []
@@ -23,6 +24,7 @@ our_rewards = []
 cpu_usage = []
 transfer_dict = dict()
 trusted_blocked = []
+deploy_dict = dict()
 
 def system_memory():
     global sysmemory
@@ -185,7 +187,7 @@ def system_cpu():
 def casper_transfers():
     global transfers
 
-    max_display = 30
+    max_display = 37
 
     local_events = transfer_dict    # make a copy in case our thread tries to stomp
     length = len(transfer_dict.keys())
@@ -232,6 +234,74 @@ def casper_transfers():
             for key in items_2_remove:
                 del transfer_dict[key]
 
+def casper_deploys():
+    global deploy_view
+
+    box_height, box_width = peers.getmaxyx()
+    starty = 34+box_height
+
+    max_display = main_height - starty - 3
+
+    length = len(deploy_dict.keys())
+    if length > max_display:
+        length = max_display
+
+    if len(deploy_dict.keys()) and length < 1:
+        length = 1
+
+    box_height, box_width = peers.getmaxyx()
+    deploy_view = curses.newwin(2 + (1 if length < 1 else length), 214, 34+box_height, 0)
+    deploy_view.box()
+    box_height, box_width = deploy_view.getmaxyx()
+    text_width = box_width - 17 # length of the Text before it gets printed
+    deploy_view.addstr(0, 2, 'Casper Deploys', curses.color_pair(4))
+
+    if length < 1:
+        deploy_view.addstr(1, 2, 'Waiting for next Deploy', curses.color_pair(5))
+    else:
+        index = 0
+        for key in list(sorted(deploy_dict.keys(), reverse=True)):
+            if index < length:
+                deploy = deploy_dict[key]
+                deploy_type = deploy[1]
+                params = deploy[2]
+                name = deploy[3]
+                entry = deploy[4]
+                result = deploy[5]
+                error_message = deploy[6]
+                deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).ljust(6, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
+                deploy_view.addstr(' / ', curses.color_pair(4))
+
+                deploy_view.addstr('{:22}'.format(deploy_type), curses.color_pair(2 if result == 'Failure' else 5))
+#                deploy_view.addstr(1+index, 32,'', curses.color_pair(2 if result == 'Failure' else 4))
+
+                if name:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('name: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(name), curses.color_pair(2 if result == 'Failure' else 5))
+
+                if entry:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('entry: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(entry), curses.color_pair(2 if result == 'Failure' else 5))
+
+
+                for param in params:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('{}: '.format(param[:20]), curses.color_pair(2 if result == 'Failure' else 4))
+                    string = str(params[param])
+                    if len(string) > 60:
+                        deploy_view.addstr('{}..{}'.format(string[:4],string[-4:]), curses.color_pair(2 if result == 'Failure' else 5))
+                    else:
+                        deploy_view.addstr('{}'.format(string[:30]), curses.color_pair(2 if result == 'Failure' else 5))
+
+                if error_message:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('error: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(error_message), curses.color_pair(2 if result == 'Failure' else 5))
+
+
+            index += 1
 
 
 def casper_bonds():
@@ -315,7 +385,7 @@ class ProposerTask:
 
             try:
                 block_info = json.loads(os.popen('casper-client get-block').read())
-                currentProposerBlock = int(block_info['result']['block']['header']['height'])
+                currentProposerBlock = int(block_info['result']['block']['header']['height']) 
                 loaded1stBlock = True
             except:
                 pass
@@ -328,6 +398,8 @@ class ProposerTask:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
                 proposer = block_info['result']['block']['body']['proposer'].strip("\"")
                 transfers = block_info['result']['block']['body']['transfer_hashes']
+                deploys = block_info['result']['block']['body']['deploy_hashes']
+
 
                 if proposer in proposers_dict:
                     proposers_dict[proposer] = proposers_dict[proposer] + 1
@@ -340,6 +412,37 @@ class ProposerTask:
                         our_blocks[era_id] = our_blocks[era_id] + 1
                     else:
                         our_blocks[era_id] = 1
+
+                if deploys:
+                    for deploy in deploys:
+                        deploy = deploy.strip("\"")
+                        d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
+                        session = d['result']['deploy']['session']
+                        results = d['result']['execution_results'][0]['result']
+                        result = None
+                        error_message = None
+                        for r in results:
+                            result = r
+                            if result == 'Failure':
+                                error_message = results[r]['error_message']
+                            break
+
+                        if session:
+                            for key in session:
+                                args = None
+                                index = 0
+                                name = None if 'name' not in session[key] else session[key]['name']
+                                entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
+
+                                args = session[key]['args']
+
+                                if args:
+                                    params = dict()
+                                    for arg in args:
+                                        params[arg[0]] = arg[1]['parsed']
+
+                                    deploy_dict['{}-{}'.format(currentProposerBlock,deploy)] = [currentProposerBlock,key,params,name,entry,result,error_message]
+
 
                 if transfers:
                     transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
@@ -491,6 +594,35 @@ class PeersTask:
             testing_trusted = False
             time.sleep(300)
 
+def sha265hmac(data, key):
+    h = hmac.new(key, data.encode('utf-8'), digestmod=hashlib.sha256)
+    return base64.b64encode(h.digest()).decode('utf-8')
+
+
+class CoinList(object):
+    def __init__(self, access_key, access_secret, endpoint_url='https://trade-api.coinlist.co'):
+        self.access_key = access_key
+        self.access_secret = access_secret
+        self.endpoint_url = endpoint_url
+
+    def request(self, method, path, params={}, body={}):
+        timestamp = str(int(time.time()))
+        # build the request path with any GET params already included
+        path_with_params = requests.Request(method, self.endpoint_url + path, params=params).prepare().path_url
+        json_body = json.dumps(body, separators=(',', ':')).strip()
+        message = timestamp + method + path_with_params + ('' if not body else json_body)
+        secret = base64.b64decode(self.access_secret).strip()
+        signature = sha265hmac(message, secret)
+        headers = {
+            'Content-Type': 'application/json',
+            'CL-ACCESS-KEY': self.access_key,
+            'CL-ACCESS-SIG': signature,
+            'CL-ACCESS-TIMESTAMP': timestamp
+        }
+        url = self.endpoint_url + path_with_params
+        r = requests.request(method, url, headers=headers, data=json_body)
+        return r.json()
+
 class CpuTask:
     def __init__(self, max_time_interval):
         self._running = True
@@ -521,6 +653,28 @@ class CpuTask:
                 cpu_usage.pop(0)
 
             time.sleep(1)
+
+class CoinListTask:
+    def __init__(self):
+        self._running = True
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        global current_price
+        coinlist = CoinList('50883453-345b-4b11-ade9-105ca81c53fd', 'YTxYSY7lXzp7Uq26dXnnPeYSQ2g3JYG1nVP/hmJ9u5eGBS/XXf6OjnnnLr5Nr87GW1upSkVcLDDxxX5hnwaAGA==')
+
+        while True:
+            try:
+                coin_info = coinlist.request('GET', '/v1/symbols/CSPR-USD')
+                current_price = coin_info['symbol']['fair_price'][:-4]
+            except:
+                global_events['price_error'] = 1
+                pass
+
+            time.sleep(10)
 
 class EventTask:
     def __init__(self):
@@ -608,21 +762,21 @@ class EventTask:
 
                                 try:
                                     deploy_hashs = json_str[key]['block']['body']['deploy_hashes']
-                                    if deploy_hashs:
-                                        if 'Deploys' in global_events:
-                                            global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
-                                        else:
-                                            global_events['Deploys'] = len(deploy_hashs)
+#                                    if deploy_hashs:
+#                                        if 'Deploys' in global_events:
+#                                            global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
+#                                        else:
+#                                            global_events['Deploys'] = len(deploy_hashs)
                                 except:
                                     pass
 
                                 try:
                                     transfer_hashs = json_str[key]['block']['body']['transfer_hashes']
-                                    if transfer_hashs:
-                                        if 'Transfers' in global_events:
-                                            global_events['Transfers'] = global_events['Transfers'] + len(transfer_hashs)
-                                        else:
-                                            global_events['Transfers'] = len(transfer_hashs)
+#                                    if transfer_hashs:
+#                                        if 'Transfers' in global_events:
+#                                            global_events['Transfers'] = global_events['Transfers'] + len(transfer_hashs)
+#                                        else:
+#                                            global_events['Transfers'] = len(transfer_hashs)
                                 except:
                                     pass
 
@@ -664,7 +818,7 @@ def casper_events():
 
     local_events = global_events    # make a copy in case our thread tries to stomp
     length = len(local_events.keys())
-    events = curses.newwin(2 + (1 if length < 1 else length), events_box_width, events_box_y+events_box_height, events_box_x)
+    events = curses.newwin(2 + 5, events_box_width, events_box_y+events_box_height, events_box_x)
     events.box()
     box_height, box_width = events.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -677,14 +831,16 @@ def casper_events():
         for key in list(sorted(local_events.keys())):
             events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
             events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
-            index = index + 1
+            index += 1 
+            if index > 5:
+                break
 
 def casper_proposers():
     global proposers
 
     local_proposers = proposers_dict    # make a copy in case our thread tries to stomp
 
-    max_proposers = 20
+    max_proposers = 22
     we_are_included = False
     for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
         if proposer[0] == public_key:
@@ -693,9 +849,8 @@ def casper_proposers():
 
     length = min(len(local_proposers.keys()), max_proposers)
     window_length = length + (0 if we_are_included else 1)
-    starty = 18+ 2 + (1 if len(global_events.keys()) < 1 else len(global_events.keys()))
 
-    proposers= curses.newwin(2 + (1 if window_length < 1 else window_length), 40, 8, 110)
+    proposers= curses.newwin(2 + 23, 40, 8, 110)
 
     proposers.box()
     box_height, box_width = proposers.getmaxyx()
@@ -757,7 +912,7 @@ def casper_era_rewards():
     max_print = 10
 
     length = min(len(era_rewards_dict), max_print)
-    era_rewards = curses.newwin(2 + (length*2)+1, events_box_width, events_box_y+events_box_height, events_box_x)
+    era_rewards = curses.newwin(2 + (max_print*2)+2, events_box_width, events_box_y+events_box_height, events_box_x)
 
     era_rewards.box()
     box_height, box_width = era_rewards.getmaxyx()
@@ -1110,6 +1265,37 @@ def casper_public_key():
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
 
+        deploys = block_info['result']['block']['body']['deploy_hashes']
+        if deploys:
+            for deploy in deploys:
+                deploy = deploy.strip("\"")
+                d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
+                session = d['result']['deploy']['session']
+                results = d['result']['execution_results'][0]['result']
+                result = None
+                error_message = None
+                for r in results:
+                    result = r
+                    if result == 'Failure':
+                        error_message = results[r]['error_message']
+                    break
+
+                if session:
+                    for key in session:
+                        args = None
+                        index = 0
+                        name = None if 'name' not in session[key] else session[key]['name']
+                        entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
+
+                        args = session[key]['args']
+
+                        if args:
+                            params = dict()
+                            for arg in args:
+                                params[arg[0]] = arg[1]['parsed']
+
+                            deploy_dict['{}-{}'.format(currentProposerBlock,deploy)] = [currentProposerBlock,key,params,name,entry,result,error_message]
+
         transfers = block_info['result']['block']['body']['transfer_hashes']
         if transfers:
             transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentBlock)).read())
@@ -1134,6 +1320,10 @@ def casper_public_key():
             pub_key_win.addstr('{:,.9f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
         else:
             pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
+
+        coin_len = len(current_price)
+        pub_key_win.addstr(2, 70-coin_len-8-7, 'Price: ', curses.color_pair(1))
+        pub_key_win.addstr('${} CSPR'.format(current_price), curses.color_pair(4))
 
     except:
         current_era_global = 0
@@ -1373,6 +1563,7 @@ def draw_menu(casper):
         casper_proposers()
         casper_events()
         casper_transfers()
+        casper_deploys()
 
         # Render status bar
         statusbarstr = "Press 'ctrl-c' to exit | STATUS BAR "
@@ -1396,6 +1587,7 @@ def draw_menu(casper):
         proposers.noutrefresh()
         events.noutrefresh()
         transfers.noutrefresh()
+        deploy_view.noutrefresh()
 
         casper.noutrefresh()
 
@@ -1499,6 +1691,16 @@ def main():
     peers_thread_ptr = threading.Thread(target=peers_ptr.run)
     peers_thread_ptr.daemon = True
     peers_thread_ptr.start()
+
+    global current_price
+    current_price = "0"
+
+    global coinlist_thread_ptr
+    global coin_ptr
+    coin_ptr = CoinListTask()
+    coin_thread_ptr = threading.Thread(target=coin_ptr.run)
+    coin_thread_ptr.daemon = True
+    coin_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
