@@ -186,7 +186,7 @@ def system_cpu():
 def casper_transfers():
     global transfers
 
-    max_display = 35
+    max_display = 37
 
     local_events = transfer_dict    # make a copy in case our thread tries to stomp
     length = len(transfer_dict.keys())
@@ -836,7 +836,7 @@ def casper_proposers():
                 if proposer[0] == public_key:
                     we_are_included = True
 
-                if index >= max_proposers:
+                if index > max_proposers:
                     break
 
 
