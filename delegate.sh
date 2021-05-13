@@ -4,21 +4,21 @@
 # Requirements: 'apt install jq'
 # Requirements: '$DELEGATE_AMOUNT' '$VALIDATOR_PUBLIC_KEY_HEX' '$DELEGATOR_PUBLIC_KEY_HEX' '$TARGET_HOST' '$KEY_PATH' '$CONTRACT_PATH' '$CHAIN_NAME' '$payment_amount' 
 
-DELEGATE_AMOUNT="1000"
+DELEGATE_AMOUNT="10000000000"
 
-VALIDATOR_PUBLIC_KEY_HEX=""
+KEY_PATH="/home/casper/keys/5/secret_key.pem" # PATH TO DELEGATOR PRIVATE KEY
 
-DELEGATOR_PUBLIC_KEY_HEX=""
+DELEGATOR_PUBLIC_KEY_HEX="<DELEGATOR PUBLIC KEY IN HEX FORMAT>" # DELEGATOR PUBLIC KEY IN HEX FORMAT
 
-TARGET_HOST="http://127.0.0.1:7777"
+VALIDATOR_PUBLIC_KEY_HEX="01a3536b5794be5b53972a9bbb56795cb7a4af385a3f1cddb29e253cbcf73586f6" # VALIDATOR PUBLIC KEY IN HEX FORMAT
 
-KEY_PATH="/etc/casper/validator_keys/secret_key.pem"
+TARGET_HOST="http://127.0.0.1:7777" # RPC NODE ADDRESS
 
-CONTRACT_PATH="$HOME/casper-node/target/wasm32-unknown-unknown/release/delegate.wasm"
+CONTRACT_PATH="$HOME/casper-node/target/wasm32-unknown-unknown/release/delegate.wasm" # APPROPRIATELY BUILD DELEGATION CONTRACT
 
-CHAIN_NAME="delta-11"
+CHAIN_NAME="casper-test" # CHAIN NAME
 
-payment_amount="1000000000"
+payment_amount="10000000000" # TRANSACTION FEE ( MOTES )
 
 casper-client put-deploy --chain-name "$CHAIN_NAME" \
   --node-address "$TARGET_HOST" \
