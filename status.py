@@ -680,6 +680,8 @@ def ProcessDeploy(deploys, height):
 
             if session:
                 for key in session:
+                    if key == 'Transfer' and result != 'Failure':
+                        return
                     args = None
                     name = None if 'name' not in session[key] else session[key]['name']
                     entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
@@ -729,6 +731,7 @@ class EventTask:
         CHUNK = 6 * 1024
         partial_line = ""
         last_block_time = ""
+        last_height = 0
 
         try:
             while self._running:
@@ -755,8 +758,17 @@ class EventTask:
                             if key == 'ApiVersion':
                                 global_events[key] = json_str[key]
                                 continue
+                            if key == 'DeployProcessed':
+                                if not last_height:
+                                    last_height = global_height
+                                deploys = [json_str[key]['deploy_hash']]
+                                ProcessDeploy(deploys, last_height)
+                                continue
+
                             if key == 'BlockAdded':
                                 event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                                last_height = int(json_str[key]['block']['header']['height'])
+
                                 if last_block_time == "":
                                     global_events['Time Since Block'] = 'Calculating'
                                 else:
@@ -786,8 +798,7 @@ class EventTask:
 
                                 try:
                                     deploys = json_str[key]['block']['body']['deploy_hashes']
-                                    height = int(json_str[key]['block']['header']['height'])
-                                    ProcessDeploy(deploys, height)
+                                    ProcessDeploy(deploys, last_height)
                                 except:
                                     pass
 
@@ -802,11 +813,10 @@ class EventTask:
                                     pass
 
                                 try:
-                                    era_height = json_str[key]['block']['header']['height']
                                     era_id = json_str[key]['block']['header']['era_id']
 
-                                    if era_height:
-                                        getEraInfo(era_height, era_id)
+                                    if last_height:
+                                        getEraInfo(last_height, era_id)
                                 except:
                                     pass
 
@@ -838,23 +848,41 @@ def casper_events():
     events_box_height, events_box_width = proposers.getmaxyx()
 
     local_events = global_events    # make a copy in case our thread tries to stomp
-    length = len(local_events.keys())
+    num_events = len(local_events.keys())
+    length = num_events
+
     events = curses.newwin(2 + 5, events_box_width, events_box_y+events_box_height, events_box_x)
     events.box()
     box_height, box_width = events.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     events.addstr(0, 2, 'Casper Events', curses.color_pair(4))
 
+    skip_list = ['BlockAdded', 'DeployProcessed', 'FinalitySignature', 'Time Since Block', 'Last Reward']
+    
     if length < 1:
         events.addstr(1, 2, 'Waiting for next Event', curses.color_pair(5))
     else:
         index = 0
+        skipped = []
         for key in list(sorted(local_events.keys())):
+            if num_events > 5 and key in skip_list:
+                skipped.append(key)
+                continue
             events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
             events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
             index += 1 
-            if index > 5:
+            if index >= 5:
                 break
+
+        if index < 5:
+            for key in skipped:
+                events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
+                events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
+                index += 1
+                if index >= 5:
+                    break
+
+
 
 def casper_proposers():
     global proposers
