@@ -269,6 +269,8 @@ def casper_deploys():
                 entry = deploy[4]
                 result = deploy[5]
                 error_message = deploy[6]
+                paid_cost = int(deploy[7])
+                actual_cost = int(deploy[8])
                 deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).ljust(6, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
                 deploy_view.addstr(' / ', curses.color_pair(4))
 
@@ -301,6 +303,16 @@ def casper_deploys():
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('error: ', curses.color_pair(2 if result == 'Failure' else 4))
                     deploy_view.addstr('{}'.format(error_message), curses.color_pair(2 if result == 'Failure' else 5))
+
+                deploy_view.addstr(' / ', curses.color_pair(4))
+                deploy_view.addstr('costs: (', curses.color_pair(1))
+                deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
+                deploy_view.addstr(' - ', curses.color_pair(4))
+#                deploy_view.addstr('c: ', curses.color_pair(2 if result == 'Failure' else 4))
+                deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
+                deploy_view.addstr(') = ', curses.color_pair(1))
+                over_under = paid_cost - actual_cost
+                deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
 
 
             index += 1
@@ -414,36 +426,7 @@ class ProposerTask:
                     else:
                         our_blocks[era_id] = 1
 
-                if deploys:
-                    for deploy in deploys:
-                        deploy = deploy.strip("\"")
-                        d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
-                        session = d['result']['deploy']['session']
-                        results = d['result']['execution_results'][0]['result']
-                        result = None
-                        error_message = None
-                        for r in results:
-                            result = r
-                            if result == 'Failure':
-                                error_message = results[r]['error_message']
-                            break
-
-                        if session:
-                            for key in session:
-                                args = None
-                                index = 0
-                                name = None if 'name' not in session[key] else session[key]['name']
-                                entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
-
-                                args = session[key]['args']
-
-                                if args:
-                                    params = dict()
-                                    for arg in args:
-                                        params[arg[0]] = arg[1]['parsed']
-
-                                    deploy_dict['{}-{}'.format(currentProposerBlock,deploy)] = [currentProposerBlock,key,params,name,entry,result,error_message]
-
+                ProcessDeploy(deploys, currentProposerBlock)
 
                 if transfers:
                     transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentProposerBlock)).read())
@@ -677,6 +660,48 @@ class CoinListTask:
 
             time.sleep(10)
 
+def ProcessDeploy(deploys, height):
+    if deploys:
+        for deploy in deploys:
+            deploy = deploy.strip("\"")
+            d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
+            payment = d['result']['deploy']['payment']
+            session = d['result']['deploy']['session']
+            results = d['result']['execution_results'][0]['result']
+            result = None
+            error_message = None
+            actual_cost = 0
+            for r in results:
+                result = r
+                actual_cost = results[r]['cost']
+                if result == 'Failure':
+                    error_message = results[r]['error_message']
+                break
+
+            if session:
+                for key in session:
+                    if key == 'Transfer' and result != 'Failure':
+                        return
+                    args = None
+                    name = None if 'name' not in session[key] else session[key]['name']
+                    entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
+
+                    paid_cost = 0
+                    args = payment['ModuleBytes']['args']
+                    if args:
+                        for arg in args:
+                            if arg[0] == 'amount':
+                                paid_cost = arg[1]['parsed']
+
+                    args = session[key]['args']
+                    if args:
+                        params = dict()
+                        for arg in args:
+                            params[arg[0]] = arg[1]['parsed']
+
+                        deploy_dict['{}-{}'.format(height,deploy)] = [height,key,params,name,entry,result,error_message,paid_cost,actual_cost]
+    
+
 class EventTask:
     def __init__(self):
         self._running = True
@@ -706,6 +731,7 @@ class EventTask:
         CHUNK = 6 * 1024
         partial_line = ""
         last_block_time = ""
+        last_height = 0
 
         try:
             while self._running:
@@ -732,8 +758,17 @@ class EventTask:
                             if key == 'ApiVersion':
                                 global_events[key] = json_str[key]
                                 continue
+                            if key == 'DeployProcessed':
+                                if not last_height:
+                                    last_height = global_height
+                                deploys = [json_str[key]['deploy_hash']]
+                                ProcessDeploy(deploys, last_height)
+                                continue
+
                             if key == 'BlockAdded':
                                 event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                                last_height = int(json_str[key]['block']['header']['height'])
+
                                 if last_block_time == "":
                                     global_events['Time Since Block'] = 'Calculating'
                                 else:
@@ -763,43 +798,7 @@ class EventTask:
 
                                 try:
                                     deploys = json_str[key]['block']['body']['deploy_hashes']
-                                    height = int(json_str[key]['block']['header']['height'])
-
-                                    if deploys:
-                                        for deploy in deploys:
-                                            deploy = deploy.strip("\"")
-                                            d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
-                                            session = d['result']['deploy']['session']
-                                            results = d['result']['execution_results'][0]['result']
-                                            result = None
-                                            error_message = None
-                                            for r in results:
-                                                result = r
-                                                if result == 'Failure':
-                                                    error_message = results[r]['error_message']
-                                                break
-
-                                            if session:
-                                                for key in session:
-                                                    args = None
-                                                    index = 0
-                                                    name = None if 'name' not in session[key] else session[key]['name']
-                                                    entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
-
-                                                    args = session[key]['args']
-
-                                                    if args:
-                                                        params = dict()
-                                                        for arg in args:
-                                                            params[arg[0]] = arg[1]['parsed']
-
-                                                        deploy_dict['{}-{}'.format(height,deploy)] = [height,key,params,name,entry,result,error_message]
-
-#                                    if deploy_hashs:
-#                                        if 'Deploys' in global_events:
-#                                            global_events['Deploys'] = global_events['Deploys'] + len(deploy_hashs)
-#                                        else:
-#                                            global_events['Deploys'] = len(deploy_hashs)
+                                    ProcessDeploy(deploys, last_height)
                                 except:
                                     pass
 
@@ -814,11 +813,10 @@ class EventTask:
                                     pass
 
                                 try:
-                                    era_height = json_str[key]['block']['header']['height']
                                     era_id = json_str[key]['block']['header']['era_id']
 
-                                    if era_height:
-                                        getEraInfo(era_height, era_id)
+                                    if last_height:
+                                        getEraInfo(last_height, era_id)
                                 except:
                                     pass
 
@@ -850,23 +848,41 @@ def casper_events():
     events_box_height, events_box_width = proposers.getmaxyx()
 
     local_events = global_events    # make a copy in case our thread tries to stomp
-    length = len(local_events.keys())
+    num_events = len(local_events.keys())
+    length = num_events
+
     events = curses.newwin(2 + 5, events_box_width, events_box_y+events_box_height, events_box_x)
     events.box()
     box_height, box_width = events.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     events.addstr(0, 2, 'Casper Events', curses.color_pair(4))
 
+    skip_list = ['BlockAdded', 'DeployProcessed', 'FinalitySignature', 'Time Since Block', 'Last Reward']
+    
     if length < 1:
         events.addstr(1, 2, 'Waiting for next Event', curses.color_pair(5))
     else:
         index = 0
+        skipped = []
         for key in list(sorted(local_events.keys())):
+            if num_events > 5 and key in skip_list:
+                skipped.append(key)
+                continue
             events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
             events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
             index += 1 
-            if index > 5:
+            if index >= 5:
                 break
+
+        if index < 5:
+            for key in skipped:
+                events.addstr(1+index, 2, '{} : '.format(key.ljust(17, ' ')), curses.color_pair(1))
+                events.addstr('{}'.format(local_events[key]), curses.color_pair(4))
+                index += 1
+                if index >= 5:
+                    break
+
+
 
 def casper_proposers():
     global proposers
@@ -1297,37 +1313,6 @@ def casper_public_key():
         currentBlock = int(header_info['height'])
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
-
-#        deploys = block_info['result']['block']['body']['deploy_hashes']
-#        if deploys:
-#            for deploy in deploys:
-#                deploy = deploy.strip("\"")
-#                d = json.loads(os.popen('casper-client get-deploy {}'.format(deploy)).read())
-#                session = d['result']['deploy']['session']
-#                results = d['result']['execution_results'][0]['result']
-#                result = None
-#                error_message = None
-#                for r in results:
-#                    result = r
-#                    if result == 'Failure':
-#                        error_message = results[r]['error_message']
-#                    break
-#
-#                if session:
-#                    for key in session:
-#                        args = None
-#                        index = 0
-#                        name = None if 'name' not in session[key] else session[key]['name']
-#                        entry = None if 'entry_point' not in session[key] else session[key]['entry_point']
-#
-#                        args = session[key]['args']
-#
-#                        if args:
-#                            params = dict()
-#                            for arg in args:
-#                                params[arg[0]] = arg[1]['parsed']
-#
-#                            deploy_dict['{}-{}'.format(currentBlock,deploy)] = [currentBlock,key,params,name,entry,result,error_message]
 
         transfers = block_info['result']['block']['body']['transfer_hashes']
         if transfers:
