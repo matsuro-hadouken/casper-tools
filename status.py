@@ -524,7 +524,6 @@ def getEraInfo(block, currentEra):
 
         our_rewards.append(my_val_reward)
 
-
     return currentEra
 
 
@@ -697,6 +696,50 @@ class CoinListTask:
 
             time.sleep(10)
 
+def ProcessStep(transforms, last_height):
+    for transform in transforms:
+        if transform['key'].startswith('era-'):
+            eraInfo = transform['transform']['WriteEraInfo']['seigniorage_allocations']
+            currentEra = int(str(transform['key'])[4:])
+            num_era_rewards[currentEra] = 0
+            era_block_start[currentEra] = last_height
+
+            my_val_reward = 0
+            for info in eraInfo:
+                if 'Delegator' in info:
+                    amount = int(info['Delegator']['amount'])
+                    if currentEra in era_rewards_dict:
+                        era_rewards_dict[currentEra] = era_rewards_dict[currentEra] + amount
+                    else:
+                        era_rewards_dict[currentEra] = amount
+
+                    num_era_rewards[currentEra] += 1
+
+                    # now check if it was us
+                    val = info['Delegator']['validator_public_key'].strip("\"")
+                    if val == public_key:
+                        my_val_reward += amount
+
+                elif 'Validator' in info:
+                    amount = int(info['Validator']['amount'])
+                    if currentEra in era_rewards_dict:
+                        era_rewards_dict[currentEra] = era_rewards_dict[currentEra] + amount
+                    else:
+                        era_rewards_dict[currentEra] = amount
+
+                    num_era_rewards[currentEra] += 1
+
+                    # now check if it was us
+                    val = info['Validator']['validator_public_key'].strip("\"")
+                    if val == public_key:
+                        my_val_reward += amount
+                        if (my_val_reward > 1000000000):
+                            global_events['Last Reward'] = '{:,.4f} CSPR'.format(my_val_reward / 1000000000)
+                        else:
+                            global_events['Last Reward'] = '{:,} mote'.format(int(my_val_reward))
+
+            our_rewards.append(my_val_reward)
+
 def ProcessDeploy(deploys, height):
     if deploys:
         for deploy in deploys:
@@ -755,7 +798,8 @@ class EventTask:
         return False
 
     def run(self):
-        url = 'http://localhost:9999/events'
+        global localhost
+        url = 'http://{}:9999/events'.format(localhost)
         localhost_active = False
         while not localhost_active:
             try:
@@ -769,6 +813,7 @@ class EventTask:
         partial_line = ""
         last_block_time = ""
         last_height = 0
+        StepEvents = False
 
         try:
             while self._running:
@@ -802,6 +847,14 @@ class EventTask:
                                 ProcessDeploy(deploys, last_height)
                                 continue
 
+                            if key == 'Step':
+                                StepEvents = True
+                                try:
+                                    ProcessStep(json_str[key]['execution_effect']['transforms'], last_height)
+                                except:
+                                    global_events['step_error'] = 1
+                                continue
+
                             if key == 'BlockAdded':
                                 event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
                                 last_height = int(json_str[key]['block']['header']['height'])
@@ -812,16 +865,17 @@ class EventTask:
                                     global_events['Time Since Block'] = event_time - last_block_time
                                 last_block_time = event_time
 
-                                try:
-                                    era_end = json_str[key]['block']['header']['era_end']
-                                    if era_end:
-                                        reward = era_end['era_report']['rewards']['{}'.format(public_key)]
-                                        if (reward > 1000000000):
-                                            global_events['Last Reward'] = '{:,.4f} CSPR'.format(reward / 1000000000)
-                                        else:
-                                            global_events['Last Reward'] = '{:,} mote'.format(int(reward))
-                                except:
-                                    global_events['Last Reward'] = 'Not Found'
+                                if not StepEvents:
+                                    try:
+                                        era_end = json_str[key]['block']['header']['era_end']
+                                        if era_end:
+                                            reward = era_end['era_report']['rewards']['{}'.format(public_key)]
+                                            if (reward > 1000000000):
+                                                global_events['Last Reward'] = '{:,.4f} CSPR'.format(reward / 1000000000)
+                                            else:
+                                                global_events['Last Reward'] = '{:,} mote'.format(int(reward))
+                                    except:
+                                        global_events['Last Reward'] = 'Not Found'
 
                                 try:
                                     proposer = json_str[key]['block']['body']['proposer'].strip("\"")
@@ -862,6 +916,7 @@ class EventTask:
                                 if key == 'FinalitySignature':
                                     pub_key = json_str[key]['public_key'].strip("\"")
                                     finality_signatures.append(pub_key)
+                                    continue
                             except:
                                 pass
 
@@ -1178,7 +1233,7 @@ def casper_block_info():
     local_chainspec = 'null'
 
     try:
-        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+        local_status = json.loads(os.popen('curl -s {}:8888/status'.format(localhost)).read())
         local_chainspec = local_status['chainspec_name']
 
         last_added_block_info = local_status['last_added_block_info']
@@ -1694,25 +1749,32 @@ def main():
     global random
     random = random.SystemRandom()
 
+    global localhost
+    localhost = 'localhost'
+
     global public_key
+    public_key = None
 
     try:
-        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
-        public_key = local_status['our_public_signing_key']
-    except:
-        reader = open('/etc/casper/validator_keys/public_key_hex')
-        try:
-            public_key= reader.read().strip()
-        finally:
-            reader.close()
-
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "k:")
+        opts, args = getopt.getopt(sys.argv[1:], 'k:h:')
         for opt, arg in opts:
             if opt == '-k':
                 public_key = arg
+            elif opt == '-h':
+                localhost = str(arg)
     except:
         pass
+
+    if not public_key:
+        try:
+            local_status = json.loads(os.popen('curl -s {}:8888/status'.format(localhost)).read())
+            public_key = local_status['our_public_signing_key']
+        except:
+            reader = open('/etc/casper/validator_keys/public_key_hex')
+            try:
+                public_key= reader.read().strip()
+            finally:
+                reader.close()
 
     global thread_ptr
     global event_ptr
