@@ -271,34 +271,47 @@ def casper_deploys():
                 error_message = deploy[6]
                 paid_cost = int(deploy[7])
                 actual_cost = int(deploy[8])
-                deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).ljust(6, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
+                deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).rjust(8, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
                 deploy_view.addstr(' / ', curses.color_pair(4))
 
-                deploy_view.addstr('{:22}'.format(deploy_type), curses.color_pair(2 if result == 'Failure' else 5))
+                string = deploy_type
+                if len(deploy_type) > 11: 
+                    string = '{}..{}'.format(deploy_type[:6], deploy_type[-6:])
+                deploy_view.addstr('{}'.format(string.rjust(14,' ')[:14]), curses.color_pair(2 if result == 'Failure' else 5))
+
 #                deploy_view.addstr(1+index, 32,'', curses.color_pair(2 if result == 'Failure' else 4))
 
                 if name:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('name: ', curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(name), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('{}: '.format('name'.rjust(12,' ')), curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(2 if result == 'Failure' else 5))
 
                 if entry:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('entry: ', curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(entry), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('{}: '.format('entry'.rjust(12,' ')), curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(2 if result == 'Failure' else 5))
 
-
+                amount = 0
                 for param in params:
-                    deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('{}: '.format(param[:20]), curses.color_pair(2 if result == 'Failure' else 4))
-                    string = str(params[param])
                     if param == 'amount':
-                        deploy_view.addstr('{}'.format('{:,.4f} CSPR'.format(int(params[param]) / 1000000000)), curses.color_pair(2 if result == 'Failure' else 5))
-                    elif len(string) > 60:
-                        deploy_view.addstr('{}..{}'.format(string[:4],string[-4:]), curses.color_pair(2 if result == 'Failure' else 5))
+                        amount = int(params[param]) / 1000000000
                     else:
-                        deploy_view.addstr('{}'.format(string[:30]), curses.color_pair(2 if result == 'Failure' else 5))
+                        deploy_view.addstr(' / ', curses.color_pair(4))
+                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(2 if result == 'Failure' else 4))
+                        string = str(params[param])
+                        if len(string) > 60:
+                            string = '{}..{}'.format(string[:4],string[-4:])
+                        else:
+                            string = '{}'.format(string[:30])
+                        deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(2 if result == 'Failure' else 5))
 
+                if amount:
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('amount: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    amount_str = '{:,.2f} CSPR'.format(amount)
+                    deploy_view.addstr('{}'.format(amount_str.rjust(17,' ')[:17]), curses.color_pair(2 if result == 'Failure' else 5))
+
+                
                 if error_message:
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('error: ', curses.color_pair(2 if result == 'Failure' else 4))
