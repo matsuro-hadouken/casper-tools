@@ -283,8 +283,6 @@ def casper_deploys():
                     string = '{}..{}'.format(deploy_type[:6], deploy_type[-6:])
                 deploy_view.addstr('{}'.format(string.rjust(14,' ')[:14]), curses.color_pair(highlight_color))
 
-#                deploy_view.addstr(1+index, 32,'', curses.color_pair(2 if result == 'Failure' else 4))
-
                 if name:
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('{}: '.format('name'.rjust(12,' ')), curses.color_pair(base_color))
@@ -301,6 +299,8 @@ def casper_deploys():
 
                 amount = 0
                 for param in params:
+                    if param == 'hash' or param == 'signature':
+                        continue
                     if param == 'amount':
                         amount = int(params[param]) / 1000000000
                     else:
@@ -325,7 +325,7 @@ def casper_deploys():
                         deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
 
                 if amount:
-                    deploy_view.move(1+index,212-42-28)
+#                    deploy_view.move(1+index,212-42-28)
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('amount: ', curses.color_pair(base_color))
                     amount_str = '{:,.2f} CSPR'.format(amount)
@@ -334,8 +334,8 @@ def casper_deploys():
                 
                 over_under = paid_cost - actual_cost
                 if not error_message:
-                    string = ' / costs: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
-                    deploy_view.move(1+index,212-len(string))
+#                    string = ' / costs: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
+                    deploy_view.move(1+index,111)
 
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('costs: (', curses.color_pair(1))
@@ -344,7 +344,9 @@ def casper_deploys():
                     deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
                     deploy_view.addstr(') = ', curses.color_pair(1))
                     deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
-                else:
+
+
+                if error_message:
                     string = ' / error: {}'.format(error_message[:32])
                     deploy_view.move(1+index,212-42)
 
