@@ -271,25 +271,29 @@ def casper_deploys():
                 error_message = deploy[6]
                 paid_cost = int(deploy[7])
                 actual_cost = int(deploy[8])
+
+                highlight_color = 2 if result == 'Failure' else 5
+                base_color = 2 if result == 'Failure' else 4
+
                 deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).rjust(8, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
                 deploy_view.addstr(' / ', curses.color_pair(4))
 
                 string = deploy_type
                 if len(deploy_type) > 11: 
                     string = '{}..{}'.format(deploy_type[:6], deploy_type[-6:])
-                deploy_view.addstr('{}'.format(string.rjust(14,' ')[:14]), curses.color_pair(2 if result == 'Failure' else 5))
+                deploy_view.addstr('{}'.format(string.rjust(14,' ')[:14]), curses.color_pair(highlight_color))
 
 #                deploy_view.addstr(1+index, 32,'', curses.color_pair(2 if result == 'Failure' else 4))
 
                 if name:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('{}: '.format('name'.rjust(12,' ')), curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('{}: '.format('name'.rjust(12,' ')), curses.color_pair(base_color))
+                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
                 if entry:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('{}: '.format('entry'.rjust(12,' ')), curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('{}: '.format('entry'.rjust(12,' ')), curses.color_pair(base_color))
+                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
                 amount = 0
                 for param in params:
@@ -297,34 +301,36 @@ def casper_deploys():
                         amount = int(params[param]) / 1000000000
                     else:
                         deploy_view.addstr(' / ', curses.color_pair(4))
-                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(2 if result == 'Failure' else 4))
+                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(base_color))
                         string = str(params[param])
                         if len(string) > 60:
                             string = '{}..{}'.format(string[:4],string[-4:])
                         else:
                             string = '{}'.format(string[:30])
-                        deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(2 if result == 'Failure' else 5))
+                        deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
 
                 if amount:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('amount: ', curses.color_pair(2 if result == 'Failure' else 4))
+                    deploy_view.addstr('amount: ', curses.color_pair(base_color))
                     amount_str = '{:,.2f} CSPR'.format(amount)
-                    deploy_view.addstr('{}'.format(amount_str.rjust(17,' ')[:17]), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('{}'.format(amount_str.rjust(17,' ')[:17]), curses.color_pair(highlight_color))
 
                 
                 if error_message:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('error: ', curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(error_message), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('error: ', curses.color_pair(base_color))
+                    deploy_view.addstr('{}'.format(error_message), curses.color_pair(highlight_color))
+
+                over_under = paid_cost - actual_cost
+                string = ' / costs: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
+                deploy_view.move(1+index,212-len(string))
 
                 deploy_view.addstr(' / ', curses.color_pair(4))
                 deploy_view.addstr('costs: (', curses.color_pair(1))
                 deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
                 deploy_view.addstr(' - ', curses.color_pair(4))
-#                deploy_view.addstr('c: ', curses.color_pair(2 if result == 'Failure' else 4))
                 deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
                 deploy_view.addstr(') = ', curses.color_pair(1))
-                over_under = paid_cost - actual_cost
                 deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
 
 
@@ -1550,6 +1556,8 @@ def draw_menu(casper):
     curses.init_pair(15, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     curses.init_pair(16, curses.COLOR_BLACK, curses.COLOR_GREEN)
+    curses.init_pair(17, curses.COLOR_GREEN, curses.COLOR_RED)
+    curses.init_pair(18, curses.COLOR_YELLOW, curses.COLOR_RED)
 
     curses.init_pair(20, curses.COLOR_RED, curses.COLOR_WHITE)
 
