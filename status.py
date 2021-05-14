@@ -333,17 +333,16 @@ def casper_deploys():
 
                 
                 over_under = paid_cost - actual_cost
-                if not error_message:
 #                    string = ' / costs: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
-                    deploy_view.move(1+index,111)
+                deploy_view.move(1+index,111)
 
-                    deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('costs: (', curses.color_pair(1))
-                    deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
-                    deploy_view.addstr(' - ', curses.color_pair(4))
-                    deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
-                    deploy_view.addstr(') = ', curses.color_pair(1))
-                    deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
+                deploy_view.addstr(' / ', curses.color_pair(4))
+                deploy_view.addstr('costs: (', curses.color_pair(1))
+                deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
+                deploy_view.addstr(' - ', curses.color_pair(4))
+                deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
+                deploy_view.addstr(') = ', curses.color_pair(1))
+                deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
 
 
                 if error_message:
