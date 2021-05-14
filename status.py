@@ -288,11 +288,15 @@ def casper_deploys():
                 if name:
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('{}: '.format('name'.rjust(12,' ')), curses.color_pair(base_color))
-                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
+                    if name == 'caspersign_contract':
+                        name = 'cs_sgn_cntr'
+                    deploy_view.addstr('{}'.format(name.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
                 if entry:
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('{}: '.format('entry'.rjust(12,' ')), curses.color_pair(base_color))
+                    if entry == 'store_signature':
+                        entry = 'store_sig'
                     deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
                 amount = 0
@@ -301,38 +305,52 @@ def casper_deploys():
                         amount = int(params[param]) / 1000000000
                     else:
                         deploy_view.addstr(' / ', curses.color_pair(4))
-                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(base_color))
                         string = str(params[param])
+
+                        if param == 'delegation_rate':
+                            param = 'd_rate'
+                        elif param == 'validator_public_key':
+                            param = 'val_pub_key'
+                        elif param == 'store_signature':
+                            param = 'store_sig'
+                        elif len(param) > 12:
+                            string = '{}..{}'.format(param[:5], param[-5:])
+                            param = ''
+                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(base_color))
+
                         if len(string) > 60:
                             string = '{}..{}'.format(string[:4],string[-4:])
-                        else:
-                            string = '{}'.format(string[:30])
+                        elif len(string) > 11:
+                            string = '{}..{}'.format(string[:5], string[-4:])
                         deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
 
                 if amount:
+                    deploy_view.move(1+index,212-42-28)
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('amount: ', curses.color_pair(base_color))
                     amount_str = '{:,.2f} CSPR'.format(amount)
                     deploy_view.addstr('{}'.format(amount_str.rjust(17,' ')[:17]), curses.color_pair(highlight_color))
 
                 
-                if error_message:
+                over_under = paid_cost - actual_cost
+                if not error_message:
+                    string = ' / costs: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
+                    deploy_view.move(1+index,212-len(string))
+
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('costs: (', curses.color_pair(1))
+                    deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
+                    deploy_view.addstr(' - ', curses.color_pair(4))
+                    deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
+                    deploy_view.addstr(') = ', curses.color_pair(1))
+                    deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
+                else:
+                    string = ' / error: {}'.format(error_message[:32])
+                    deploy_view.move(1+index,212-42)
+
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('error: ', curses.color_pair(base_color))
-                    deploy_view.addstr('{}'.format(error_message), curses.color_pair(highlight_color))
-
-                over_under = paid_cost - actual_cost
-                string = ' / costs: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
-                deploy_view.move(1+index,212-len(string))
-
-                deploy_view.addstr(' / ', curses.color_pair(4))
-                deploy_view.addstr('costs: (', curses.color_pair(1))
-                deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
-                deploy_view.addstr(' - ', curses.color_pair(4))
-                deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
-                deploy_view.addstr(') = ', curses.color_pair(1))
-                deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
-
+                    deploy_view.addstr('{}'.format(error_message[:32]), curses.color_pair(highlight_color))
 
             index += 1
 
