@@ -1426,7 +1426,7 @@ def casper_public_key():
         balance_json = json.loads(os.popen('casper-client get-balance --purse-uref "{}" --state-root-hash "{}"'.format(purse_uref, lfb_root)).read())
         balance = int(balance_json['result']['balance_value'].strip("\""))
 
-        if (balance > 1000000000):
+        if (balance > 100000000):
             pub_key_win.addstr('{:,.9f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
         else:
             pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
