@@ -431,7 +431,7 @@ class ProposerTask:
         global currentProposerBlock
         global blocks_start
 
-        while not loaded1stBlock:
+        while not loaded1stBlock and self._running:
             time.sleep(1)
 
             try:
@@ -444,7 +444,7 @@ class ProposerTask:
         # now that we have the 1st block... loop back X blocks to get a brief history
         xBlocks = 700
         lastBlock = currentProposerBlock - xBlocks
-        while currentProposerBlock > lastBlock:
+        while currentProposerBlock > lastBlock and self._running:
             try:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
                 proposer = block_info['result']['block']['body']['proposer'].strip("\"")
@@ -538,7 +538,7 @@ class EraTask:
     def run(self):
         loaded1stBlock = False
 
-        while not loaded1stBlock:
+        while not loaded1stBlock and self._running:
             time.sleep(1)
 
             try:
@@ -554,7 +554,7 @@ class EraTask:
         # now that we have the current era... loop back X eras to get a brief history
         xEras = 10
         lastEra = currentEra - xEras
-        while currentBlock > 0 and currentEra > lastEra:
+        while currentBlock > 0 and currentEra > lastEra and self._running:
             try:
                 currentEra = getEraInfo(currentBlock, currentEra)
 
@@ -586,7 +586,7 @@ class PeersTask:
     def run(self):
         global testing_trusted
 
-        while True:
+        while self._running:
             working = []
             for ip in trusted_blocked:
                 status = getPeerInfo(ip)
@@ -656,7 +656,7 @@ class CpuTask:
         last_idle = last_total = 0
         initialized = False
     
-        while True:
+        while self._running:
             with open('/proc/stat') as f:
                 fields = [float(column) for column in f.readline().strip().split()[1:]]
             idle, total = fields[3], sum(fields)
@@ -686,7 +686,7 @@ class CoinListTask:
         global current_price
         coinlist = CoinList('50883453-345b-4b11-ade9-105ca81c53fd', 'YTxYSY7lXzp7Uq26dXnnPeYSQ2g3JYG1nVP/hmJ9u5eGBS/XXf6OjnnnLr5Nr87GW1upSkVcLDDxxX5hnwaAGA==')
 
-        while True:
+        while self._running:
             try:
                 coin_info = coinlist.request('GET', '/v1/symbols/CSPR-USD')
                 current_price = coin_info['symbol']['fair_price'][:-4]
@@ -801,7 +801,7 @@ class EventTask:
         global localhost
         url = 'http://{}:9999/events'.format(localhost)
         localhost_active = False
-        while not localhost_active:
+        while not localhost_active and self._running:
             try:
                 self._request = urllib.request.Request(url)
                 self._reader = urllib.request.urlopen(self._request)
