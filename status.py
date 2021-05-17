@@ -255,6 +255,7 @@ def casper_deploys():
     box_height, box_width = deploy_view.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     deploy_view.addstr(0, 2, 'Casper Deploys', curses.color_pair(4))
+    deploy_view.addstr(0, 182, 'Spent -   Used  =  Overage', curses.color_pair(4))
 
     if length < 1:
         deploy_view.addstr(1, 2, 'Waiting for next Deploy', curses.color_pair(5))
@@ -271,49 +272,85 @@ def casper_deploys():
                 error_message = deploy[6]
                 paid_cost = int(deploy[7])
                 actual_cost = int(deploy[8])
-                deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).ljust(6, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
+
+                highlight_color = 2 if result == 'Failure' else 5
+                base_color = 2 if result == 'Failure' else 4
+
+                deploy_view.addstr(1+index, 2,'{}'.format(str(deploy[0]).rjust(8, ' ')), curses.color_pair(2 if result == 'Failure' else 4))
                 deploy_view.addstr(' / ', curses.color_pair(4))
 
-                deploy_view.addstr('{:22}'.format(deploy_type), curses.color_pair(2 if result == 'Failure' else 5))
-#                deploy_view.addstr(1+index, 32,'', curses.color_pair(2 if result == 'Failure' else 4))
+                string = deploy_type
+                if len(deploy_type) > 11: 
+                    string = '{}..{}'.format(deploy_type[:6], deploy_type[-6:])
+                deploy_view.addstr('{}'.format(string.rjust(14,' ')[:14]), curses.color_pair(highlight_color))
 
                 if name:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('name: ', curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(name), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('{}: '.format('name'.rjust(12,' ')), curses.color_pair(base_color))
+                    if name == 'caspersign_contract':
+                        name = 'cs_sgn_cntr'
+                    deploy_view.addstr('{}'.format(name.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
                 if entry:
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('entry: ', curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(entry), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('{}: '.format('entry'.rjust(12,' ')), curses.color_pair(base_color))
+                    if entry == 'store_signature':
+                        entry = 'store_sig'
+                    deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
-
+                amount = 0
                 for param in params:
-                    deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('{}: '.format(param[:20]), curses.color_pair(2 if result == 'Failure' else 4))
-                    string = str(params[param])
+#                    if param == 'hash' or param == 'signature':
+#                        continue
                     if param == 'amount':
-                        deploy_view.addstr('{}'.format('{:,.4f} CSPR'.format(int(params[param]) / 1000000000)), curses.color_pair(2 if result == 'Failure' else 5))
-                    elif len(string) > 60:
-                        deploy_view.addstr('{}..{}'.format(string[:4],string[-4:]), curses.color_pair(2 if result == 'Failure' else 5))
+                        amount = int(params[param]) / 1000000000
                     else:
-                        deploy_view.addstr('{}'.format(string[:30]), curses.color_pair(2 if result == 'Failure' else 5))
+                        deploy_view.addstr(' / ', curses.color_pair(4))
+                        string = str(params[param])
 
-                if error_message:
+                        if param == 'delegation_rate':
+                            param = 'd_rate'
+                        elif param == 'validator_public_key':
+                            param = 'val_pub_key'
+                        elif param == 'store_signature':
+                            param = 'store_sig'
+                        elif len(param) > 12:
+                            string = '{}..{}'.format(param[:5], param[-5:])
+                            param = ''
+                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(base_color))
+
+                        if len(string) > 60:
+                            string = '{}..{}'.format(string[:4],string[-4:])
+                        elif len(string) > 11:
+                            string = '{}..{}'.format(string[:5], string[-4:])
+                        deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
+
+                if amount:
+                    deploy_view.move(1+index,212-41-28)
                     deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('error: ', curses.color_pair(2 if result == 'Failure' else 4))
-                    deploy_view.addstr('{}'.format(error_message), curses.color_pair(2 if result == 'Failure' else 5))
+                    deploy_view.addstr('amount: ', curses.color_pair(base_color))
+                    amount_str = '{:,.2f} CSPR'.format(amount)
+                    deploy_view.addstr('{}'.format(amount_str.rjust(17,' ')[:17]), curses.color_pair(highlight_color))
 
-                deploy_view.addstr(' / ', curses.color_pair(4))
-                deploy_view.addstr('costs: (', curses.color_pair(1))
-                deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
-                deploy_view.addstr(' - ', curses.color_pair(4))
-#                deploy_view.addstr('c: ', curses.color_pair(2 if result == 'Failure' else 4))
-                deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
-                deploy_view.addstr(') = ', curses.color_pair(1))
+                
                 over_under = paid_cost - actual_cost
-                deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
+                if not error_message:
+                    string = ' / paid: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
+                    deploy_view.move(1+index,212-len(string))
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('paid: (', curses.color_pair(1))
+                    deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
+                    deploy_view.addstr(' - ', curses.color_pair(4))
+                    deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
+                    deploy_view.addstr(') = ', curses.color_pair(1))
+                    deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
+                else:
+                    string = ' / paid: ({:,.2f}): {}'.format((paid_cost / 1000000000),error_message[:24])
+                    deploy_view.move(1+index,212-41)
 
+                    deploy_view.addstr(' / ', curses.color_pair(4))
+                    deploy_view.addstr('paid: ({:,.2f}): '.format(paid_cost / 1000000000), curses.color_pair(base_color))
+                    deploy_view.addstr('{}'.format(error_message[:24]), curses.color_pair(highlight_color))
 
             index += 1
 
@@ -394,7 +431,7 @@ class ProposerTask:
         global currentProposerBlock
         global blocks_start
 
-        while not loaded1stBlock:
+        while not loaded1stBlock and self._running:
             time.sleep(1)
 
             try:
@@ -407,7 +444,7 @@ class ProposerTask:
         # now that we have the 1st block... loop back X blocks to get a brief history
         xBlocks = 700
         lastBlock = currentProposerBlock - xBlocks
-        while currentProposerBlock > lastBlock:
+        while currentProposerBlock > lastBlock and self._running:
             try:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
                 proposer = block_info['result']['block']['body']['proposer'].strip("\"")
@@ -487,7 +524,6 @@ def getEraInfo(block, currentEra):
 
         our_rewards.append(my_val_reward)
 
-
     return currentEra
 
 
@@ -502,7 +538,7 @@ class EraTask:
     def run(self):
         loaded1stBlock = False
 
-        while not loaded1stBlock:
+        while not loaded1stBlock and self._running:
             time.sleep(1)
 
             try:
@@ -518,7 +554,7 @@ class EraTask:
         # now that we have the current era... loop back X eras to get a brief history
         xEras = 10
         lastEra = currentEra - xEras
-        while currentBlock > 0 and currentEra > lastEra:
+        while currentBlock > 0 and currentEra > lastEra and self._running:
             try:
                 currentEra = getEraInfo(currentBlock, currentEra)
 
@@ -550,7 +586,7 @@ class PeersTask:
     def run(self):
         global testing_trusted
 
-        while True:
+        while self._running:
             working = []
             for ip in trusted_blocked:
                 status = getPeerInfo(ip)
@@ -620,7 +656,7 @@ class CpuTask:
         last_idle = last_total = 0
         initialized = False
     
-        while True:
+        while self._running:
             with open('/proc/stat') as f:
                 fields = [float(column) for column in f.readline().strip().split()[1:]]
             idle, total = fields[3], sum(fields)
@@ -650,7 +686,7 @@ class CoinListTask:
         global current_price
         coinlist = CoinList('50883453-345b-4b11-ade9-105ca81c53fd', 'YTxYSY7lXzp7Uq26dXnnPeYSQ2g3JYG1nVP/hmJ9u5eGBS/XXf6OjnnnLr5Nr87GW1upSkVcLDDxxX5hnwaAGA==')
 
-        while True:
+        while self._running:
             try:
                 coin_info = coinlist.request('GET', '/v1/symbols/CSPR-USD')
                 current_price = coin_info['symbol']['fair_price'][:-4]
@@ -659,6 +695,50 @@ class CoinListTask:
                 pass
 
             time.sleep(10)
+
+def ProcessStep(transforms, last_height):
+    for transform in transforms:
+        if transform['key'].startswith('era-'):
+            eraInfo = transform['transform']['WriteEraInfo']['seigniorage_allocations']
+            currentEra = int(str(transform['key'])[4:])
+            num_era_rewards[currentEra] = 0
+            era_block_start[currentEra] = last_height
+
+            my_val_reward = 0
+            for info in eraInfo:
+                if 'Delegator' in info:
+                    amount = int(info['Delegator']['amount'])
+                    if currentEra in era_rewards_dict:
+                        era_rewards_dict[currentEra] = era_rewards_dict[currentEra] + amount
+                    else:
+                        era_rewards_dict[currentEra] = amount
+
+                    num_era_rewards[currentEra] += 1
+
+                    # now check if it was us
+                    val = info['Delegator']['validator_public_key'].strip("\"")
+                    if val == public_key:
+                        my_val_reward += amount
+
+                elif 'Validator' in info:
+                    amount = int(info['Validator']['amount'])
+                    if currentEra in era_rewards_dict:
+                        era_rewards_dict[currentEra] = era_rewards_dict[currentEra] + amount
+                    else:
+                        era_rewards_dict[currentEra] = amount
+
+                    num_era_rewards[currentEra] += 1
+
+                    # now check if it was us
+                    val = info['Validator']['validator_public_key'].strip("\"")
+                    if val == public_key:
+                        my_val_reward += amount
+                        if (my_val_reward > 1000000000):
+                            global_events['Last Reward'] = '{:,.4f} CSPR'.format(my_val_reward / 1000000000)
+                        else:
+                            global_events['Last Reward'] = '{:,} mote'.format(int(my_val_reward))
+
+            our_rewards.append(my_val_reward)
 
 def ProcessDeploy(deploys, height):
     if deploys:
@@ -718,9 +798,10 @@ class EventTask:
         return False
 
     def run(self):
-        url = 'http://localhost:9999/events'
+        global localhost
+        url = 'http://{}:9999/events'.format(localhost)
         localhost_active = False
-        while not localhost_active:
+        while not localhost_active and self._running:
             try:
                 self._request = urllib.request.Request(url)
                 self._reader = urllib.request.urlopen(self._request)
@@ -732,6 +813,7 @@ class EventTask:
         partial_line = ""
         last_block_time = ""
         last_height = 0
+        StepEvents = False
 
         try:
             while self._running:
@@ -765,6 +847,14 @@ class EventTask:
                                 ProcessDeploy(deploys, last_height)
                                 continue
 
+                            if key == 'Step':
+                                StepEvents = True
+                                try:
+                                    ProcessStep(json_str[key]['execution_effect']['transforms'], last_height)
+                                except:
+                                    global_events['step_error'] = 1
+                                continue
+
                             if key == 'BlockAdded':
                                 event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
                                 last_height = int(json_str[key]['block']['header']['height'])
@@ -775,16 +865,17 @@ class EventTask:
                                     global_events['Time Since Block'] = event_time - last_block_time
                                 last_block_time = event_time
 
-                                try:
-                                    era_end = json_str[key]['block']['header']['era_end']
-                                    if era_end:
-                                        reward = era_end['era_report']['rewards']['{}'.format(public_key)]
-                                        if (reward > 1000000000):
-                                            global_events['Last Reward'] = '{:,.4f} CSPR'.format(reward / 1000000000)
-                                        else:
-                                            global_events['Last Reward'] = '{:,} mote'.format(int(reward))
-                                except:
-                                    global_events['Last Reward'] = 'Not Found'
+                                if not StepEvents:
+                                    try:
+                                        era_end = json_str[key]['block']['header']['era_end']
+                                        if era_end:
+                                            reward = era_end['era_report']['rewards']['{}'.format(public_key)]
+                                            if (reward > 1000000000):
+                                                global_events['Last Reward'] = '{:,.4f} CSPR'.format(reward / 1000000000)
+                                            else:
+                                                global_events['Last Reward'] = '{:,} mote'.format(int(reward))
+                                    except:
+                                        global_events['Last Reward'] = 'Not Found'
 
                                 try:
                                     proposer = json_str[key]['block']['body']['proposer'].strip("\"")
@@ -825,6 +916,7 @@ class EventTask:
                                 if key == 'FinalitySignature':
                                     pub_key = json_str[key]['public_key'].strip("\"")
                                     finality_signatures.append(pub_key)
+                                    continue
                             except:
                                 pass
 
@@ -1141,7 +1233,7 @@ def casper_block_info():
     local_chainspec = 'null'
 
     try:
-        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
+        local_status = json.loads(os.popen('curl -s {}:8888/status'.format(localhost)).read())
         local_chainspec = local_status['chainspec_name']
 
         last_added_block_info = local_status['last_added_block_info']
@@ -1334,7 +1426,7 @@ def casper_public_key():
         balance_json = json.loads(os.popen('casper-client get-balance --purse-uref "{}" --state-root-hash "{}"'.format(purse_uref, lfb_root)).read())
         balance = int(balance_json['result']['balance_value'].strip("\""))
 
-        if (balance > 1000000000):
+        if (balance > 100000000):
             pub_key_win.addstr('{:,.9f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
         else:
             pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
@@ -1537,6 +1629,8 @@ def draw_menu(casper):
     curses.init_pair(15, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     curses.init_pair(16, curses.COLOR_BLACK, curses.COLOR_GREEN)
+    curses.init_pair(17, curses.COLOR_GREEN, curses.COLOR_RED)
+    curses.init_pair(18, curses.COLOR_YELLOW, curses.COLOR_RED)
 
     curses.init_pair(20, curses.COLOR_RED, curses.COLOR_WHITE)
 
@@ -1655,25 +1749,32 @@ def main():
     global random
     random = random.SystemRandom()
 
+    global localhost
+    localhost = 'localhost'
+
     global public_key
+    public_key = None
 
     try:
-        local_status = json.loads(os.popen('curl -s localhost:8888/status').read())
-        public_key = local_status['our_public_signing_key']
-    except:
-        reader = open('/etc/casper/validator_keys/public_key_hex')
-        try:
-            public_key= reader.read().strip()
-        finally:
-            reader.close()
-
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "k:")
+        opts, args = getopt.getopt(sys.argv[1:], 'k:h:')
         for opt, arg in opts:
             if opt == '-k':
                 public_key = arg
+            elif opt == '-h':
+                localhost = str(arg)
     except:
         pass
+
+    if not public_key:
+        try:
+            local_status = json.loads(os.popen('curl -s {}:8888/status'.format(localhost)).read())
+            public_key = local_status['our_public_signing_key']
+        except:
+            reader = open('/etc/casper/validator_keys/public_key_hex')
+            try:
+                public_key= reader.read().strip()
+            finally:
+                reader.close()
 
     global thread_ptr
     global event_ptr
