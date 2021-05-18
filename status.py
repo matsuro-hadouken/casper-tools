@@ -424,16 +424,16 @@ def casper_bonds():
 
         longest_len = max(len(delegate_str), len(total_stake_str), len(our_reward_str), len(del_reward_str))
 
-        bonds.addstr(4, 2, 'Our Stake    : ', curses.color_pair(1))
+        bonds.addstr(4, 2, 'Auction Bond : ', curses.color_pair(1))
         bonds.addstr('{}'.format(our_stake_str.rjust(longest_len, ' ')), curses.color_pair(4))
 
-        bonds.addstr(5, 2, 'DelegateStake: ', curses.color_pair(1))
+        bonds.addstr(5, 2, 'Delegate Bond: ', curses.color_pair(1))
         bonds.addstr('{}'.format(delegate_str.rjust(longest_len, ' ')), curses.color_pair(4))
 
-        bonds.addstr(6, 2, 'Total Stake  : ', curses.color_pair(1))
+        bonds.addstr(6, 2, 'Total Bond   : ', curses.color_pair(1))
         bonds.addstr('{}'.format(total_stake_str.rjust(longest_len, ' ')), curses.color_pair(4))
 
-        bonds.addstr(7, 2, '---------- Recent Rewards ----------', curses.color_pair(5))
+        bonds.addstr(7, 2, '--------- Previous Reward ----------', curses.color_pair(5))
 
         bonds.addstr(8, 2, 'Validator    : ', curses.color_pair(1))
         bonds.addstr('{}'.format(our_reward_str.rjust(longest_len, ' ')), curses.color_pair(4))
