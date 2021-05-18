@@ -357,7 +357,7 @@ def casper_deploys():
 
 def casper_bonds():
     global bonds
-    bonds = curses.newwin(8, 40, 0, 110)
+    bonds = curses.newwin(11, 40, 0, 110)
     bonds.box()
     box_height, box_width = bonds.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
@@ -401,20 +401,45 @@ def casper_bonds():
         else:
             bonds.addstr('True', curses.color_pair(4))
 
-        bonds.addstr(2, 2, 'Stake        : ', curses.color_pair(1))
-        bonds.addstr('{:,.4f} CSPR'.format(staked / 1000000000), curses.color_pair(4))
 
-        bonds.addstr(3, 2, 'Delegation   : ', curses.color_pair(1))
+        bonds.addstr(2, 2, 'Delegation   : ', curses.color_pair(1))
         bonds.addstr('{} %'.format(delegation), curses.color_pair(4))
 
-        bonds.addstr(4, 2, 'Num Delegates: ', curses.color_pair(1))
+        bonds.addstr(3, 2, 'Num Delegates: ', curses.color_pair(1))
         bonds.addstr('{}'.format(num_delegates), curses.color_pair(4))
 
+        our_stake_str = '{:,.4f} CSPR'.format(staked / 1000000000)
+        delegate_str = '{:,.4f} CSPR'.format(delegate_stake / 1000000000)
+        total_stake_str = '{:,.4f} CSPR'.format((staked + delegate_stake) / 1000000000)
+
+        if (last_val_reward > 1000000000):
+            our_reward_str = '{:,.4f} CSPR'.format(last_val_reward / 1000000000)
+        else:
+            our_reward_str = '{:,} mote'.format(int(last_val_reward))
+
+        if (last_del_reward > 1000000000):
+            del_reward_str = '{:,.4f} CSPR'.format(last_del_reward / 1000000000)
+        else:
+            del_reward_str = '{:,} mote'.format(int(last_del_reward))
+
+        longest_len = max(len(delegate_str), len(total_stake_str), len(our_reward_str), len(del_reward_str))
+
+        bonds.addstr(4, 2, 'Our Stake    : ', curses.color_pair(1))
+        bonds.addstr('{}'.format(our_stake_str.rjust(longest_len, ' ')), curses.color_pair(4))
+
         bonds.addstr(5, 2, 'DelegateStake: ', curses.color_pair(1))
-        bonds.addstr('{:,.4f} CSPR'.format(delegate_stake / 1000000000), curses.color_pair(4))
+        bonds.addstr('{}'.format(delegate_str.rjust(longest_len, ' ')), curses.color_pair(4))
 
         bonds.addstr(6, 2, 'Total Stake  : ', curses.color_pair(1))
-        bonds.addstr('{:,.4f} CSPR'.format((staked + delegate_stake) / 1000000000), curses.color_pair(4))
+        bonds.addstr('{}'.format(total_stake_str.rjust(longest_len, ' ')), curses.color_pair(4))
+
+        bonds.addstr(7, 2, '---------- Recent Rewards ----------', curses.color_pair(5))
+
+        bonds.addstr(8, 2, 'Validator    : ', curses.color_pair(1))
+        bonds.addstr('{}'.format(our_reward_str.rjust(longest_len, ' ')), curses.color_pair(4))
+
+        bonds.addstr(9, 2, 'Delegates    : ', curses.color_pair(1))
+        bonds.addstr('{}'.format(del_reward_str.rjust(longest_len, ' ')), curses.color_pair(4))
     except:
         bonds.addstr(1, 2, 'No Bond Info Found', curses.color_pair(1))
 
@@ -483,7 +508,7 @@ class ProposerTask:
                 time.sleep(2)
                 pass
 
-def getEraInfo(block, currentEra):
+def getEraInfo(block, currentEra, update_globals):
     block_info = json.loads(os.popen('casper-client get-era-info-by-switch-block -b {}'.format(block)).read())
     summary = block_info['result']['era_summary']
     if summary != None:
@@ -493,6 +518,8 @@ def getEraInfo(block, currentEra):
         era_block_start[currentEra] = block
 
         my_val_reward = 0
+        my_del_reward = 0
+        
         for info in eraInfo:
             if 'Delegator' in info:
                 amount = int(info['Delegator']['amount'])
@@ -506,7 +533,7 @@ def getEraInfo(block, currentEra):
                 # now check if it was us
                 val = info['Delegator']['validator_public_key'].strip("\"")
                 if val == public_key:
-                    my_val_reward += amount
+                    my_del_reward += amount
 
             elif 'Validator' in info:
                 amount = int(info['Validator']['amount'])
@@ -522,7 +549,13 @@ def getEraInfo(block, currentEra):
                 if val == public_key:
                     my_val_reward += amount
 
-        our_rewards.append(my_val_reward)
+        our_rewards.append(my_val_reward + my_del_reward)
+
+        global last_val_reward
+        global last_del_reward
+        if update_globals or not last_val_reward:
+            last_val_reward = my_val_reward
+            last_del_reward = my_del_reward
 
     return currentEra
 
@@ -556,8 +589,7 @@ class EraTask:
         lastEra = currentEra - xEras
         while currentBlock > 0 and currentEra > lastEra and self._running:
             try:
-                currentEra = getEraInfo(currentBlock, currentEra)
-
+                currentEra = getEraInfo(currentBlock, currentEra, False)
                 currentBlock = currentBlock - 1
             except:
                 global_events['era loop error'] = 1
@@ -705,6 +737,7 @@ def ProcessStep(transforms, last_height):
             era_block_start[currentEra] = last_height
 
             my_val_reward = 0
+            my_del_reward = 0
             for info in eraInfo:
                 if 'Delegator' in info:
                     amount = int(info['Delegator']['amount'])
@@ -718,7 +751,7 @@ def ProcessStep(transforms, last_height):
                     # now check if it was us
                     val = info['Delegator']['validator_public_key'].strip("\"")
                     if val == public_key:
-                        my_val_reward += amount
+                        my_del_reward += amount
 
                 elif 'Validator' in info:
                     amount = int(info['Validator']['amount'])
@@ -738,7 +771,21 @@ def ProcessStep(transforms, last_height):
                         else:
                             global_events['Last Reward'] = '{:,} mote'.format(int(my_val_reward))
 
-            our_rewards.append(my_val_reward)
+         
+            if (my_val_reward > 1000000000):
+                global_events['Our Last Reward'] = '{:,.4f} CSPR'.format(my_val_reward / 1000000000)
+            else:
+                global_events['Our Last Reward'] = '{:,} mote'.format(int(my_val_reward))
+
+            if (my_del_reward > 1000000000):
+                global_events['Del Last Reward'] = '{:,.4f} CSPR'.format(my_del_reward / 1000000000)
+            else:
+                global_events['Del Last Reward'] = '{:,} mote'.format(int(my_del_reward))
+
+            our_rewards.append(my_val_reward + my_del_reward)
+
+            last_del_reward = my_del_reward
+            last_val_reward = my_val_reward
 
 def ProcessDeploy(deploys, height):
     if deploys:
@@ -907,7 +954,7 @@ class EventTask:
                                     era_id = json_str[key]['block']['header']['era_id']
 
                                     if last_height:
-                                        getEraInfo(last_height, era_id)
+                                        getEraInfo(last_height, era_id, True)
                                 except:
                                     pass
 
@@ -981,7 +1028,7 @@ def casper_proposers():
 
     local_proposers = proposers_dict    # make a copy in case our thread tries to stomp
 
-    max_proposers = 22
+    max_proposers = 20
     we_are_included = False
     for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
         if proposer[0] == public_key:
@@ -991,7 +1038,8 @@ def casper_proposers():
     length = min(len(local_proposers.keys()), max_proposers)
     window_length = length + (0 if we_are_included else 1)
 
-    proposers= curses.newwin(2 + 23, 40, 8, 110)
+    bonds_y, bonds_x = bonds.getmaxyx()
+    proposers= curses.newwin(2 + max_proposers, 40, bonds_y, 110)
 
     proposers.box()
     box_height, box_width = proposers.getmaxyx()
@@ -1017,6 +1065,9 @@ def casper_proposers():
 
             we_are_included = False
             for proposer in sorted(local_proposers.items(), key=lambda x: x[1], reverse=True):
+                if index == max_proposers and not we_are_included and proposer[0] != public_key:
+                    continue
+
                 proposers.addstr(index, 2, '{}....{} : '.format(proposer[0][:6], proposer[0][-6:]), curses.color_pair(1 if proposer[0] != public_key else 5))
                 proposers.addstr('{:6.2f}%'.format(current_weights[proposer[0]]/total_staked*100), curses.color_pair(4))
                 proposers.addstr(' / ', curses.color_pair(1))
@@ -1775,6 +1826,12 @@ def main():
                 public_key= reader.read().strip()
             finally:
                 reader.close()
+
+    global last_val_reward
+    global last_del_reward
+
+    last_val_reward = 0
+    last_del_reward = 0
 
     global thread_ptr
     global event_ptr
