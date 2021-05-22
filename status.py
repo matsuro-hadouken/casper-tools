@@ -900,10 +900,10 @@ class EventTask:
                                 global_events[key] = json_str[key]
                                 continue
                             if key == 'DeployProcessed':
-                                if not last_height:
-                                    last_height = global_height
-                                deploys = [json_str[key]['deploy_hash']]
-                                ProcessDeploy(deploys, last_height)
+#                                if not last_height:
+#                                    last_height = global_height
+#                                deploys = [json_str[key]['deploy_hash']]
+#                                ProcessDeploy(deploys, last_height)
                                 continue
 
                             if key == 'Step':
@@ -946,21 +946,21 @@ class EventTask:
                                 except:
                                     pass
 
-                                try:
-                                    deploys = json_str[key]['block']['body']['deploy_hashes']
-                                    ProcessDeploy(deploys, last_height)
-                                except:
-                                    pass
+#                                try:
+#                                    deploys = json_str[key]['block']['body']['deploy_hashes']
+#                                    ProcessDeploy(deploys, last_height)
+#                                except:
+#                                    pass
 
-                                try:
-                                    transfer_hashs = json_str[key]['block']['body']['transfer_hashes']
+#                                try:
+#                                    transfer_hashs = json_str[key]['block']['body']['transfer_hashes']
 #                                    if transfer_hashs:
 #                                        if 'Transfers' in global_events:
 #                                            global_events['Transfers'] = global_events['Transfers'] + len(transfer_hashs)
 #                                        else:
 #                                            global_events['Transfers'] = len(transfer_hashs)
-                                except:
-                                    pass
+#                                except:
+#                                    pass
 
                                 try:
                                     era_id = json_str[key]['block']['header']['era_id']
