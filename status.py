@@ -337,7 +337,7 @@ def casper_deploys():
                             deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
 
 
-                if amount and len(params) < 4:
+                if amount and len(params) < 6:
                     deploy_view.move(1+index,212-41-28-4)
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('amount: ', curses.color_pair(base_color))
@@ -346,7 +346,7 @@ def casper_deploys():
 
                 
                 over_under = paid_cost - actual_cost
-                if len(params) < 5:
+                if len(params) < 7:
                     deploy_view.move(1+index,167)
                     if not error_message:
                         paid = '{:,.4f}'.format(paid_cost / 1000000000)[:6]
