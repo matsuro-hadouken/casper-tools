@@ -349,12 +349,12 @@ def casper_deploys():
                         deploy_view.addstr(') = ', curses.color_pair(1))
                         deploy_view.addstr('{} CSPR'.format(diff), curses.color_pair(5))
                     else:
-                        string = ' / paid: ({:,.2f}): {}'.format((paid_cost / 1000000000),error_message[:24])
-                        deploy_view.move(1+index,212-41)
+                        string = ' / paid: {:,.2f} {}'.format((paid_cost / 1000000000),error_message[:26])
+                        deploy_view.move(1+index,212-40)
 
                         deploy_view.addstr(' / ', curses.color_pair(4))
-                        deploy_view.addstr('paid: ({:,.2f}): '.format(paid_cost / 1000000000), curses.color_pair(base_color))
-                        deploy_view.addstr('{}'.format(error_message[:24]), curses.color_pair(highlight_color))
+                        deploy_view.addstr('paid: {:,.2f} '.format(paid_cost / 1000000000), curses.color_pair(base_color))
+                        deploy_view.addstr('{}'.format(error_message[:26]), curses.color_pair(highlight_color))
 
             index += 1
 
