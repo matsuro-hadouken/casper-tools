@@ -255,7 +255,7 @@ def casper_deploys():
     box_height, box_width = deploy_view.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     deploy_view.addstr(0, 2, 'Casper Deploys', curses.color_pair(4))
-    deploy_view.addstr(0, 183, 'Spent -   Used  =  Overage', curses.color_pair(4))
+    deploy_view.addstr(0, 178, 'Spent -   Used  =  Overage', curses.color_pair(4))
 
     if length < 1:
         deploy_view.addstr(1, 2, 'Waiting for next Deploy', curses.color_pair(5))
@@ -299,9 +299,15 @@ def casper_deploys():
                     deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
                 amount = 0
+                param_index = 0
+                param_area_size = 12
+                param_clip = 5
                 for param in params:
-#                    if param == 'hash' or param == 'signature':
-#                        continue
+                    param_index += 1
+                    if param_index == 5:
+                        param_area_size = 10
+                        param_clip = 4
+
                     if param == 'amount':
                         amount = int(params[param]) / 1000000000
                     else:
@@ -314,15 +320,22 @@ def casper_deploys():
                             param = 'val_pub_key'
                         elif param == 'store_signature':
                             param = 'store_sig'
-                        elif len(param) > 12:
-                            param = '{}..{}'.format(param[:5], param[-5:])
-                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(base_color))
+                        elif len(param) > param_area_size:
+                            param = '{}..{}'.format(param[:param_clip], param[-param_clip:])
+                        if param_index > 4:
+                            deploy_view.addstr('{}: '.format(param), curses.color_pair(base_color))
+                        else:
+                            deploy_view.addstr('{}: '.format(param.rjust(param_area_size,' ')[:param_area_size]), curses.color_pair(base_color))
 
                         if len(string) > 60:
                             string = '{}..{}'.format(string[:4],string[-4:])
                         elif len(string) > 11:
                             string = '{}..{}'.format(string[:5], string[-4:])
-                        deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
+                        if param_index > 4:
+                            deploy_view.addstr('{}'.format(string[:11]), curses.color_pair(highlight_color))
+                        else:
+                            deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
+
 
                 if amount and len(params) < 4:
                     deploy_view.move(1+index,212-41-28-4)
@@ -334,13 +347,13 @@ def casper_deploys():
                 
                 over_under = paid_cost - actual_cost
                 if len(params) < 5:
+                    deploy_view.move(1+index,167)
                     if not error_message:
                         paid = '{:,.4f}'.format(paid_cost / 1000000000)[:6]
                         actual = '{:,.4f}'.format(actual_cost / 1000000000)[:6]
                         diff = '{:+,.4f}'.format(over_under / 1000000000)[:6]
                         string = ' / paid: ({} - {}) = {} CSPR'.format(paid, actual, diff)
 
-                        deploy_view.move(1+index,212-len(string))
                         deploy_view.addstr(' / ', curses.color_pair(4))
                         deploy_view.addstr('paid: (', curses.color_pair(1))
                         deploy_view.addstr('{}'.format(paid), curses.color_pair(5))
@@ -349,7 +362,7 @@ def casper_deploys():
                         deploy_view.addstr(') = ', curses.color_pair(1))
                         deploy_view.addstr('{} CSPR'.format(diff), curses.color_pair(5))
                     else:
-                        deploy_view.addstr(1+index,212-40, ' / paid: {} {}'.format('{:,.2f}'.format(paid_cost / 1000000000)[:4],error_message[:26]), curses.color_pair(base_color))
+                        deploy_view.addstr(' / paid: {} {}'.format('{:,.2f}'.format(paid_cost / 1000000000)[:4],error_message[:31]), curses.color_pair(base_color))
 
             index += 1
 
