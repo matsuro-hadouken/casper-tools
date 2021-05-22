@@ -1538,7 +1538,8 @@ def casper_validator():
         future = dict()
 
         auction_info = json.loads(os.popen('casper-client get-auction-info').read())
-        auction_info = auction_info['result']['auction_state']        
+        auction_info = auction_info['result']['auction_state']
+        bid_info = auction_info['bids']
     
         current_validators = auction_info['era_validators'][0]['validator_weights']
         current_era = auction_info['era_validators'][0]['era_id']
@@ -1590,8 +1591,8 @@ def casper_validator():
         pass
 
     validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
-    validator.addstr('{:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators,validator_slots), curses.color_pair(4))
-    validator.addstr(1, 42, '<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
+    validator.addstr('{:,} / {:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators, len(bid_info), validator_slots), curses.color_pair(4))
+    validator.addstr(1, 42, '<- {}/{}/Bids/Slots'.format(current_era, future_era), curses.color_pair(1))
 
     # get the length of the printed string so we can right justify and not leave blank spaces
     if current_weight > 100000000000000:
@@ -1660,7 +1661,7 @@ def casper_validator():
     validator.addstr(' / ', curses.color_pair(4))
     validator.addstr('{:.2f}'.format(avg_blocks), curses.color_pair(4))
 
-    validator.addstr(6, 42, '<- ERA {}/{}/{}/Avg'.format(current_era_global,current_era_global-1,current_era_global-2), curses.color_pair(1))
+    validator.addstr(6, 42, '<- {}/{}/{}/Avg'.format(current_era_global,current_era_global-1,current_era_global-2), curses.color_pair(1))
 
 
 def draw_menu(casper):
