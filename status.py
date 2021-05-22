@@ -1451,12 +1451,16 @@ def casper_public_key():
     try:
         block_info = json.loads(os.popen('casper-client get-block').read())
         header_info = block_info['result']['block']['header']
+        body_info = block_info['result']['block']['body']
         lfb_root = header_info['state_root_hash']
         currentBlock = int(header_info['height'])
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
 
-        transfers = block_info['result']['block']['body']['transfer_hashes']
+        deploys = body_info['deploy_hashes']
+        ProcessDeploy(deploys, currentBlock)
+
+        transfers = body_info['transfer_hashes']
         if transfers:
             transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentBlock)).read())
             transfers = transfer['result']['transfers']
