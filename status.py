@@ -858,6 +858,8 @@ class EventTask:
 
     def run(self):
         global localhost
+        global round_time
+        global avg_rnd_time
         url = 'http://{}:9999/events'.format(localhost)
         localhost_active = False
         while not localhost_active and self._running:
@@ -870,7 +872,7 @@ class EventTask:
 
         CHUNK = 6 * 1024
         partial_line = ""
-        last_block_time = ""
+        last_block_time = datetime.utcnow()
         last_height = 0
         StepEvents = False
 
@@ -915,13 +917,18 @@ class EventTask:
                                 continue
 
                             if key == 'BlockAdded':
+                                round_time = datetime.utcnow()
                                 event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
                                 last_height = int(json_str[key]['block']['header']['height'])
 
-                                if last_block_time == "":
+                                elapsed = event_time - last_block_time
+                                if elapsed.total_seconds() < 1:
                                     global_events['Time Since Block'] = 'Calculating'
                                 else:
-                                    global_events['Time Since Block'] = event_time - last_block_time
+                                    global_events['Time Since Block'] = elapsed
+                                    avg_rnd_time = elapsed.total_seconds()
+
+
                                 last_block_time = event_time
 
                                 if not StepEvents:
@@ -1391,14 +1398,29 @@ def casper_block_info():
 
     index += 1
     block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
-    block_info.addstr('{}\t\t'.format(peer_height), curses.color_pair(4))
+    block_info.addstr('{}'.format(peer_height), curses.color_pair(4))
 
-    block_info.addstr('<- {} Peer : '.format('   From' if peer_address not in trusted_ips else 'Trusted'), curses.color_pair(1))
+    block_info.addstr(index,34,'<- {} Peer : '.format('   From' if peer_address not in trusted_ips else 'Trusted'), curses.color_pair(1))
     block_info.addstr('{}'.format(peer_address), curses.color_pair(4 if peer_address not in trusted_ips else 5))
 
     index += 1
     block_info.addstr(index, 2, 'Round Length : ', curses.color_pair(1))
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
+
+    bar_length = 34
+    number_seconds = (datetime.utcnow() - round_time).total_seconds()
+    round_percent = (number_seconds/avg_rnd_time)*100
+
+    if  round_percent > 98:
+         round_percent= 100
+
+    for x in range(bar_length):
+        block_info.addstr(index,34+x,' ', curses.color_pair(6))
+
+    num_blocks = int(float(round_percent/(100/bar_length)))
+    for x in range(num_blocks):
+        block_info.addstr(index,34+x,' ', curses.color_pair(16))
+
     index += 1
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
     block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
@@ -1420,7 +1442,7 @@ def casper_block_info():
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
 
     avg_num_blocks = 110
-    bar_length = 40
+#    bar_length = 40
     block_percent = 1
     number_blocks = 0
 
@@ -1432,14 +1454,14 @@ def casper_block_info():
         block_percent = 100
 
     for x in range(bar_length):
-        block_info.addstr(index,28+x,' ', curses.color_pair(6))
+        block_info.addstr(index,34+x,' ', curses.color_pair(6))
 
     num_blocks = int(float(block_percent/(100/bar_length)))
     for x in range(num_blocks):
-        block_info.addstr(index,28+x,' ', curses.color_pair(16))
+        block_info.addstr(index,34+x,' ', curses.color_pair(16))
 
     if number_blocks > 0:
-        block_info.addstr(index, 28 if num_blocks < 2 else 29, '{}'.format(number_blocks), curses.color_pair(16))
+        block_info.addstr(index, 34 if num_blocks < 2 else 35, '{}'.format(number_blocks), curses.color_pair(16))
 
     index += 2
     block_info.addstr(index, 2, 'Config File  : ', curses.color_pair(1))
@@ -1819,6 +1841,11 @@ def main():
 
     global localhost
     localhost = 'localhost'
+
+    global round_time
+    round_time = datetime.utcnow()
+    global avg_rnd_time
+    avg_rnd_time = 65.536
 
     global public_key
     public_key = None
