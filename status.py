@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import sys,os,curses,json,time,select,random,threading,urllib.request,contextlib
-from datetime import datetime
+from datetime import datetime,timedelta
 from collections import namedtuple
 from configparser import ConfigParser
 import platform,subprocess,re,getopt
@@ -198,7 +198,7 @@ def casper_transfers():
     box_height, box_width = transfers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     transfers.addstr(0, 2, 'Casper Transfers', curses.color_pair(4))
-    transfers.addstr(1, 2, 'Block  / From uref  /  To uref   / Amount', curses.color_pair(4))
+    transfers.addstr(1, 2, '  Block  / From uref  /  To uref   /   Amount', curses.color_pair(4))
 
     my_uref = 0 if not purse_uref else purse_uref[5:69]
 
@@ -211,7 +211,7 @@ def casper_transfers():
         for key in list(sorted(local_events.keys(), reverse=True)):
             if index <= max_display:
                 transfer = local_events[key]
-                transfers.addstr(1+index, 2,'{}'.format(str(transfer[0]).ljust(6, ' ')), curses.color_pair(4))
+                transfers.addstr(1+index, 2,'{}'.format(str(transfer[0]).rjust(8, ' ')), curses.color_pair(4))
                 transfers.addstr(' / ', curses.color_pair(4))
                 source = transfer[2][5:69]
                 target = transfer[3][5:69]
@@ -221,10 +221,14 @@ def casper_transfers():
 
                 transfers.addstr(' / ', curses.color_pair(4))
                 amount = int(transfer[1])
+                transfer_string = ''
                 if (amount > 1000000000):
-                    transfers.addstr('{:,.4f} CSPR'.format(amount / 1000000000), curses.color_pair(5))
+                    transfer_string = '{:,.4f} CSPR'.format(amount / 1000000000)
                 else:
-                    transfers.addstr('{:,} mote'.format(amount), curses.color_pair(5))
+                    transfer_string = '{:,} mote'.format(amount)
+
+                transfers.addstr(transfer_string.rjust(18, ' '), curses.color_pair(5))
+
             else:
                 items_2_remove.append(key)
 
@@ -255,7 +259,7 @@ def casper_deploys():
     box_height, box_width = deploy_view.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     deploy_view.addstr(0, 2, 'Casper Deploys', curses.color_pair(4))
-    deploy_view.addstr(0, 182, 'Spent -   Used  =  Overage', curses.color_pair(4))
+    deploy_view.addstr(0, 178, 'Spent -   Used  =  Overage', curses.color_pair(4))
 
     if length < 1:
         deploy_view.addstr(1, 2, 'Waiting for next Deploy', curses.color_pair(5))
@@ -299,9 +303,15 @@ def casper_deploys():
                     deploy_view.addstr('{}'.format(entry.ljust(11, ' ')[:11]), curses.color_pair(highlight_color))
 
                 amount = 0
+                param_index = 0
+                param_area_size = 12
+                param_clip = 5
                 for param in params:
-#                    if param == 'hash' or param == 'signature':
-#                        continue
+                    param_index += 1
+                    if param_index == 5:
+                        param_area_size = 10
+                        param_clip = 4
+
                     if param == 'amount':
                         amount = int(params[param]) / 1000000000
                     else:
@@ -314,19 +324,25 @@ def casper_deploys():
                             param = 'val_pub_key'
                         elif param == 'store_signature':
                             param = 'store_sig'
-                        elif len(param) > 12:
-                            string = '{}..{}'.format(param[:5], param[-5:])
-                            param = ''
-                        deploy_view.addstr('{}: '.format(param.rjust(12,' ')[:12]), curses.color_pair(base_color))
+                        elif len(param) > param_area_size:
+                            param = '{}..{}'.format(param[:param_clip], param[-param_clip:])
+                        if param_index > 4:
+                            deploy_view.addstr('{}: '.format(param), curses.color_pair(base_color))
+                        else:
+                            deploy_view.addstr('{}: '.format(param.rjust(param_area_size,' ')[:param_area_size]), curses.color_pair(base_color))
 
                         if len(string) > 60:
                             string = '{}..{}'.format(string[:4],string[-4:])
                         elif len(string) > 11:
                             string = '{}..{}'.format(string[:5], string[-4:])
-                        deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
+                        if param_index > 4:
+                            deploy_view.addstr('{}'.format(string[:11]), curses.color_pair(highlight_color))
+                        else:
+                            deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
 
-                if amount:
-                    deploy_view.move(1+index,212-41-28)
+
+                if amount and len(params) < 6:
+                    deploy_view.move(1+index,212-41-28-4)
                     deploy_view.addstr(' / ', curses.color_pair(4))
                     deploy_view.addstr('amount: ', curses.color_pair(base_color))
                     amount_str = '{:,.2f} CSPR'.format(amount)
@@ -334,23 +350,23 @@ def casper_deploys():
 
                 
                 over_under = paid_cost - actual_cost
-                if not error_message:
-                    string = ' / paid: ({} - {}) = {}'.format('{:,.4f}'.format(paid_cost / 1000000000), '{:,.4f}'.format(actual_cost / 1000000000), '{:+,.4f} CSPR'.format(over_under / 1000000000))
-                    deploy_view.move(1+index,212-len(string))
-                    deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('paid: (', curses.color_pair(1))
-                    deploy_view.addstr('{}'.format('{:,.4f}'.format(paid_cost / 1000000000)), curses.color_pair(5))
-                    deploy_view.addstr(' - ', curses.color_pair(4))
-                    deploy_view.addstr('{}'.format('{:,.4f}'.format(actual_cost / 1000000000)), curses.color_pair(5))
-                    deploy_view.addstr(') = ', curses.color_pair(1))
-                    deploy_view.addstr('{}'.format('{:+,.4f} CSPR'.format(over_under / 1000000000)), curses.color_pair(5))
-                else:
-                    string = ' / paid: ({:,.2f}): {}'.format((paid_cost / 1000000000),error_message[:24])
-                    deploy_view.move(1+index,212-41)
+                if len(params) < 7:
+                    deploy_view.move(1+index,167)
+                    if not error_message:
+                        paid = '{:,.4f}'.format(paid_cost / 1000000000)[:6]
+                        actual = '{:,.4f}'.format(actual_cost / 1000000000)[:6]
+                        diff = '{:+,.4f}'.format(over_under / 1000000000)[:6]
+                        string = ' / paid: ({} - {}) = {} CSPR'.format(paid, actual, diff)
 
-                    deploy_view.addstr(' / ', curses.color_pair(4))
-                    deploy_view.addstr('paid: ({:,.2f}): '.format(paid_cost / 1000000000), curses.color_pair(base_color))
-                    deploy_view.addstr('{}'.format(error_message[:24]), curses.color_pair(highlight_color))
+                        deploy_view.addstr(' / ', curses.color_pair(4))
+                        deploy_view.addstr('paid: (', curses.color_pair(1))
+                        deploy_view.addstr('{}'.format(paid), curses.color_pair(5))
+                        deploy_view.addstr(' - ', curses.color_pair(4))
+                        deploy_view.addstr('{}'.format(actual), curses.color_pair(5))
+                        deploy_view.addstr(') = ', curses.color_pair(1))
+                        deploy_view.addstr('{} CSPR'.format(diff), curses.color_pair(5))
+                    else:
+                        deploy_view.addstr(' / paid: {} {}'.format('{:,.2f}'.format(paid_cost / 1000000000)[:4],error_message[:31]), curses.color_pair(base_color))
 
             index += 1
 
@@ -469,6 +485,8 @@ class ProposerTask:
         # now that we have the 1st block... loop back X blocks to get a brief history
         xBlocks = 700
         lastBlock = currentProposerBlock - xBlocks
+        if lastBlock < 1:
+            lastBlock = 0
         while currentProposerBlock > lastBlock and self._running:
             try:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
@@ -499,9 +517,9 @@ class ProposerTask:
                         amount = transfer['amount']
                         source = transfer['source'].strip("\"")
                         target = transfer['target'].strip("\"")
-                        transfer_dict['{}-{}-{}-{}'.format(currentProposerBlock,block_hash,source,target)] = [currentProposerBlock,amount,source,target]
+                        transfer_dict['{}-{}-{}-{}'.format(str(currentProposerBlock).rjust(8,' '),block_hash,source,target)] = [currentProposerBlock,amount,source,target]
 
-                currentProposerBlock = currentProposerBlock - 1
+                currentProposerBlock -= 1
                 blocks_start = blocks_start + 1
             except:
                 global_events['proposer loop error'] = 1
@@ -826,7 +844,7 @@ def ProcessDeploy(deploys, height):
                         for arg in args:
                             params[arg[0]] = arg[1]['parsed']
 
-                        deploy_dict['{}-{}'.format(height,deploy)] = [height,key,params,name,entry,result,error_message,paid_cost,actual_cost]
+                        deploy_dict['{}-{}'.format(str(height).rjust(8,' '),deploy)] = [height,key,params,name,entry,result,error_message,paid_cost,actual_cost]
     
 
 class EventTask:
@@ -846,6 +864,8 @@ class EventTask:
 
     def run(self):
         global localhost
+        global round_time
+        global avg_rnd_time
         url = 'http://{}:9999/events'.format(localhost)
         localhost_active = False
         while not localhost_active and self._running:
@@ -858,7 +878,7 @@ class EventTask:
 
         CHUNK = 6 * 1024
         partial_line = ""
-        last_block_time = ""
+        last_block_time = datetime.utcnow() + timedelta(seconds=65)
         last_height = 0
         StepEvents = False
 
@@ -888,10 +908,10 @@ class EventTask:
                                 global_events[key] = json_str[key]
                                 continue
                             if key == 'DeployProcessed':
-                                if not last_height:
-                                    last_height = global_height
-                                deploys = [json_str[key]['deploy_hash']]
-                                ProcessDeploy(deploys, last_height)
+#                                if not last_height:
+#                                    last_height = global_height
+#                                deploys = [json_str[key]['deploy_hash']]
+#                                ProcessDeploy(deploys, last_height)
                                 continue
 
                             if key == 'Step':
@@ -903,13 +923,17 @@ class EventTask:
                                 continue
 
                             if key == 'BlockAdded':
+                                round_time = datetime.utcnow()
                                 event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
                                 last_height = int(json_str[key]['block']['header']['height'])
 
-                                if last_block_time == "":
+                                elapsed = event_time - last_block_time
+                                if elapsed.total_seconds() < 1:
                                     global_events['Time Since Block'] = 'Calculating'
                                 else:
-                                    global_events['Time Since Block'] = event_time - last_block_time
+                                    global_events['Time Since Block'] = elapsed
+                                    avg_rnd_time = elapsed.total_seconds()
+
                                 last_block_time = event_time
 
                                 if not StepEvents:
@@ -934,21 +958,21 @@ class EventTask:
                                 except:
                                     pass
 
-                                try:
-                                    deploys = json_str[key]['block']['body']['deploy_hashes']
-                                    ProcessDeploy(deploys, last_height)
-                                except:
-                                    pass
+#                                try:
+#                                    deploys = json_str[key]['block']['body']['deploy_hashes']
+#                                    ProcessDeploy(deploys, last_height)
+#                                except:
+#                                    pass
 
-                                try:
-                                    transfer_hashs = json_str[key]['block']['body']['transfer_hashes']
+#                                try:
+#                                    transfer_hashs = json_str[key]['block']['body']['transfer_hashes']
 #                                    if transfer_hashs:
 #                                        if 'Transfers' in global_events:
 #                                            global_events['Transfers'] = global_events['Transfers'] + len(transfer_hashs)
 #                                        else:
 #                                            global_events['Transfers'] = len(transfer_hashs)
-                                except:
-                                    pass
+#                                except:
+#                                    pass
 
                                 try:
                                     era_id = json_str[key]['block']['header']['era_id']
@@ -1379,14 +1403,41 @@ def casper_block_info():
 
     index += 1
     block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
-    block_info.addstr('{}\t\t'.format(peer_height), curses.color_pair(4))
+    block_info.addstr('{}'.format(peer_height), curses.color_pair(4))
 
-    block_info.addstr('<- {} Peer : '.format('   From' if peer_address not in trusted_ips else 'Trusted'), curses.color_pair(1))
+    block_info.addstr(index,34,'<- {} Peer : '.format('   From' if peer_address not in trusted_ips else 'Trusted'), curses.color_pair(1))
     block_info.addstr('{}'.format(peer_address), curses.color_pair(4 if peer_address not in trusted_ips else 5))
 
     index += 1
     block_info.addstr(index, 2, 'Round Length : ', curses.color_pair(1))
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
+
+    bar_length = 34
+    elapsed = datetime.utcnow() - round_time
+    number_seconds = elapsed.total_seconds()
+    round_percent = (number_seconds/avg_rnd_time)*100
+    minutes = int(number_seconds/60)
+    seconds = int(number_seconds%60)
+    milliseconds = int(float(number_seconds - int(number_seconds)) * 1000)
+    round_string = 'Elapsed {:01d}m {:02d}s {:03d}ms'.format(minutes, seconds, milliseconds)
+    string_start_x = ((bar_length-len(round_string))/2) + 34
+    
+    if  round_percent > 99:
+         round_percent= 100
+
+    for x in range(bar_length):
+        block_info.addstr(index,34+x,' ', curses.color_pair(6))
+
+    num_blocks = int(float(round_percent/(100/bar_length)))
+    for x in range(num_blocks):
+        block_info.addstr(index,34+x,' ', curses.color_pair(16))
+
+    block_info.move(index,int(string_start_x))
+    char_index = 0
+    for each_char in round_string:
+        block_info.addstr(each_char, curses.color_pair(7 if string_start_x+char_index < 34 + num_blocks else 3))
+        char_index += 1
+
     index += 1
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
     block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
@@ -1408,7 +1459,7 @@ def casper_block_info():
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
 
     avg_num_blocks = 110
-    bar_length = 40
+#    bar_length = 40
     block_percent = 1
     number_blocks = 0
 
@@ -1420,14 +1471,19 @@ def casper_block_info():
         block_percent = 100
 
     for x in range(bar_length):
-        block_info.addstr(index,28+x,' ', curses.color_pair(6))
+        block_info.addstr(index,34+x,' ', curses.color_pair(6))
 
     num_blocks = int(float(block_percent/(100/bar_length)))
     for x in range(num_blocks):
-        block_info.addstr(index,28+x,' ', curses.color_pair(16))
+        block_info.addstr(index,34+x,' ', curses.color_pair(16))
 
-    if number_blocks > 0:
-        block_info.addstr(index, 28 if num_blocks < 2 else 29, '{}'.format(number_blocks), curses.color_pair(16))
+    blocks_string = 'Blocks Processed {}'.format(number_blocks)
+    string_start_x = ((bar_length-len(blocks_string))/2) + 34
+    block_info.move(index,int(string_start_x))
+    char_index = 0
+    for each_char in blocks_string:
+        block_info.addstr(each_char, curses.color_pair(7 if string_start_x+char_index < 34 + num_blocks else 3))
+        char_index += 1
 
     index += 2
     block_info.addstr(index, 2, 'Config File  : ', curses.color_pair(1))
@@ -1452,12 +1508,16 @@ def casper_public_key():
     try:
         block_info = json.loads(os.popen('casper-client get-block').read())
         header_info = block_info['result']['block']['header']
+        body_info = block_info['result']['block']['body']
         lfb_root = header_info['state_root_hash']
         currentBlock = int(header_info['height'])
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
 
-        transfers = block_info['result']['block']['body']['transfer_hashes']
+        deploys = body_info['deploy_hashes']
+        ProcessDeploy(deploys, currentBlock)
+
+        transfers = body_info['transfer_hashes']
         if transfers:
             transfer = json.loads(os.popen('casper-client get-block-transfers -b {}'.format(currentBlock)).read())
             transfers = transfer['result']['transfers']
@@ -1522,7 +1582,8 @@ def casper_validator():
         future = dict()
 
         auction_info = json.loads(os.popen('casper-client get-auction-info').read())
-        auction_info = auction_info['result']['auction_state']        
+        auction_info = auction_info['result']['auction_state']
+        bid_info = auction_info['bids']
     
         current_validators = auction_info['era_validators'][0]['validator_weights']
         current_era = auction_info['era_validators'][0]['era_id']
@@ -1574,8 +1635,8 @@ def casper_validator():
         pass
 
     validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
-    validator.addstr('{:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators,validator_slots), curses.color_pair(4))
-    validator.addstr(1, 42, '<- ERA {}/{}/Slots'.format(current_era, future_era), curses.color_pair(1))
+    validator.addstr('{:,} / {:,} / {:,} / {}'.format(num_cur_validators, num_fut_validators, len(bid_info), validator_slots), curses.color_pair(4))
+    validator.addstr(1, 42, '<- {}/{}/Bids/Slots'.format(current_era, future_era), curses.color_pair(1))
 
     # get the length of the printed string so we can right justify and not leave blank spaces
     if current_weight > 100000000000000:
@@ -1644,7 +1705,7 @@ def casper_validator():
     validator.addstr(' / ', curses.color_pair(4))
     validator.addstr('{:.2f}'.format(avg_blocks), curses.color_pair(4))
 
-    validator.addstr(6, 42, '<- ERA {}/{}/{}/Avg'.format(current_era_global,current_era_global-1,current_era_global-2), curses.color_pair(1))
+    validator.addstr(6, 42, '<- {}/{}/{}/Avg'.format(current_era_global,current_era_global-1,current_era_global-2), curses.color_pair(1))
 
 
 def draw_menu(casper):
@@ -1802,6 +1863,11 @@ def main():
 
     global localhost
     localhost = 'localhost'
+
+    global round_time
+    round_time = datetime.utcnow()
+    global avg_rnd_time
+    avg_rnd_time = 65.536
 
     global public_key
     public_key = None
