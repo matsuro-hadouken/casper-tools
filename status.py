@@ -198,7 +198,7 @@ def casper_transfers():
     box_height, box_width = transfers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     transfers.addstr(0, 2, 'Casper Transfers', curses.color_pair(4))
-    transfers.addstr(1, 2, 'Block  / From uref  /  To uref   / Amount', curses.color_pair(4))
+    transfers.addstr(1, 2, '  Block  / From uref  /  To uref   / Amount', curses.color_pair(4))
 
     my_uref = 0 if not purse_uref else purse_uref[5:69]
 
@@ -211,7 +211,7 @@ def casper_transfers():
         for key in list(sorted(local_events.keys(), reverse=True)):
             if index <= max_display:
                 transfer = local_events[key]
-                transfers.addstr(1+index, 2,'{}'.format(str(transfer[0]).ljust(6, ' ')), curses.color_pair(4))
+                transfers.addstr(1+index, 2,'{}'.format(str(transfer[0]).rjust(8, ' ')), curses.color_pair(4))
                 transfers.addstr(' / ', curses.color_pair(4))
                 source = transfer[2][5:69]
                 target = transfer[3][5:69]
@@ -481,6 +481,8 @@ class ProposerTask:
         # now that we have the 1st block... loop back X blocks to get a brief history
         xBlocks = 700
         lastBlock = currentProposerBlock - xBlocks
+        if lastBlock < 1:
+            lastBlock = 0
         while currentProposerBlock > lastBlock and self._running:
             try:
                 block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
@@ -511,9 +513,9 @@ class ProposerTask:
                         amount = transfer['amount']
                         source = transfer['source'].strip("\"")
                         target = transfer['target'].strip("\"")
-                        transfer_dict['{}-{}-{}-{}'.format(currentProposerBlock,block_hash,source,target)] = [currentProposerBlock,amount,source,target]
+                        transfer_dict['{}-{}-{}-{}'.format(str(currentProposerBlock).rjust(8,' '),block_hash,source,target)] = [currentProposerBlock,amount,source,target]
 
-                currentProposerBlock = currentProposerBlock - 1
+                currentProposerBlock -= 1
                 blocks_start = blocks_start + 1
             except:
                 global_events['proposer loop error'] = 1
@@ -838,7 +840,7 @@ def ProcessDeploy(deploys, height):
                         for arg in args:
                             params[arg[0]] = arg[1]['parsed']
 
-                        deploy_dict['{}-{}'.format(height,deploy)] = [height,key,params,name,entry,result,error_message,paid_cost,actual_cost]
+                        deploy_dict['{}-{}'.format(str(height).rjust(8,' '),deploy)] = [height,key,params,name,entry,result,error_message,paid_cost,actual_cost]
     
 
 class EventTask:
