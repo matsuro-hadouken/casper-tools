@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import sys,os,curses,json,time,select,random,threading,urllib.request,contextlib
-from datetime import datetime
+from datetime import datetime,timedelta
 from collections import namedtuple
 from configparser import ConfigParser
 import platform,subprocess,re,getopt
@@ -874,7 +874,7 @@ class EventTask:
 
         CHUNK = 6 * 1024
         partial_line = ""
-        last_block_time = datetime.utcnow()
+        last_block_time = datetime.utcnow() + timedelta(seconds=65)
         last_height = 0
         StepEvents = False
 
@@ -929,7 +929,6 @@ class EventTask:
                                 else:
                                     global_events['Time Since Block'] = elapsed
                                     avg_rnd_time = elapsed.total_seconds()
-
 
                                 last_block_time = event_time
 
@@ -1410,10 +1409,16 @@ def casper_block_info():
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
 
     bar_length = 34
-    number_seconds = (datetime.utcnow() - round_time).total_seconds()
+    elapsed = datetime.utcnow() - round_time
+    number_seconds = elapsed.total_seconds()
     round_percent = (number_seconds/avg_rnd_time)*100
-
-    if  round_percent > 98:
+    minutes = int(number_seconds/60)
+    seconds = int(number_seconds%60)
+    milliseconds = int(float(number_seconds - int(number_seconds)) * 1000)
+    round_string = 'Elapsed {:01d}m {:02d}s {:03d}ms'.format(minutes, seconds, milliseconds)
+    string_start_x = ((bar_length-len(round_string))/2) + 34
+    
+    if  round_percent > 99:
          round_percent= 100
 
     for x in range(bar_length):
@@ -1422,6 +1427,12 @@ def casper_block_info():
     num_blocks = int(float(round_percent/(100/bar_length)))
     for x in range(num_blocks):
         block_info.addstr(index,34+x,' ', curses.color_pair(16))
+
+    block_info.move(index,int(string_start_x))
+    char_index = 0
+    for each_char in round_string:
+        block_info.addstr(each_char, curses.color_pair(7 if string_start_x+char_index < 34 + num_blocks else 3))
+        char_index += 1
 
     index += 1
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
@@ -1462,8 +1473,13 @@ def casper_block_info():
     for x in range(num_blocks):
         block_info.addstr(index,34+x,' ', curses.color_pair(16))
 
-    if number_blocks > 0:
-        block_info.addstr(index, 34 if num_blocks < 2 else 35, '{}'.format(number_blocks), curses.color_pair(16))
+    blocks_string = 'Blocks Processed {}'.format(number_blocks)
+    string_start_x = ((bar_length-len(blocks_string))/2) + 34
+    block_info.move(index,int(string_start_x))
+    char_index = 0
+    for each_char in blocks_string:
+        block_info.addstr(each_char, curses.color_pair(7 if string_start_x+char_index < 34 + num_blocks else 3))
+        char_index += 1
 
     index += 2
     block_info.addstr(index, 2, 'Config File  : ', curses.color_pair(1))
