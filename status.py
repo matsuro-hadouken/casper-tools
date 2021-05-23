@@ -1299,6 +1299,7 @@ def casper_launcher():
 def casper_block_info():
     global block_info
     global global_height
+
     block_info = curses.newwin(15, 70, 7, 0)
     block_info.box()
     box_height, box_width = block_info.getmaxyx()
@@ -1311,6 +1312,7 @@ def casper_block_info():
     global local_chainspec
     local_chainspec = 'null'
 
+    next_era_upgrade = 0
     try:
         local_status = json.loads(os.popen('curl -s {}:8888/status'.format(localhost)).read())
         local_chainspec = local_status['chainspec_name']
@@ -1328,9 +1330,10 @@ def casper_block_info():
         try:
             next_upgrade = local_status['next_upgrade']
             if next_upgrade != None:
-                next_upgrade = 'Era: {} - Version: {}'.format(next_upgrade['activation_point'], next_upgrade['protocol_version'])
+                next_era_upgrade = int(next_upgrade['activation_point'])
+                next_upgrade = 'Version: {}'.format(next_upgrade['protocol_version'])
         except:
-            next_upgrade = 'null'
+            next_upgrade = None
         try:
             build_version = local_status['build_version']
         except:
@@ -1355,7 +1358,7 @@ def casper_block_info():
         global_height = 0
         local_height = 'null'
         round_length = 'null'
-        next_upgrade = 'null'
+        next_upgrade = None
         build_version= 'null'
         chain_name = 'null'
         root_hash = 'null'
@@ -1418,6 +1421,8 @@ def casper_block_info():
 
     bar_length = 34
     global round_time
+    global avg_rnd_time
+
     if not has_been_active:
         round_time = datetime.utcnow()
     elapsed = datetime.utcnow() - round_time
@@ -1448,6 +1453,48 @@ def casper_block_info():
     index += 1
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
     block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
+
+    avg_num_blocks = 110
+    block_percent = 1
+    number_blocks = 0
+
+    if local_era in era_block_start and  local_era-1 in era_block_start:
+        number_blocks = era_block_start[local_era]-era_block_start[local_era-1]
+        block_percent = int((era_block_start[local_era]-era_block_start[local_era-1])/avg_num_blocks*100)
+
+    if next_upgrade:
+        elapsed = datetime.utcnow() - round_time
+        eras_left = next_era_upgrade - local_era - 1
+        block_left = avg_num_blocks - number_blocks
+        number_seconds = int(eras_left * (2*60*60) + (block_left * avg_rnd_time) + (avg_rnd_time - elapsed.total_seconds()))
+
+        if number_seconds < 1:
+            number_seconds = 0
+
+        day = number_seconds // (24 * 3600)
+        time = number_seconds % (24 * 3600)
+        hour = time // 3600
+        time %= 3600
+        minutes = time // 60
+        time %= 60
+        seconds = time
+
+        if day:
+            round_string = 'Era {} in ~{}d {}h {:02d}m {:02d}s'.format(next_era_upgrade, day, hour, minutes, seconds)
+        elif hour:
+            round_string = 'Era {} in ~{}h {:02d}m {:02d}s'.format(next_era_upgrade, hour, minutes, seconds)
+        elif minutes:
+            round_string = 'Era {} in ~{}m {:02d}s'.format(next_era_upgrade, minutes, seconds)
+        else:
+            round_string = 'Era {} in ~{}s'.format(next_era_upgrade, seconds)
+
+        string_start_x = ((bar_length-len(round_string))/2) + 34
+
+        for x in range(bar_length):
+            block_info.addstr(index,34+x,' ', curses.color_pair(18))
+
+        block_info.addstr(index,int(string_start_x), round_string, curses.color_pair(18))
+
     index += 1
     block_info.addstr(index, 2, 'Build Version: ', curses.color_pair(1))
     block_info.addstr('{}'.format(build_version), curses.color_pair(4))
@@ -1464,15 +1511,6 @@ def casper_block_info():
     index += 1
     block_info.addstr(index, 2, 'Local ERA    : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
-
-    avg_num_blocks = 110
-#    bar_length = 40
-    block_percent = 1
-    number_blocks = 0
-
-    if local_era in era_block_start and  local_era-1 in era_block_start:
-        number_blocks = era_block_start[local_era]-era_block_start[local_era-1]
-        block_percent = int((era_block_start[local_era]-era_block_start[local_era-1])/avg_num_blocks*100)
 
     if block_percent > 99:
         block_percent = 100
@@ -1751,6 +1789,8 @@ def draw_menu(casper):
     curses.init_pair(16, curses.COLOR_BLACK, curses.COLOR_GREEN)
     curses.init_pair(17, curses.COLOR_GREEN, curses.COLOR_RED)
     curses.init_pair(18, curses.COLOR_YELLOW, curses.COLOR_RED)
+
+    curses.init_pair(18, curses.COLOR_BLACK, curses.COLOR_CYAN)
 
     curses.init_pair(20, curses.COLOR_RED, curses.COLOR_WHITE)
 
