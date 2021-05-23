@@ -1272,7 +1272,9 @@ def casper_launcher():
     except:
         timestamp = 'null'
 
+    global has_been_active
     if active == 'active':
+        has_been_active = True
         launcher.addstr(1, 2, 'MemoryCurrent: ', curses.color_pair(1))
         launcher.addstr('{}'.format(memory), curses.color_pair(4))
 
@@ -1288,6 +1290,8 @@ def casper_launcher():
         launcher.addstr(5, 2, 'Running Time : ', curses.color_pair(1))
         launcher.addstr('{}'.format(timestamp), curses.color_pair(4))
     else:
+        if has_been_active:
+            os.execv(sys.argv[0], sys.argv)
         launcher.addstr(1, 2, 'Casper-Node-Launcher not running', curses.color_pair(2))
 
 
@@ -1413,6 +1417,9 @@ def casper_block_info():
     block_info.addstr('{}'.format(round_length), curses.color_pair(4))
 
     bar_length = 34
+    global round_time
+    if not has_been_active:
+        round_time = datetime.utcnow()
     elapsed = datetime.utcnow() - round_time
     number_seconds = elapsed.total_seconds()
     round_percent = (number_seconds/avg_rnd_time)*100
@@ -1632,6 +1639,7 @@ def casper_validator():
         future_weight = 0
         current_validators = 0
         current_era = 0
+        bid_info = []
         pass
 
     validator.addstr(1, 2, 'Validators   : ', curses.color_pair(1))
@@ -1734,7 +1742,7 @@ def draw_menu(casper):
     curses.init_pair( 9, curses.COLOR_BLACK, curses.COLOR_YELLOW)
     curses.init_pair(10, curses.COLOR_BLACK, curses.COLOR_RED)
 
-    curses.init_pair(11, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(11, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
     curses.init_pair(12, curses.COLOR_BLACK, curses.COLOR_CYAN)
     curses.init_pair(13, curses.COLOR_BLACK, curses.COLOR_YELLOW)
     curses.init_pair(14, curses.COLOR_BLACK, curses.COLOR_RED)
@@ -1758,6 +1766,9 @@ def draw_menu(casper):
 
     global cpu_name
     cpu_name = get_processor_name()
+
+    global has_been_active
+    has_been_active = False
 
     # Loop where k is the last character pressed
     while (k != ord('q')):
