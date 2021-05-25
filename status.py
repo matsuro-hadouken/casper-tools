@@ -198,7 +198,7 @@ def casper_transfers():
     box_height, box_width = transfers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
     transfers.addstr(0, 2, 'Casper Transfers', curses.color_pair(4))
-    transfers.addstr(1, 2, '  Block  / From uref  /  To uref   /   Amount', curses.color_pair(4))
+    transfers.addstr(1, 2, '  Block  / From uref  /  To uref   /         Amount', curses.color_pair(4))
 
     my_uref = 0 if not purse_uref else purse_uref[5:69]
 
@@ -227,7 +227,7 @@ def casper_transfers():
                 else:
                     transfer_string = '{:,} mote'.format(amount)
 
-                transfers.addstr(transfer_string.rjust(18, ' '), curses.color_pair(5))
+                transfers.addstr(transfer_string.rjust(20, ' '), curses.color_pair(5))
 
             else:
                 items_2_remove.append(key)
