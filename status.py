@@ -954,7 +954,11 @@ class EventTask:
                                         proposers_dict[proposer] = proposers_dict[proposer] + 1
                                     else:
                                         proposers_dict[proposer] = 1
-
+                                    if proposer == public_key:
+                                        if last_height in our_blocks:
+                                            our_blocks[last_height] = our_blocks[last_height] + 1
+                                        else:
+                                            our_blocks[last_height] = 1
                                 except:
                                     pass
 
@@ -1499,13 +1503,17 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Build Version: ', curses.color_pair(1))
     block_info.addstr('{}'.format(build_version), curses.color_pair(4))
 
+    index += 1
+    block_info.addstr(index, 2, 'Proposer     : ', curses.color_pair(1))
+    block_info.addstr('{}...{}'.format(current_proposer[:24],current_proposer[-24:]), curses.color_pair(4 if current_proposer != public_key else 5))
+
     index += 2
     block_info.addstr(index, 2, 'Chain Name   : ', curses.color_pair(1))
     block_info.addstr('{}'.format(chain_name), curses.color_pair(4))
     block_info.addstr(index, 34, 'Starting Hash : ', curses.color_pair(1))
     block_info.addstr('{}'.format(root_hash), curses.color_pair(4))
 
-    index += 2
+    index += 1
     block_info.addstr(index, 2, 'API Version  : ', curses.color_pair(1))
     block_info.addstr('{}'.format(api_version), curses.color_pair(4))
     index += 1
@@ -1522,7 +1530,7 @@ def casper_block_info():
     for x in range(num_blocks):
         block_info.addstr(index,34+x,' ', curses.color_pair(16))
 
-    blocks_string = 'Blocks Processed {}'.format(number_blocks)
+    blocks_string = 'Processing Block: {}'.format(number_blocks)
     string_start_x = ((bar_length-len(blocks_string))/2) + 34
     block_info.move(index,int(string_start_x))
     char_index = 0
@@ -1541,6 +1549,8 @@ def casper_block_info():
 def casper_public_key():
     global pub_key_win
     global current_era_global
+    global current_proposer
+
     pub_key_win = curses.newwin(4, 70, 22, 0)
     pub_key_win.box()
     box_height, box_width = pub_key_win.getmaxyx()
@@ -1558,6 +1568,8 @@ def casper_public_key():
         currentBlock = int(header_info['height'])
         current_era_global = int(header_info['era_id'])
         era_block_start[current_era_global] = currentBlock
+        current_proposer = body_info['proposer'].strip("\"")
+
 
         deploys = body_info['deploy_hashes']
         ProcessDeploy(deploys, currentBlock)
@@ -1919,6 +1931,9 @@ def main():
     round_time = datetime.utcnow()
     global avg_rnd_time
     avg_rnd_time = 65.536
+
+    global current_proposer
+    current_proposer = ''
 
     global public_key
     public_key = None
