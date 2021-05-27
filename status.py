@@ -954,12 +954,15 @@ class EventTask:
                                         proposers_dict[proposer] = proposers_dict[proposer] + 1
                                     else:
                                         proposers_dict[proposer] = 1
+
                                     if proposer == public_key:
-                                        if last_height in our_blocks:
-                                            our_blocks[last_height] = our_blocks[last_height] + 1
+                                        era_id = json_str[key]['block']['header']['era_id']
+                                        if era_id in our_blocks:
+                                            our_blocks[era_id] = our_blocks[era_id] + 1
                                         else:
-                                            our_blocks[last_height] = 1
+                                            our_blocks[era_id] = 1
                                 except:
+                                    global_events['proposer_error'] = 1
                                     pass
 
 #                                try:
