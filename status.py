@@ -25,6 +25,9 @@ cpu_usage = []
 transfer_dict = dict()
 trusted_blocked = []
 deploy_dict = dict()
+peer_scan_dict = dict()
+peer_scan_running = False
+peer_scan_last_run = None 
 
 def system_memory():
     global sysmemory
@@ -185,7 +188,7 @@ def system_cpu():
 #    syscpu.addstr(3, 13, '{:.2f} %'.format(disk_percent), curses.color_pair(11+int(disk_percent/25)))
 
 def casper_transfers():
-    global transfers
+    global transfers_view
 
     max_display = 37
 
@@ -193,33 +196,33 @@ def casper_transfers():
     length = len(transfer_dict.keys())
     if length > max_display:
         length = max_display
-    transfers = curses.newwin(3 + (1 if length < 1 else length), 64, 0, 150)
-    transfers.box()
-    box_height, box_width = transfers.getmaxyx()
+    transfers_view = curses.newwin(3 + (1 if length < 1 else length), 64, 0, 150)
+    transfers_view.box()
+    box_height, box_width = transfers_view.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
-    transfers.addstr(0, 2, 'Casper Transfers', curses.color_pair(4))
-    transfers.addstr(1, 2, '  Block  / From uref  /  To uref   /         Amount', curses.color_pair(4))
+    transfers_view.addstr(0, 2, 'Casper Transfers', curses.color_pair(4))
+    transfers_view.addstr(1, 2, '  Block  / From uref  /  To uref   /         Amount', curses.color_pair(4))
 
     my_uref = 0 if not purse_uref else purse_uref[5:69]
 
     items_2_remove = []
 
     if length < 1:
-        transfers.addstr(2, 2, 'Waiting for next Transfer', curses.color_pair(5))
+        transfers_view.addstr(2, 2, 'Waiting for next Transfer', curses.color_pair(5))
     else:
         index = 1
         for key in list(sorted(local_events.keys(), reverse=True)):
             if index <= max_display:
                 transfer = local_events[key]
-                transfers.addstr(1+index, 2,'{}'.format(str(transfer[0]).rjust(8, ' ')), curses.color_pair(4))
-                transfers.addstr(' / ', curses.color_pair(4))
+                transfers_view.addstr(1+index, 2,'{}'.format(str(transfer[0]).rjust(8, ' ')), curses.color_pair(4))
+                transfers_view.addstr(' / ', curses.color_pair(4))
                 source = transfer[2][5:69]
                 target = transfer[3][5:69]
-                transfers.addstr('{}..{}'.format(source[:4],source[-4:]), curses.color_pair(1 if source != my_uref else 5))
-                transfers.addstr(' / ', curses.color_pair(4))
-                transfers.addstr('{}..{}'.format(target[:4],target[-4:]), curses.color_pair(1 if target != my_uref else 5))
+                transfers_view.addstr('{}..{}'.format(source[:4],source[-4:]), curses.color_pair(1 if source != my_uref else 5))
+                transfers_view.addstr(' / ', curses.color_pair(4))
+                transfers_view.addstr('{}..{}'.format(target[:4],target[-4:]), curses.color_pair(1 if target != my_uref else 5))
 
-                transfers.addstr(' / ', curses.color_pair(4))
+                transfers_view.addstr(' / ', curses.color_pair(4))
                 amount = int(transfer[1])
                 transfer_string = ''
                 if (amount > 1000000000):
@@ -227,7 +230,7 @@ def casper_transfers():
                 else:
                     transfer_string = '{:,} mote'.format(amount)
 
-                transfers.addstr(transfer_string.rjust(20, ' '), curses.color_pair(5))
+                transfers_view.addstr(transfer_string.rjust(20, ' '), curses.color_pair(5))
 
             else:
                 items_2_remove.append(key)
@@ -624,6 +627,63 @@ def getPeerInfo(ip):
         pass
 
     return status
+
+def getStatusInfo(status,ip):
+    try:
+        current_api_version = status['api_version']
+        current_chain_name = status['chainspec_name']
+        last_block_added_info = status['last_added_block_info']
+        current_era_id = last_block_added_info['era_id']
+        current_height = last_block_added_info['height']
+        peer_public_key = status['our_public_signing_key']
+        next_upgrade = status['next_upgrade']
+        peer_scan_dict[ip] = [peer_public_key,current_api_version,current_chain_name,last_block_added_info,current_era_id,current_height,next_upgrade]
+    except:
+        pass
+    
+class ScanValidatorsTask:
+    def __init__(self):
+        self._running = True
+
+    def terminate(self):
+        global_events['terminating'] = 1
+        self._running = False
+
+    def run(self):
+        global peer_scan_running
+        global peer_scan_last_run
+
+        while self._running:
+            start = time.time()
+
+            peer_scan_dict.clear()
+            status_not_responding = True
+            while status_not_responding:
+                try:
+                    peers_info = json.loads(os.popen('curl -s {}:8888/status'.format(localhost)).read())
+                    status_not_responding = False
+                except:
+                    time.sleep(2)
+
+            peer_scan_running = True
+            getStatusInfo(peers_info,'localhost')
+            peers = peers_info['peers']
+            for peer in peers:
+                address = peer['address']
+                ip = address[:address.index(':')]
+                status = getPeerInfo(ip)
+                if status != None:
+                    getStatusInfo(status,ip)
+                else:
+                    peer_scan_dict[ip] = None
+
+            end = time.time()
+            global_events['scan_time'] = end - start
+
+            peer_scan_running = False
+            peer_scan_last_run = datetime.utcnow()
+
+            time.sleep(900)
 
 class PeersTask:
     def __init__(self):
@@ -1205,38 +1265,109 @@ def casper_peers():
     peers.box()
     box_height, box_width = peers.getmaxyx()
     text_width = box_width - 17 # length of the Text before it gets printed
-    peers.addstr(0, 2, 'Casper Peers', curses.color_pair(4))
+    peers.addstr(0, 2, 'Casper Peers - ', curses.color_pair(4))
+
+    if peer_scan_running:
+        peers.addstr('Scanning Peers', curses.color_pair(5))
+    elif peer_scan_last_run != None:
+        elapsed = 900 - (datetime.utcnow() - peer_scan_last_run).total_seconds()
+        minutes = int(elapsed / 60)
+        seconds = int(elapsed % 60)
+        peers.addstr('Next scan in ~{}m {:02}s'.format(minutes, seconds), curses.color_pair(5))
 
     try:
         num_peers = len(local_status['peers'])
     except:
         num_peers = 0
 
-    peers.addstr(1, 2, 'Peers        : ', curses.color_pair(1))
+    peers.addstr(1, 2, 'Peers   : ', curses.color_pair(1))
     peers.addstr('{}'.format(num_peers), curses.color_pair(4))
 
-    peers.addstr(2, 2, 'Trusted Open : ', curses.color_pair(1))
+    peers.addstr(2, 2, 'Trusted : ', curses.color_pair(1))
     if not testing_trusted:
         peers.addstr('{}'.format(len(trusted_ips)), curses.color_pair(4))
-        peers.addstr('\tClosed : ', curses.color_pair(1))
+        peers.addstr(2, 20, '->', curses.color_pair(1))
+        peers.addstr(2, 25, 'Closed    : ', curses.color_pair(1))
         peers.addstr('{}'.format(len(trusted_blocked)), curses.color_pair(4))
     else:
         peers.addstr('Testing', curses.color_pair(5))
 
-    peers.addstr('{}\tTotal Trusted : '.format('\t' if testing_trusted else ''), curses.color_pair(1))
+    peers.addstr(2, 42, 'Total Trusted : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(trusted_ips)+len(trusted_blocked)), curses.color_pair(4))
 
-    peers.addstr(3, 2, 'In Blacklist : ', curses.color_pair(1))
-    peers.addstr('{}'.format(len(peer_blacklist)), curses.color_pair(4))
-    peers.addstr('\t<- Not answering our :8888/status', curses.color_pair(1))
+    peers_total = len(peer_scan_dict.keys())
+    peers_blocked = 0
+    peers_wrong_chain = 0
+    peers_wrong_version = 0
+    peers_not_upgraded = 0
+    we_have_not_staged = False
+    missing_era_upgrade = 0
+    our_era_upgrade = 0
 
-    peers.addstr(4, 2, 'Bad Chainspec: ', curses.color_pair(1))
-    peers.addstr('{}'.format(len(peer_wrong_chain)), curses.color_pair(4))
-    peers.addstr('\t<- Not on our Chainspec (', curses.color_pair(1))
-    peers.addstr('{}'.format(local_chainspec), curses.color_pair(4))
-    peers.addstr(')', curses.color_pair(1))
+    if peers_total < 1:
+        peer_scan_view.addstr(2, 2, 'Scanning Peers', curses.color_pair(5))
+    else:
+        our_peer = peer_scan_dict['localhost']
+        our_chain = our_peer[2]
+        our_version = our_peer[1]
+        our_next_upgrade = our_peer[6]
+        if our_next_upgrade != None:
+            our_era_upgrade = int(our_next_upgrade['activation_point'])
+            our_upgrade = our_next_upgrade['protocol_version']
 
-#    peers.addstr(4, 2,'{}'.format(peer_blacklist)[:347], curses.color_pair(4))
+        total_staked = 0
+        for item in current_weights.items():
+            total_staked += item[1]
+        
+        peers_staked = 0
+
+        for ip in peer_scan_dict:
+            current_peer = peer_scan_dict[ip]
+            if current_peer == None:
+                peers_blocked += 1
+            else:
+                peer_key = current_peer[0]
+                if peer_key in current_weights:
+                    peers_staked += current_weights[peer_key]
+                if our_chain != current_peer[2]:
+                    peers_wrong_chain += 1
+                elif our_version != current_peer[1]:
+                    peers_wrong_version += 1
+                peer_next_upgrade = current_peer[6]
+                if peer_next_upgrade != None:
+                    peer_era_upgrade = int(peer_next_upgrade['activation_point'])
+                    peer_upgrade = peer_next_upgrade['protocol_version']
+                    if current_era_global < peer_era_upgrade:
+                        we_have_not_staged = True
+                        missing_era_upgrade = peer_era_upgrade
+                if peer_next_upgrade != our_next_upgrade:
+                    peers_not_upgraded += 1
+
+        peers.addstr(3, 2, 'Blocked : ', curses.color_pair(1))
+        peers.addstr('{:.2%} ({})'.format(peers_blocked/peers_total, peers_blocked), curses.color_pair(4))
+
+        peers.addstr(3, 25, 'Bad Chain : ', curses.color_pair(1))
+        peers.addstr('{:.2%} ({})'.format(peers_wrong_chain/peers_total, peers_wrong_chain), curses.color_pair(4))
+        peers.addstr(3, 48, 'Bad Ver : ', curses.color_pair(1))
+        peers.addstr('{:.2%} ({})'.format(peers_wrong_version/peers_total,peers_wrong_version), curses.color_pair(4))
+
+        if we_have_not_staged:
+            peers.addstr(4, 2, 'It appears someone has an upgrade staged for', curses.color_pair(5))
+            peers.addstr(' {} '.format(missing_era_upgrade), curses.color_pair(1))
+            peers.addstr('and we do not!', curses.color_pair(5))
+        else:
+            peers.addstr(4, 25, 'Stk Weight: ', curses.color_pair(1))
+            peers.addstr('{:.2%}'.format(peers_staked/total_staked), curses.color_pair(4))
+
+#            if True:
+            if our_next_upgrade == None:
+                peers.addstr(4, 2, 'Answring: ', curses.color_pair(1))
+                peers.addstr('{:.2%} ({})'.format((peers_total - peers_blocked - peers_not_upgraded)/peers_total, peers_total - peers_blocked), curses.color_pair(4))
+            else:
+                peers.addstr(4, 2, 'Staged  : ', curses.color_pair(1))
+                peers.addstr('{:.2%} ({})'.format((peers_total - peers_blocked - peers_not_upgraded)/peers_total, peers_total - peers_blocked), curses.color_pair(4))
+                peers.addstr(4, 48, 'Not Stgd: ', curses.color_pair(1))
+                peers.addstr('{:.2%} ({})'.format(peers_not_upgraded/peers_total, peers_not_upgraded), curses.color_pair(4))
 
 def casper_launcher():
     global launcher
@@ -1876,7 +2007,7 @@ def draw_menu(casper):
         era_rewards.noutrefresh()
         proposers.noutrefresh()
         events.noutrefresh()
-        transfers.noutrefresh()
+        transfers_view.noutrefresh()
         deploy_view.noutrefresh()
 
         casper.noutrefresh()
@@ -2012,6 +2143,13 @@ def main():
     coin_thread_ptr = threading.Thread(target=coin_ptr.run)
     coin_thread_ptr.daemon = True
     coin_thread_ptr.start()
+
+    global scan_validators_thread_ptr
+    global scan_validators_ptr
+    scan_validators_ptr = ScanValidatorsTask()
+    scan_validators_thread_ptr = threading.Thread(target=scan_validators_ptr.run)
+    scan_validators_thread_ptr.daemon = True
+    scan_validators_thread_ptr.start()
 
     curses.wrapper(draw_menu)
 
