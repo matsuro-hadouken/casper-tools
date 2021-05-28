@@ -654,7 +654,7 @@ class ScanValidatorsTask:
         global peer_scan_last_run
 
         while self._running:
-            start = time.time()
+#            start = time.time()
 
             peer_scan_dict.clear()
             status_not_responding = True
@@ -677,8 +677,8 @@ class ScanValidatorsTask:
                 else:
                     peer_scan_dict[ip] = None
 
-            end = time.time()
-            global_events['scan_time'] = end - start
+ #           end = time.time()
+ #           global_events['scan_time'] = end - start
 
             peer_scan_running = False
             peer_scan_last_run = datetime.utcnow()
