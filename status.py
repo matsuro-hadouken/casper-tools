@@ -1274,6 +1274,8 @@ def casper_peers():
         minutes = int(elapsed / 60)
         seconds = int(elapsed % 60)
         peers.addstr('Next scan in ~{}m {:02}s'.format(minutes, seconds), curses.color_pair(5))
+    else:
+        peers.addstr('Waiting to Scan', curses.color_pair(5))
 
     try:
         num_peers = len(local_status['peers'])
@@ -1304,9 +1306,7 @@ def casper_peers():
     missing_era_upgrade = 0
     our_era_upgrade = 0
 
-    if peers_total < 1:
-        peers.addstr(2, 2, 'Scanning Peers', curses.color_pair(5))
-    else:
+    if peers_total:
         our_peer = peer_scan_dict['localhost']
         our_chain = our_peer[2]
         our_version = our_peer[1]
@@ -1355,7 +1355,7 @@ def casper_peers():
             peers.addstr(4, 2, 'It appears someone has an upgrade staged for', curses.color_pair(5))
             peers.addstr(' {} '.format(missing_era_upgrade), curses.color_pair(1))
             peers.addstr('and we do not!', curses.color_pair(5))
-        else:
+        elif total_staked:
             peers.addstr(4, 25, 'Stk Weight: ', curses.color_pair(1))
             peers.addstr('{:.2%}'.format(peers_staked/total_staked), curses.color_pair(4))
 
