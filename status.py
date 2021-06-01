@@ -1305,7 +1305,7 @@ def casper_peers():
     our_era_upgrade = 0
 
     if peers_total < 1:
-        peer_scan_view.addstr(2, 2, 'Scanning Peers', curses.color_pair(5))
+        peers.addstr(2, 2, 'Scanning Peers', curses.color_pair(5))
     else:
         our_peer = peer_scan_dict['localhost']
         our_chain = our_peer[2]
