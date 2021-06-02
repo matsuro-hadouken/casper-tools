@@ -427,17 +427,17 @@ def casper_bonds():
         bonds.addstr(3, 2, 'Num Delegates: ', curses.color_pair(1))
         bonds.addstr('{}'.format(num_delegates), curses.color_pair(4))
 
-        our_stake_str = '{:,.4f} CSPR'.format(staked / 1000000000)
-        delegate_str = '{:,.4f} CSPR'.format(delegate_stake / 1000000000)
-        total_stake_str = '{:,.4f} CSPR'.format((staked + delegate_stake) / 1000000000)
+        our_stake_str = '{:,} CSPR'.format(int(staked / 1000000000))
+        delegate_str = '{:,} CSPR'.format(int(delegate_stake / 1000000000))
+        total_stake_str = '{:,} CSPR'.format(int((staked + delegate_stake) / 1000000000))
 
         if (last_val_reward > 1000000000):
-            our_reward_str = '{:,.4f} CSPR'.format(last_val_reward / 1000000000)
+            our_reward_str = '{:,} CSPR'.format(int(last_val_reward / 1000000000))
         else:
             our_reward_str = '{:,} mote'.format(int(last_val_reward))
 
         if (last_del_reward > 1000000000):
-            del_reward_str = '{:,.4f} CSPR'.format(last_del_reward / 1000000000)
+            del_reward_str = '{:,} CSPR'.format(int(last_del_reward / 1000000000))
         else:
             del_reward_str = '{:,} mote'.format(int(last_del_reward))
 
@@ -455,10 +455,20 @@ def casper_bonds():
         bonds.addstr(7, 2, '--------- Previous Reward ----------', curses.color_pair(5))
 
         bonds.addstr(8, 2, 'Validator    : ', curses.color_pair(1))
-        bonds.addstr('{}'.format(our_reward_str.rjust(longest_len, ' ')), curses.color_pair(4))
+        reward_percent = last_val_reward/staked*12*365
+        if longest_len > 13:
+            bonds.addstr('{} {:d}%'.format(our_reward_str.rjust(longest_len, ' '),int(reward_percent*100)), curses.color_pair(4))
+        else:
+            bonds.addstr('{} ({:.2%})'.format(our_reward_str.rjust(longest_len, ' '),reward_percent), curses.color_pair(4))
 
         bonds.addstr(9, 2, 'Delegates    : ', curses.color_pair(1))
-        bonds.addstr('{}'.format(del_reward_str.rjust(longest_len, ' ')), curses.color_pair(4))
+
+        reward_percent = last_del_reward/(delegate_stake if delegate_stake else 1)*12*365
+        if longest_len > 13:
+            bonds.addstr('{} {:d}%'.format(del_reward_str.rjust(longest_len, ' '),int(reward_percent*100)), curses.color_pair(4))
+        else:
+            bonds.addstr('{} ({:.2%})'.format(del_reward_str.rjust(longest_len, ' '),reward_percent), curses.color_pair(4))
+
     except:
         bonds.addstr(1, 2, 'No Bond Info Found', curses.color_pair(1))
 
@@ -1274,6 +1284,8 @@ def casper_peers():
         minutes = int(elapsed / 60)
         seconds = int(elapsed % 60)
         peers.addstr('Next scan in ~{}m {:02}s'.format(minutes, seconds), curses.color_pair(5))
+    else:
+        peers.addstr('Waiting to Scan', curses.color_pair(5))
 
     try:
         num_peers = len(local_status['peers'])
@@ -1304,9 +1316,7 @@ def casper_peers():
     missing_era_upgrade = 0
     our_era_upgrade = 0
 
-    if peers_total < 1:
-        peer_scan_view.addstr(2, 2, 'Scanning Peers', curses.color_pair(5))
-    else:
+    if peers_total:
         our_peer = peer_scan_dict['localhost']
         our_chain = our_peer[2]
         our_version = our_peer[1]
@@ -1355,7 +1365,7 @@ def casper_peers():
             peers.addstr(4, 2, 'It appears someone has an upgrade staged for', curses.color_pair(5))
             peers.addstr(' {} '.format(missing_era_upgrade), curses.color_pair(1))
             peers.addstr('and we do not!', curses.color_pair(5))
-        else:
+        elif total_staked:
             peers.addstr(4, 25, 'Stk Weight: ', curses.color_pair(1))
             peers.addstr('{:.2%}'.format(peers_staked/total_staked), curses.color_pair(4))
 
@@ -1861,6 +1871,7 @@ def casper_validator():
     else:
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
+    validator.addstr(4, 42, '<- {:.2%} yearly'.format(reward/(current_weight if current_weight else 1)*12*365, 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
 
     validator.addstr(5, 2, 'Avg Reward   : ', curses.color_pair(1))
     reward = 0
@@ -1871,7 +1882,7 @@ def casper_validator():
     else:
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
-    validator.addstr(5, 42, '<- Last {} reward{}'.format(len(our_rewards), 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
+    validator.addstr(5, 42, '<- Last {} reward{} ({:.2%})'.format(len(our_rewards), 's' if len(our_rewards)>1 else '',reward/current_weight*12*365), curses.color_pair(1))
 
     validator.addstr(6, 2, 'Blks Propsed : ', curses.color_pair(1))
     this_block = 0
