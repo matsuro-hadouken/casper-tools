@@ -455,7 +455,7 @@ def casper_bonds():
         bonds.addstr(7, 2, '--------- Previous Reward ----------', curses.color_pair(5))
 
         bonds.addstr(8, 2, 'Validator    : ', curses.color_pair(1))
-        reward_percent = last_val_reward/staked*12*365
+        reward_percent = last_val_reward/(staked if staked else 1)*12*365
         if longest_len > 13:
             bonds.addstr('{} {:d}%'.format(our_reward_str.rjust(longest_len, ' '),int(reward_percent*100)), curses.color_pair(4))
         else:
