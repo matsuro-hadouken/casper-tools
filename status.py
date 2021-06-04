@@ -955,9 +955,12 @@ class EventTask:
         try:
             while self._running:
                 self._time_before_read = datetime.now()
-                chunk = self._reader.read(CHUNK)
-                if not chunk:
-                    break
+                try:
+                    chunk = self._reader.read(CHUNK)
+                    if not chunk:
+                        break
+                except:
+                    break;
 
                 if self.has_finality():
                     global_events['FinalitySignature'] = 0
@@ -1871,7 +1874,8 @@ def casper_validator():
     else:
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
-    validator.addstr(4, 42, '<- {:.2%} yearly'.format(reward/(current_weight if current_weight else 1)*12*365, 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
+    if current_weight:
+        validator.addstr(4, 42, '<- {:.2%} yearly'.format((reward/current_weight)*12*365, 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
 
     validator.addstr(5, 2, 'Avg Reward   : ', curses.color_pair(1))
     reward = 0
@@ -1882,7 +1886,10 @@ def casper_validator():
     else:
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
-    validator.addstr(5, 42, '<- Last {} reward{} ({:.2%})'.format(len(our_rewards), 's' if len(our_rewards)>1 else '',reward/(current_weight if current_weight else 1)*12*365), curses.color_pair(1))
+    if current_weight:
+        validator.addstr(5, 42, '<- Last {} reward{} ({:.2%})'.format(len(our_rewards), 's' if len(our_rewards)>1 else '',((reward/current_weight) if current_weight else 0)*12*365), curses.color_pair(1))
+    else:
+        validator.addstr(5, 42, '<- Last {} reward{}'.format(len(our_rewards), 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
 
     validator.addstr(6, 2, 'Blks Propsed : ', curses.color_pair(1))
     this_block = 0
