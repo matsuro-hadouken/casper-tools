@@ -455,7 +455,7 @@ def casper_bonds():
         bonds.addstr(7, 2, '--------- Previous Reward ----------', curses.color_pair(5))
 
         bonds.addstr(8, 2, 'Validator    : ', curses.color_pair(1))
-        reward_percent = last_val_reward/staked*12*365
+        reward_percent = last_val_reward/(staked if staked else 1)*12*365
         if longest_len > 13:
             bonds.addstr('{} {:d}%'.format(our_reward_str.rjust(longest_len, ' '),int(reward_percent*100)), curses.color_pair(4))
         else:
@@ -1882,7 +1882,7 @@ def casper_validator():
     else:
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
-    validator.addstr(5, 42, '<- Last {} reward{} ({:.2%})'.format(len(our_rewards), 's' if len(our_rewards)>1 else '',reward/current_weight*12*365), curses.color_pair(1))
+    validator.addstr(5, 42, '<- Last {} reward{} ({:.2%})'.format(len(our_rewards), 's' if len(our_rewards)>1 else '',reward/(current_weight if current_weight else 1)*12*365), curses.color_pair(1))
 
     validator.addstr(6, 2, 'Blks Propsed : ', curses.color_pair(1))
     this_block = 0
