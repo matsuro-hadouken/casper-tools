@@ -1310,7 +1310,8 @@ def casper_peers():
     peers.addstr(2, 42, 'Total Trusted : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(trusted_ips)+len(trusted_blocked)), curses.color_pair(4))
 
-    peers_total = len(peer_scan_dict.keys())
+    local_peer_scan_dict = peer_scan_dict
+    peers_total = len(local_peer_scan_dict.keys())
     peers_blocked = 0
     peers_wrong_chain = 0
     peers_wrong_version = 0
@@ -1320,7 +1321,7 @@ def casper_peers():
     our_era_upgrade = 0
 
     if peers_total:
-        our_peer = peer_scan_dict['localhost']
+        our_peer = local_peer_scan_dict['localhost']
         our_chain = our_peer[2]
         our_version = our_peer[1]
         our_next_upgrade = our_peer[6]
@@ -1334,8 +1335,8 @@ def casper_peers():
         
         peers_staked = 0
 
-        for ip in peer_scan_dict:
-            current_peer = peer_scan_dict[ip]
+        for ip in local_peer_scan_dict:
+            current_peer = local_peer_scan_dict[ip]
             if current_peer == None:
                 peers_blocked += 1
             else:
@@ -1844,12 +1845,12 @@ def casper_validator():
     validator.addstr(1, 42, '<- {}/{}/Bids/Slots'.format(current_era, future_era), curses.color_pair(1))
 
     # get the length of the printed string so we can right justify and not leave blank spaces
-    if current_weight > 100000000000000:
+    if current_weight > 10000000000:
         current_str = '{:,.4f} CSPR'.format(current_weight/1000000000)
     else:
         current_str = '{:,.9f} CSPR'.format(current_weight/1000000000)
 
-    if future_weight > 100000000000000:
+    if future_weight > 10000000000:
         future_str = '{:,.4f} CSPR'.format(future_weight/1000000000)
     else:
         future_str = '{:,.9f} CSPR'.format(future_weight/1000000000)
@@ -1869,7 +1870,7 @@ def casper_validator():
 
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
     reward = float(future_weight - current_weight)
-    if (reward > 1000000000):
+    if (reward > 10000000):
         this_str = '{:,.4f} CSPR'.format(reward / 1000000000)
     else:
         this_str = '{:,} mote'.format(int(reward))
@@ -1881,7 +1882,7 @@ def casper_validator():
     reward = 0
     if len(our_rewards):
         reward = float(sum(our_rewards) / len(our_rewards))
-    if reward > 1000000000:
+    if reward > 10000000:
         this_str = '{:,.4f} CSPR'.format(reward / 1000000000)
     else:
         this_str = '{:,} mote'.format(int(reward))
