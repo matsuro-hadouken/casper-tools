@@ -1310,7 +1310,7 @@ def casper_peers():
     peers.addstr(2, 42, 'Total Trusted : ', curses.color_pair(1))
     peers.addstr('{}'.format(len(trusted_ips)+len(trusted_blocked)), curses.color_pair(4))
 
-    local_peer_scan_dict = peer_scan_dict
+    local_peer_scan_dict = peer_scan_dict.copy()
     peers_total = len(local_peer_scan_dict.keys())
     peers_blocked = 0
     peers_wrong_chain = 0
