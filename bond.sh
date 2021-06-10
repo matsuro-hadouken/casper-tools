@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# Tested and works on "delta-11"
-
 # Bond validat to networks
 # Requirements: 'apt install jq'
 # Requirements: Set 'validator public hex' , 'BID_AMOUNT' , 'PROFIT ( fee ), 'CHAIN_NAME', 'OWNER_PRIVATE_KEY' path, 'API' end pint, 'BONDING_CONTRACT' path.
 
-PUB_KEY_HEX="$1"
+BID_AMOUNT="10000000000"    # AMOUNT 'IN MOTES' ( 10 CSPR MINIMUM )
 
-BID_AMOUNT="12345678"
-payment_amount="3000000"
-validator_comission="10"
+payment_amount="3000000000" # TRANSACTION FEE 'IN MOTES'
+
+validator_comission="50"    # COMISSION RATE PERCENTAGE
 
 CHAIN_NAME=`curl -s localhost:8888/status | jq -r .chainspec_name`
 public_hex_path='/etc/casper/validator_keys/public_key_hex'
@@ -23,6 +21,7 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+PUB_KEY_HEX="$1"
 
 function GetPublicHEX() {
 
@@ -52,3 +51,4 @@ TX=$(casper-client put-deploy \
         --session-arg="amount:u512='$BID_AMOUNT'" \
         --session-arg="delegation_rate:u8='$validator_comission'" | jq -r '.result | .deploy_hash')
 
+echo "$TX"
