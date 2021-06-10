@@ -19,3 +19,15 @@ explorer.sh
 status.py
 ```
 ![alt text](https://github.com/RapidMark/casper-tools/raw/master/images/status.PNG)
+ - delegation tool, allow user to stake
+```
+delegate.sh
+```
+ - delegation tool, allow user to withdraw stake
+```
+undelegate.sh
+```
+- validator tool, allow validator to withdraw from auction
+```
+withdraw_bid.sh
+```
