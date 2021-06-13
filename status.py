@@ -28,6 +28,7 @@ deploy_dict = dict()
 peer_scan_dict = dict()
 peer_scan_running = False
 peer_scan_last_run = None 
+our_era_rewards = dict()
 
 def system_memory():
     global sysmemory
@@ -546,6 +547,7 @@ def getEraInfo(block, currentEra, update_globals):
         eraInfo = summary['stored_value']['EraInfo']['seigniorage_allocations']
         currentEra = int(summary['era_id'])
         num_era_rewards[currentEra] = 0
+        our_era_rewards[currentEra] = 0
         era_block_start[currentEra] = block
 
         my_val_reward = 0
@@ -581,6 +583,7 @@ def getEraInfo(block, currentEra, update_globals):
                     my_val_reward += amount
 
         our_rewards.append(my_val_reward + my_del_reward)
+        our_era_rewards[currentEra] = my_val_reward + my_del_reward
 
         global last_val_reward
         global last_del_reward
@@ -822,6 +825,7 @@ def ProcessStep(transforms, last_height):
             eraInfo = transform['transform']['WriteEraInfo']['seigniorage_allocations']
             currentEra = int(str(transform['key'])[4:])
             num_era_rewards[currentEra] = 0
+            our_era_rewards[currentEra] = 0
             era_block_start[currentEra] = last_height
 
             my_val_reward = 0
@@ -871,6 +875,7 @@ def ProcessStep(transforms, last_height):
                 global_events['Del Last Reward'] = '{:,} mote'.format(int(my_del_reward))
 
             our_rewards.append(my_val_reward + my_del_reward)
+            our_era_rewards[currentEra] = my_val_reward + my_del_reward
 
             last_del_reward = my_del_reward
             last_val_reward = my_val_reward
@@ -1869,7 +1874,7 @@ def casper_validator():
     validator.addstr(3, 42, '<- Position {}'.format(future_index), curses.color_pair(1))
 
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
-    reward = float(future_weight - current_weight)
+    reward = our_era_rewards[current_era-1] if current_era-1 in our_era_rewards else 0
     if (reward > 10000000):
         this_str = '{:,.4f} CSPR'.format(reward / 1000000000)
     else:
