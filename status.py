@@ -1451,6 +1451,9 @@ def casper_launcher():
             os.execv(sys.argv[0], sys.argv)
         launcher.addstr(1, 2, 'Casper-Node-Launcher not running', curses.color_pair(2))
 
+    dt = datetime.utcnow()
+    launcher.addstr(1, 38, 'Time: ', curses.color_pair(1))
+    launcher.addstr('{} UTC'.format(dt.strftime("%Y-%m-%d %H:%M:%S")), curses.color_pair(5))
 
 
 def casper_block_info():
@@ -1477,9 +1480,11 @@ def casper_block_info():
         last_added_block_info = local_status['last_added_block_info']
         try:
             global_height = local_height = last_added_block_info['height']
+            last_block_time = datetime.strptime(last_added_block_info['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
         except:
             global_height = 0
             local_height = 'null'
+            last_block_time = 0
         try:
             round_length = local_status['round_length']
         except:
@@ -1522,6 +1527,7 @@ def casper_block_info():
         api_version = 'null'
         local_era = 'null'
         local_chainspe = 'null'
+        last_block_time = 0
 
     global peer_address
     previous_peer = peer_address
@@ -1564,6 +1570,8 @@ def casper_block_info():
     index = 1
     block_info.addstr(index, 2, 'Local height : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_height), curses.color_pair(4))
+    block_info.addstr(index,34,'<- Added: ', curses.color_pair(1))
+    block_info.addstr('{} UTC'.format(last_block_time.strftime("%Y-%m-%d %H:%M:%S") if last_block_time != 0 else 0), curses.color_pair(5))
 
     index += 1
     block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
