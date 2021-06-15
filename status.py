@@ -28,6 +28,7 @@ deploy_dict = dict()
 peer_scan_dict = dict()
 peer_scan_running = False
 peer_scan_last_run = None 
+our_era_rewards = dict()
 
 def system_memory():
     global sysmemory
@@ -546,6 +547,7 @@ def getEraInfo(block, currentEra, update_globals):
         eraInfo = summary['stored_value']['EraInfo']['seigniorage_allocations']
         currentEra = int(summary['era_id'])
         num_era_rewards[currentEra] = 0
+        our_era_rewards[currentEra] = 0
         era_block_start[currentEra] = block
 
         my_val_reward = 0
@@ -581,6 +583,7 @@ def getEraInfo(block, currentEra, update_globals):
                     my_val_reward += amount
 
         our_rewards.append(my_val_reward + my_del_reward)
+        our_era_rewards[currentEra] = my_val_reward + my_del_reward
 
         global last_val_reward
         global last_del_reward
@@ -822,6 +825,7 @@ def ProcessStep(transforms, last_height):
             eraInfo = transform['transform']['WriteEraInfo']['seigniorage_allocations']
             currentEra = int(str(transform['key'])[4:])
             num_era_rewards[currentEra] = 0
+            our_era_rewards[currentEra] = 0
             era_block_start[currentEra] = last_height
 
             my_val_reward = 0
@@ -871,6 +875,7 @@ def ProcessStep(transforms, last_height):
                 global_events['Del Last Reward'] = '{:,} mote'.format(int(my_del_reward))
 
             our_rewards.append(my_val_reward + my_del_reward)
+            our_era_rewards[currentEra] = my_val_reward + my_del_reward
 
             last_del_reward = my_del_reward
             last_val_reward = my_val_reward
@@ -1446,6 +1451,9 @@ def casper_launcher():
             os.execv(sys.argv[0], sys.argv)
         launcher.addstr(1, 2, 'Casper-Node-Launcher not running', curses.color_pair(2))
 
+    dt = datetime.utcnow()
+    launcher.addstr(1, 38, 'Time: ', curses.color_pair(1))
+    launcher.addstr('{} UTC'.format(dt.strftime("%Y-%m-%d %H:%M:%S")), curses.color_pair(5))
 
 
 def casper_block_info():
@@ -1472,9 +1480,11 @@ def casper_block_info():
         last_added_block_info = local_status['last_added_block_info']
         try:
             global_height = local_height = last_added_block_info['height']
+            last_block_time = datetime.strptime(last_added_block_info['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
         except:
             global_height = 0
             local_height = 'null'
+            last_block_time = 0
         try:
             round_length = local_status['round_length']
         except:
@@ -1517,6 +1527,7 @@ def casper_block_info():
         api_version = 'null'
         local_era = 'null'
         local_chainspe = 'null'
+        last_block_time = 0
 
     global peer_address
     previous_peer = peer_address
@@ -1559,6 +1570,8 @@ def casper_block_info():
     index = 1
     block_info.addstr(index, 2, 'Local height : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_height), curses.color_pair(4))
+    block_info.addstr(index,34,'<- Added: ', curses.color_pair(1))
+    block_info.addstr('{} UTC'.format(last_block_time.strftime("%Y-%m-%d %H:%M:%S") if last_block_time != 0 else 0), curses.color_pair(5))
 
     index += 1
     block_info.addstr(index, 2, 'Peer height  : ', curses.color_pair(1))
@@ -1869,7 +1882,7 @@ def casper_validator():
     validator.addstr(3, 42, '<- Position {}'.format(future_index), curses.color_pair(1))
 
     validator.addstr(4, 2, 'Last Reward  : ', curses.color_pair(1))
-    reward = float(future_weight - current_weight)
+    reward = our_era_rewards[current_era-1] if current_era-1 in our_era_rewards else 0
     if (reward > 10000000):
         this_str = '{:,.4f} CSPR'.format(reward / 1000000000)
     else:
