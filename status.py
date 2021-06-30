@@ -965,6 +965,7 @@ class EventTask:
                     if not chunk:
                         break
                 except:
+                    os.execv(sys.argv[0], sys.argv)
                     break;
 
                 if self.has_finality():
