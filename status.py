@@ -1516,7 +1516,7 @@ def casper_block_info():
         try:
             local_era = last_added_block_info['era_id']
         except:
-            local_era = 'null'
+            local_era = 0
     except:
         global_height = 0
         local_height = 'null'
@@ -1526,7 +1526,7 @@ def casper_block_info():
         chain_name = 'null'
         root_hash = 'null'
         api_version = 'null'
-        local_era = 'null'
+        local_era = 0
         local_chainspe = 'null'
         last_block_time = 0
 
