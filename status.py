@@ -1434,7 +1434,7 @@ def casper_launcher():
     if active == 'active':
         has_been_active = True
         launcher.addstr(1, 2, 'MemoryCurrent: ', curses.color_pair(1))
-        launcher.addstr('{}'.format(memory), curses.color_pair(4))
+        launcher.addstr('{:.2f} GB'.format(float(memory)/1024/1024/1024), curses.color_pair(4))
 
         launcher.addstr(2, 2, 'ActiveState  : ', curses.color_pair(1))
         launcher.addstr('{}'.format(active), curses.color_pair(4))
