@@ -1357,7 +1357,7 @@ def casper_peers():
                 if peer_next_upgrade != None:
                     peer_era_upgrade = int(peer_next_upgrade['activation_point'])
                     peer_upgrade = peer_next_upgrade['protocol_version']
-                    if current_era_global < peer_era_upgrade:
+                    if our_era_upgrade < peer_era_upgrade:
                         we_have_not_staged = True
                         missing_era_upgrade = peer_era_upgrade
                 if peer_next_upgrade != our_next_upgrade:
