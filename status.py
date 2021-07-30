@@ -941,7 +941,7 @@ class EventTask:
         global localhost
         global round_time
         global avg_rnd_time
-        url = 'http://{}:9999/events'.format(localhost)
+        url = 'http://{}:9999/events/main'.format(localhost)
         localhost_active = False
         while not localhost_active and self._running:
             try:
