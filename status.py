@@ -811,13 +811,14 @@ class CoinListTask:
 
         while self._running:
             try:
+                global_events.pop('price_error', None)
                 coin_info = coinlist.request('GET', '/v1/symbols/CSPR-USD')
                 current_price = coin_info['symbol']['fair_price'][:-4]
             except:
                 global_events['price_error'] = 1
                 pass
 
-            time.sleep(10)
+            time.sleep(60)
 
 def ProcessStep(transforms, last_height):
     for transform in transforms:
