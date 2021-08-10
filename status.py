@@ -811,13 +811,14 @@ class CoinListTask:
 
         while self._running:
             try:
+                global_events.pop('price_error', None)
                 coin_info = coinlist.request('GET', '/v1/symbols/CSPR-USD')
                 current_price = coin_info['symbol']['fair_price'][:-4]
             except:
                 global_events['price_error'] = 1
                 pass
 
-            time.sleep(10)
+            time.sleep(60)
 
 def ProcessStep(transforms, last_height):
     for transform in transforms:
@@ -1330,10 +1331,13 @@ def casper_peers():
         our_peer = local_peer_scan_dict['localhost']
         our_chain = our_peer[2]
         our_version = our_peer[1]
+        our_era = our_peer[4]
         our_next_upgrade = our_peer[6]
         if our_next_upgrade != None:
             our_era_upgrade = int(our_next_upgrade['activation_point'])
             our_upgrade = our_next_upgrade['protocol_version']
+        else:
+            our_era_upgrade = our_era
 
         total_staked = 0
         for item in current_weights.items():
@@ -1357,7 +1361,7 @@ def casper_peers():
                 if peer_next_upgrade != None:
                     peer_era_upgrade = int(peer_next_upgrade['activation_point'])
                     peer_upgrade = peer_next_upgrade['protocol_version']
-                    if our_era_upgrade < peer_era_upgrade:
+                    if our_era_upgrade < peer_era_upgrade and our_chain == current_peer[2]:
                         we_have_not_staged = True
                         missing_era_upgrade = peer_era_upgrade
                 if peer_next_upgrade != our_next_upgrade:
@@ -1673,7 +1677,7 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Chain Name   : ', curses.color_pair(1))
     block_info.addstr('{}'.format(chain_name), curses.color_pair(4))
     block_info.addstr(index, 34, 'Starting Hash : ', curses.color_pair(1))
-    block_info.addstr('{}'.format(root_hash), curses.color_pair(4))
+    block_info.addstr('{}..{}'.format(root_hash[:8],root_hash[-8:]), curses.color_pair(4))
 
     index += 1
     block_info.addstr(index, 2, 'API Version  : ', curses.color_pair(1))
