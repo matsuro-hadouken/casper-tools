@@ -1137,7 +1137,7 @@ def casper_events():
 def casper_proposers():
     global proposers
 
-    local_proposers = proposers_dict    # make a copy in case our thread tries to stomp
+    local_proposers = proposers_dict.copy()    # make a copy in case our thread tries to stomp
 
     max_proposers = 20
     we_are_included = False
@@ -1159,6 +1159,32 @@ def casper_proposers():
     proposers.addstr(' {:6} '.format((global_height-currentProposerBlock) if global_height > 0 and currentProposerBlock > 0 else 0), curses.color_pair(5))
     proposers.addstr('Blks / Stk Wgt / Prpsr %', curses.color_pair(4))
 
+    local_peer_scan_dict = peer_scan_dict.copy()
+    peers_total = len(local_peer_scan_dict.keys())
+    proposer_upgrade = dict()
+
+    if peers_total:
+        total_not_staged = 0
+        our_peer = local_peer_scan_dict['localhost']
+        our_chain = our_peer[2]
+        our_version = our_peer[1]
+        our_era = our_peer[4]
+        our_next_upgrade = our_peer[6]
+        if our_next_upgrade != None:
+            our_era_upgrade = int(our_next_upgrade['activation_point'])
+            our_upgrade = our_next_upgrade['protocol_version']
+            for ip in local_peer_scan_dict:
+                current_peer = local_peer_scan_dict[ip]
+                if current_peer != None and our_chain == current_peer[2]:
+                    if current_peer[6] == None:
+                        proposer_upgrade[current_peer[0]] = 2
+                        total_not_staged += 1
+
+        if total_not_staged == 0:
+            global_events.pop('Upgrade Not Ready', None)
+        else:
+            global_events['Upgrade Not Ready'] = total_not_staged
+
 
     index = 1
     try:
@@ -1179,7 +1205,11 @@ def casper_proposers():
                 if index == max_proposers and not we_are_included and proposer[0] != public_key:
                     continue
 
-                proposers.addstr(index, 2, '{}....{} : '.format(proposer[0][:6], proposer[0][-6:]), curses.color_pair(1 if proposer[0] != public_key else 5))
+                proposer_color = 1
+                if proposer[0] in proposer_upgrade.keys():
+                    proposer_color = proposer_upgrade[proposer[0]]
+
+                proposers.addstr(index, 2, '{}..{} : '.format(proposer[0][:10], proposer[0][-4:]), curses.color_pair(proposer_color if proposer[0] != public_key else 5))
                 proposers.addstr('{:6.2f}%'.format(current_weights[proposer[0]]/total_staked*100), curses.color_pair(4))
                 proposers.addstr(' / ', curses.color_pair(1))
                 proposers.addstr('{:6.2f}%'.format(100*proposer[1]/blocks), curses.color_pair(4))
@@ -1194,7 +1224,7 @@ def casper_proposers():
 
 
             if not we_are_included and public_key in current_weights:            
-                proposers.addstr(index, 2, '{}....{} : '.format(public_key[:6], public_key[-6:]), curses.color_pair(5))
+                proposers.addstr(index, 2, '{}..{} : '.format(public_key[:10], public_key[-4:]), curses.color_pair(5))
                 if public_key in local_proposers:
                     proposers.addstr('{:6.2f}%'.format(current_weights[public_key]/3500000000000000000*100), curses.color_pair(4))
                     proposers.addstr(' / ', curses.color_pair(1))
@@ -1921,10 +1951,11 @@ def casper_validator():
         last_block= our_blocks[current_era_global-1]
     if current_era_global-2 in our_blocks:
         prev_block = our_blocks[current_era_global-2]
-    for era in our_blocks:
-        avg_blocks += our_blocks[era]
-    if len(our_blocks):
-        avg_blocks /= len(our_blocks)
+    avg_blocks = (prev_block+last_block+this_block)/3
+#    for era in our_blocks:
+#        avg_blocks += our_blocks[era]
+#    if len(our_blocks):
+#        avg_blocks /= len(our_blocks)
 
     validator.addstr('{}'.format(this_block), curses.color_pair(2 if this_block < int(avg_blocks) else 5 if this_block > int(avg_blocks) else 4))
     validator.addstr(' / ', curses.color_pair(4))
