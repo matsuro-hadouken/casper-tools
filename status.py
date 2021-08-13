@@ -946,8 +946,7 @@ class EventTask:
         localhost_active = False
         while not localhost_active and self._running:
             try:
-                self._request = urllib.request.Request(url)
-                self._reader = urllib.request.urlopen(self._request)
+                r = requests.get(url, stream=True)
                 localhost_active = True
             except:
                 time.sleep(10)
@@ -962,8 +961,8 @@ class EventTask:
             while self._running:
                 self._time_before_read = datetime.now()
                 try:
-                    chunk = self._reader.read(CHUNK)
-                    if not chunk:
+                    lines = r.iter_lines()
+                    if not lines:
                         break
                 except:
                     os.execv(sys.argv[0], sys.argv)
@@ -973,9 +972,9 @@ class EventTask:
                     global_events['FinalitySignature'] = 0
                     finality_signatures.clear()
 
-                data = chunk.decode().split('\n')
                 first = True
-                for line in data:
+                for line in lines:
+                    line = line.decode('utf-8')
                     if first and len(partial_line):
                         line = '{}{}'.format(partial_line, line)
                         partial_line = ""
@@ -1068,6 +1067,8 @@ class EventTask:
                                         getEraInfo(last_height, era_id, True)
                                 except:
                                     pass
+
+                                continue;
 
 
                             try:
@@ -1181,9 +1182,9 @@ def casper_proposers():
                         total_not_staged += 1
 
         if total_not_staged == 0:
-            global_events.pop('Upgrade Not Ready', None)
+            global_events.pop('Peers Not Ready', None)
         else:
-            global_events['Upgrade Not Ready'] = total_not_staged
+            global_events['Peers Not Ready'] = total_not_staged
 
 
     index = 1
