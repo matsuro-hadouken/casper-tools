@@ -5,6 +5,7 @@ from collections import namedtuple
 from configparser import ConfigParser
 import platform,subprocess,re,getopt
 import requests,hmac,hashlib,base64
+import math
 
 peer_blacklist = []
 peer_wrong_chain = []
@@ -29,6 +30,14 @@ peer_scan_dict = dict()
 peer_scan_running = False
 peer_scan_last_run = None 
 our_era_rewards = dict()
+
+millnames = ['',' K',' M',' B',' T']
+
+def millify(n):
+    n = float(n)
+    millidx = max(0,min(len(millnames)-1, int(math.floor(0 if n == 0 else math.log10(abs(n))/3))))
+
+    return '${:.1f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
 
 def system_memory():
     global sysmemory
@@ -415,17 +424,17 @@ def casper_bonds():
         except:
             delegate_stake = 0
 
-        bonds.addstr(1, 2, 'Active       : ', curses.color_pair(1))
+        bonds.addstr(1, 2, 'Active   : ', curses.color_pair(1))
         if inactive:
             bonds.addstr('Not Active', curses.color_pair(2 if blink else 20))
         else:
             bonds.addstr('True', curses.color_pair(4))
 
 
-        bonds.addstr(2, 2, 'Delegation   : ', curses.color_pair(1))
+        bonds.addstr(2, 2, 'Dele %   : ', curses.color_pair(1))
         bonds.addstr('{} %'.format(delegation), curses.color_pair(4))
 
-        bonds.addstr(3, 2, 'Num Delegates: ', curses.color_pair(1))
+        bonds.addstr(3, 2, 'Num Dele : ', curses.color_pair(1))
         bonds.addstr('{}'.format(num_delegates), curses.color_pair(4))
 
         our_stake_str = '{:,} CSPR'.format(int(staked / 1000000000))
@@ -442,16 +451,19 @@ def casper_bonds():
         else:
             del_reward_str = '{:,} mote'.format(int(last_del_reward))
 
-        longest_len = max(len(delegate_str), len(total_stake_str), len(our_reward_str), len(del_reward_str))
+        longest_len = max(len(delegate_str), len(total_stake_str), len(our_reward_str), len(del_reward_str), len(our_stake_str))
 
-        bonds.addstr(4, 2, 'Auction Bond : ', curses.color_pair(1))
+        bonds.addstr(4, 2, 'Bond     : ', curses.color_pair(1))
         bonds.addstr('{}'.format(our_stake_str.rjust(longest_len, ' ')), curses.color_pair(4))
+        bonds.addstr(' {}'.format(millify(int(staked / 1000000000)*float(current_price))), curses.color_pair(1))
 
-        bonds.addstr(5, 2, 'Delegate Bond: ', curses.color_pair(1))
+        bonds.addstr(5, 2, 'Delegate : ', curses.color_pair(1))
         bonds.addstr('{}'.format(delegate_str.rjust(longest_len, ' ')), curses.color_pair(4))
+        bonds.addstr(' {}'.format(millify(int(delegate_stake / 1000000000)*float(current_price))), curses.color_pair(1))
 
-        bonds.addstr(6, 2, 'Total Bond   : ', curses.color_pair(1))
+        bonds.addstr(6, 2, 'Total    : ', curses.color_pair(1))
         bonds.addstr('{}'.format(total_stake_str.rjust(longest_len, ' ')), curses.color_pair(4))
+        bonds.addstr(' {}'.format(millify(int((staked + delegate_stake) / 1000000000)*float(current_price))), curses.color_pair(1))
 
         bonds.addstr(7, 2, '--------- Previous Reward ----------', curses.color_pair(5))
 
@@ -1792,9 +1804,11 @@ def casper_public_key():
         balance = int(balance_json['result']['balance_value'].strip("\""))
 
         if (balance > 100000000):
-            pub_key_win.addstr('{:,.9f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
+            pub_key_win.addstr('{:,.4f} CSPR'.format(balance / 1000000000), curses.color_pair(4))
         else:
             pub_key_win.addstr('{:,} mote'.format(balance), curses.color_pair(4))
+
+        pub_key_win.addstr(' ({})'.format(millify((balance / 1000000000)*float(current_price))), curses.color_pair(1))
 
         coin_len = len(current_price)
         pub_key_win.addstr(2, 70-coin_len-8-7-4, 'Price: ', curses.color_pair(1))
