@@ -190,7 +190,7 @@ def run():
                 auction = getAuctionInfo(startBlock)
                 print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, balance/1000000000, auction/1000000000, (balance+auction)/1000000000))
                 if output_file != None:
-                    data = [event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, firstBalance/1000000000, firstAuction/1000000000, (firstBalance+firstAuction)/1000000000]
+                    data = [event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, balance/1000000000, auction/1000000000, (balance+auction)/1000000000]
                     writer.writerow(data)
                 break;
 
