@@ -291,9 +291,19 @@ def getPublicKey():
 
 #-------------------------------------------------------
 
-print('\nAudit - Useful Casper Blockchain tool to get auditable Balance information over time')
+print('\nAudit - Useful Casper Blockchain tool to get auditable Balance information')
 print('The MIT License (MIT)')
 print('Copyright (c) 2021 Mark Caldwell (RapidMark)')
+
+try:
+    ver = os.popen('casper-client --version').read()
+    ver = ver.split()
+    if int(ver[2].replace('.', '')) < 132:
+        raise
+except:
+    print('\nrequired: Casper-Client version 1.3.2 or greater\n')
+    sys.exit(3)
+
 
 getPublicKey()
 run()
