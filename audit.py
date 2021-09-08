@@ -20,6 +20,8 @@ last_day = None
 last_month = None
 last_year = None
 #-------------------------------------------------------
+num_decimals = 2
+#-------------------------------------------------------
 
 def checkBalance(block):
     pass
@@ -56,9 +58,9 @@ def run():
     if lastBlock < 0:
         lastBlock = 0
 
-    print('\nAll data is gathered at the beginning of each day, and then a final entry is on the last day @11:59pm\n(so you can see total earning from Midnight on first day to Midnight on last day')
-
-    print("\nCasper Blockchain is currently at Block=", currentProposerBlock)
+    print('\nAll data is gathered at the beginning of each day, and then a final entry is on the last day @11:59pm\n(so you can see total earning from Midnight on first day to Midnight on last day)')
+    print("\nCasper Blockchain is currently at Block:", currentProposerBlock)
+    print("\nUsing Public Key", public_key)
 
     today = datetime.utcnow().date()
     first = today.replace(day=1)
@@ -158,7 +160,7 @@ def run():
 
     print("\n\n")
     print("Date\tBlock\tLiquid\tAuction\tTotal")
-    print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, firstBalance/1000000000, firstAuction/1000000000, (firstBalance+firstAuction)/1000000000))
+    print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, round(firstBalance/1000000000,num_decimals), round(firstAuction/1000000000,num_decimals), round((firstBalance+firstAuction)/1000000000),num_decimals))
 
     if output_file != None:
         data = [event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, firstBalance/1000000000, firstAuction/1000000000, (firstBalance+firstAuction)/1000000000]
@@ -188,7 +190,7 @@ def run():
 
                 balance = checkBalance(startBlock)
                 auction = getAuctionInfo(startBlock)
-                print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, balance/1000000000, auction/1000000000, (balance+auction)/1000000000))
+                print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, round(balance/1000000000,num_decimals), round(auction/1000000000,num_decimals), round((balance+auction)/1000000000),num_decimals))
                 if output_file != None:
                     data = [event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, balance/1000000000, auction/1000000000, (balance+auction)/1000000000]
                     writer.writerow(data)
@@ -200,12 +202,12 @@ def run():
     block_info = json.loads(os.popen('casper-client get-block -b {}'.format(lastDayBlock)).read())
     event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
 
-    print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format("{}".format(event_time.strftime("%Y-%m-%d %H:%M:%S")), lastDayBlock, lastBalance/1000000000, lastAuction/1000000000, (lastBalance+lastAuction)/1000000000))
+    print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format("{}".format(event_time.strftime("%Y-%m-%d %H:%M:%S")), lastDayBlock, round(lastBalance/1000000000,num_decimals), round(lastAuction/1000000000,num_decimals), round((lastBalance+lastAuction)/1000000000),num_decimals))
     if output_file != None:
         data = ["{}".format(event_time.strftime("%Y-%m-%d %H:%M:%S")), lastDayBlock, lastBalance/1000000000, lastAuction/1000000000, (lastBalance+lastAuction)/1000000000]
         writer.writerow(data)
 
-    print("\n\nTotal Increase: {} CSPR\n\n".format(((lastBalance+lastAuction) - (firstBalance+firstAuction)) / 1000000000))
+    print("\n\nTotal Increase: {} CSPR\n\n".format(round(((lastBalance+lastAuction) - (firstBalance+firstAuction)) / 1000000000),num_decimals))
     if output_file != None:
         writer.writerow(['', '', 'Total Diff:', 'End - Start', '{}'.format(((lastBalance+lastAuction) - (firstBalance+firstAuction)) / 1000000000)])
         f.close()
@@ -224,6 +226,12 @@ def usage():
     print('Usage: '+sys.argv[0]+' [option]\n')
     print('options:')
     print('\tempty options will do last month')
+    print('\tPublic Key will be read locally but can be overriden')
+    print('\t\t-k <key>')
+    print('\tand if you don\'t have a public key locally you can read it from')
+    print('\t\t-l <ip-address> (default = localhost)')
+    print('\tto limit decimals')
+    print('\t\t-d <num decimals> (default = 2)')
     print('\tStart Dates')
     print('\t\t--sd= (--sd=21)   - Start Date')
     print('\t\t--sm= (--sm=5)    - Start Month')
@@ -249,10 +257,10 @@ def getPublicKey():
     global last_day
     global last_year
     global output_file
-
+    global num_decimals
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'k:h:l:' ,['sm=','sd=','sy=','em=','ed=','ey=','help','f='])
+        opts, args = getopt.getopt(sys.argv[1:], 'k:h:l:d:' ,['sm=','sd=','sy=','em=','ed=','ey=','help','f='])
         for opt, arg in opts:
             if opt == '-k':
                 public_key = arg
@@ -270,6 +278,8 @@ def getPublicKey():
                 last_day = int(arg)
             elif opt == '--ey':
                 last_year = int(arg)
+            elif opt == '-d':
+                num_decimals = int(opt)
             elif opt == '--f':
                 output_file = str(arg)
             elif opt in ('-h', '--help'):
@@ -290,6 +300,19 @@ def getPublicKey():
                 reader.close()
 
 #-------------------------------------------------------
+def notFound(ver):
+    print('\nrequired: Casper-Client version 1.3.2 or greater')
+
+    if ver != None:
+        print('found   : Casper-Client version {}'.format(ver))
+
+    print('\nClient is incompatible (or not found), please compile (or install) 1.3.2 version or above.\n')
+    print('If compiling, these instructions might help')
+    print('\tcd casper-node\n\tgit pull\n\tgit checkout release-1.3.2\n\tmake setup-rs\n\tmake build-client-contracts\n\tcargo build -p casper-client --release\n\n\tsudo cp target/release/casper-client /usr/bin\n')
+
+    sys.exit(3)
+
+#-------------------------------------------------------
 
 print('\nAudit - Useful Casper Blockchain tool to get auditable Balance information')
 print('The MIT License (MIT)')
@@ -297,11 +320,13 @@ print('Copyright (c) 2021 Mark Caldwell (RapidMark)')
 
 try:
     ver = os.popen('casper-client --version').read()
+    if not ver:
+        notFound(None)
     ver = ver.split()
     if int(ver[2].replace('.', '')) < 132:
-        raise
+        notFound(ver[2])
+
 except:
-    print('\nrequired: Casper-Client version 1.3.2 or greater\n')
     sys.exit(3)
 
 
