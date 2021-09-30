@@ -1,32 +1,28 @@
-### DASHBOARD ALPHA
+### CASPER VALIDATOR DASHBOARD
 
-Requirements: Datatable Panel Plugin _(`grafana-cli plugins install briangann-datatable-panel`)_
+* _Due to lack of maintenance on custom exporter some additional metrics been temporaty removed._
 
-* https://grafana.com/grafana/plugins/briangann-datatable-panel/
+* _Casper validator serve metrics by default at `127.0.0.1:8888/metrics`_
 
-Exporter repository maintain by Pixiemars:
+* _Grafana version: 8.1.2_
 
-* https://github.com/pixiemars/CasperPrometheusGrabber
+* _Grafana alerts system doesn't support variables, examples included, but should be set on specific target manualy._
 
-Exporter default port `8123`
-
-* Prometheus example:
+#### Prometheus example:
 
 ```
 global:
-  scrape_interval:     1s
-  evaluation_interval: 1s
+  scrape_interval:     15s
+  evaluation_interval: 15s
 
   - job_name: 'casper'
     static_configs:
-    - targets: ['10.0.0.1:8888']
+    - targets: ['127.0.0.1:8888']
 
-  - job_name: 'chain'
-    static_configs:
-    - targets: ['10.0.0.1:8123']
 ```
 
-![1](https://user-images.githubusercontent.com/50751381/115509785-633d5c00-a26e-11eb-9a41-2a8cfd33124b.jpg)
-![2](https://user-images.githubusercontent.com/50751381/115509798-66d0e300-a26e-11eb-8b76-9df1045806d2.jpg)
-![3](https://user-images.githubusercontent.com/50751381/115509811-6a646a00-a26e-11eb-8448-27ed5892a073.jpg)
-![4](https://user-images.githubusercontent.com/50751381/115509821-6c2e2d80-a26e-11eb-8baa-a9edfcd8ebfb.jpg)
+![1](https://user-images.githubusercontent.com/50751381/135534072-e0779742-e015-40ae-84fb-f61f9c49c145.png)
+![2](https://user-images.githubusercontent.com/50751381/135534083-7744f44e-8447-4d59-9237-882ade28b7f4.png)
+![3](https://user-images.githubusercontent.com/50751381/135534091-684d9354-be4f-4932-bb76-d5149374674b.png)
+![4](https://user-images.githubusercontent.com/50751381/135534097-fdb81875-7e84-4e26-98b9-77b0b51dfe6d.png)
+![5](https://user-images.githubusercontent.com/50751381/135534105-d03c968f-cc8a-4a94-83cd-73d67e9852e1.png)
