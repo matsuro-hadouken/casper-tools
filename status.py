@@ -2169,6 +2169,8 @@ def main():
         try:
             local_status = json.loads(os.popen('curl -s {}:8888/status'.format(localhost)).read())
             public_key = local_status['our_public_signing_key']
+            if public_key == None:
+                raise
         except:
             reader = open('/etc/casper/validator_keys/public_key_hex')
             try:
