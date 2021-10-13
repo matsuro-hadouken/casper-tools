@@ -2126,6 +2126,9 @@ def main():
 
     config.read(config_file)
     node_path = config.get('storage', 'path').strip('\'')
+    if not os.path.exists(node_path):
+        print("\nCasper needs to be run at least once to initialize the path '{}'\n\nPlease start Casper node first, then run status.py\n".format(node_path))
+        exit(1)
 
     global trusted_ips
     global testing_trusted
