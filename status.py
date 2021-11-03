@@ -1669,7 +1669,7 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
     block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
 
-    avg_num_blocks = 110
+    avg_num_blocks = 220
     block_percent = 1
     number_blocks = 0
 
