@@ -1176,7 +1176,7 @@ def casper_proposers():
     peers_total = len(local_peer_scan_dict.keys())
     proposer_upgrade = dict()
 
-    if peers_total:
+    if peers_total and 'localhost' in local_peer_scan_dict:
         total_not_staged = 0
         our_peer = local_peer_scan_dict['localhost']
         our_chain = our_peer[2]
@@ -1370,7 +1370,7 @@ def casper_peers():
     missing_era_upgrade = 0
     our_era_upgrade = 0
 
-    if peers_total:
+    if peers_total and 'localhost' in local_peer_scan_dict:
         our_peer = local_peer_scan_dict['localhost']
         our_chain = our_peer[2]
         our_version = our_peer[1]
