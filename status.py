@@ -2117,12 +2117,18 @@ def main():
     config_file = '/etc/casper/1_0_0/config.toml'
 
     try:
-        subfolders = [ f.path for f in os.scandir('/etc/casper/') if f.is_dir() and re.match(r'\d{0,255}_\d{0,255}_\d{0,255}', f.name) ]
-        for folder in sorted(subfolders, reverse=True):
-            config_file = '{}/config.toml'.format(folder)
-            break;
+        config_file = os.popen('ps -ef | grep casper | grep config.toml | head -1 | awk -F" " \'{print $10}\'').read().split('\n')[0]
     except:
         pass
+
+    if config_file == '':
+        try:
+            subfolders = [ f.path for f in os.scandir('/etc/casper/') if f.is_dir() and re.match(r'\d{0,255}_\d{0,255}_\d{0,255}', f.name) ]
+            for folder in sorted(subfolders, reverse=True):
+                config_file = '{}/config.toml'.format(folder)
+                break;
+        except:
+            pass
 
     config.read(config_file)
     node_path = config.get('storage', 'path').strip('\'')
