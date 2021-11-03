@@ -1455,8 +1455,10 @@ def casper_launcher():
 
     try:
         memory = json_dict['MemoryCurrent']
+        if memory == '[not set]':
+            memory = '0'
     except:
-        memory = 'null'
+        memory = '0'
     try:
         active = json_dict['ActiveState']
     except:
