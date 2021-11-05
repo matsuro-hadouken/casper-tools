@@ -10,6 +10,10 @@ balance_check.sh <PUB_HEX>
  ``` bash
 bond.sh
 ```
+ - return validator to active state
+``` bash
+activate_bid.sh
+```
  - connected peers explorer
  ``` bash
 explorer.sh
