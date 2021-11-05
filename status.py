@@ -1669,7 +1669,7 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
     block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
 
-    avg_num_blocks = 220
+    avg_num_blocks = (3600*2)/avg_rnd_time
     block_percent = 1
     number_blocks = 0
 
@@ -1680,7 +1680,7 @@ def casper_block_info():
     if next_upgrade:
         elapsed = datetime.utcnow() - round_time
         eras_left = next_era_upgrade - local_era - 1
-        block_left = avg_num_blocks - number_blocks
+        block_left = int(avg_num_blocks - number_blocks)
         number_seconds = int(eras_left * (2*60*60) + (block_left * avg_rnd_time) + (avg_rnd_time - elapsed.total_seconds()))
 
         if number_seconds < 1:
@@ -1727,6 +1727,8 @@ def casper_block_info():
     index += 1
     block_info.addstr(index, 2, 'API Version  : ', curses.color_pair(1))
     block_info.addstr('{}'.format(api_version), curses.color_pair(4))
+    block_info.addstr(index, 34, 'Avg Blocks per Era : ', curses.color_pair(1))
+    block_info.addstr('{}'.format(round(avg_num_blocks)), curses.color_pair(4))
     index += 1
     block_info.addstr(index, 2, 'Local ERA    : ', curses.color_pair(1))
     block_info.addstr('{}'.format(local_era), curses.color_pair(4))
@@ -2147,11 +2149,14 @@ def main():
     testing_trusted = True
 
     trusted_ips = []
-    known = config.get('network', 'known_addresses').strip('[]').split(',')
-    for ip in known:
-        clean_ip = ip.strip('\'') if ':' not in ip else ip.strip('\'').split(':')[0]
-        if clean_ip not in trusted_ips:
-            trusted_ips.append(clean_ip)
+    try:
+        known = config.get('network', 'known_addresses').strip('[]').split(',')
+        for ip in known:
+            clean_ip = ip.strip('\'') if ':' not in ip else ip.strip('\'').split(':')[0]
+            if clean_ip not in trusted_ips:
+                trusted_ips.append(clean_ip)
+    except:
+        pass
 
     global random
     random = random.SystemRandom()
@@ -2162,7 +2167,7 @@ def main():
     global round_time
     round_time = datetime.utcnow()
     global avg_rnd_time
-    avg_rnd_time = 65.536
+    avg_rnd_time = 32.768
 
     global current_proposer
     current_proposer = ''
