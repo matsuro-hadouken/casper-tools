@@ -2133,7 +2133,11 @@ def main():
             pass
 
     config.read(config_file)
-    node_path = config.get('storage', 'path').strip('\'')
+    try:
+        node_path = config.get('storage', 'path').strip('\'')
+    except:
+        node_path = '/var/lib/casper/casper-node'
+
     if not os.path.exists(node_path):
         print("\nCasper needs to be run at least once to initialize the path '{}'\n\nPlease start Casper node first, then run status.py\n".format(node_path))
         exit(1)
