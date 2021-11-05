@@ -2167,7 +2167,7 @@ def main():
     global round_time
     round_time = datetime.utcnow()
     global avg_rnd_time
-    avg_rnd_time = 65.536
+    avg_rnd_time = 32.768
 
     global current_proposer
     current_proposer = ''
