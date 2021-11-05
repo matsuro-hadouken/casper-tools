@@ -2123,7 +2123,7 @@ def main():
     except:
         pass
 
-    if config_file == '':
+    if config_file == '' or config_file == None:
         try:
             subfolders = [ f.path for f in os.scandir('/etc/casper/') if f.is_dir() and re.match(r'\d{0,255}_\d{0,255}_\d{0,255}', f.name) ]
             for folder in sorted(subfolders, reverse=True):
