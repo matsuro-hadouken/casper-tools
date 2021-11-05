@@ -1669,7 +1669,7 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Next Upgrade : ', curses.color_pair(1))
     block_info.addstr('{}'.format(next_upgrade), curses.color_pair(4 if next_upgrade == None else 5))
 
-    avg_num_blocks = 110
+    avg_num_blocks = 220
     block_percent = 1
     number_blocks = 0
 
@@ -2123,7 +2123,7 @@ def main():
     except:
         pass
 
-    if config_file == '':
+    if config_file == '' or config_file == None:
         try:
             subfolders = [ f.path for f in os.scandir('/etc/casper/') if f.is_dir() and re.match(r'\d{0,255}_\d{0,255}_\d{0,255}', f.name) ]
             for folder in sorted(subfolders, reverse=True):
@@ -2133,7 +2133,11 @@ def main():
             pass
 
     config.read(config_file)
-    node_path = config.get('storage', 'path').strip('\'')
+    try:
+        node_path = config.get('storage', 'path').strip('\'')
+    except:
+        node_path = '/var/lib/casper/casper-node'
+
     if not os.path.exists(node_path):
         print("\nCasper needs to be run at least once to initialize the path '{}'\n\nPlease start Casper node first, then run status.py\n".format(node_path))
         exit(1)
