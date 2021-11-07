@@ -40,8 +40,8 @@ function GetPublicHEX() {
     elif [[ "${#AutoHEX}" -eq 66 ]]; then
 
         MyValidatorPubKey="$AutoHEX"
-        echo && echo -e "${RED}No valid manual input detected !${NC}" && echo
-        echo -e "Using public HEX from: ${RED}$public_hex_path${NC}"
+        echo -e " ${RED}No valid manual input detected !${NC}" && echo
+        echo -e " Using public HEX from: ${RED}$public_hex_path${NC}"
 
     else
 
@@ -49,7 +49,7 @@ function GetPublicHEX() {
 
     fi
 
-    echo && echo -e "Public HEX: ${CYAN}$MyValidatorPubKey${NC}"
+    echo && echo -e " Public HEX: ${CYAN}$MyValidatorPubKey${NC}"
 
 }
 
@@ -61,7 +61,7 @@ function CreateTemporaryFolder() {
 
     if [ ! -e "$TMPDIR" ]; then
 
-        echo >&2 -e "${RED}Failed to create temp directory${NC}" && echo
+        echo >&2 -e " ${RED}Failed to create temp directory${NC}" && echo
         exit 1
 
     fi
@@ -73,31 +73,67 @@ function CreateTemporaryFolder() {
 
 function GetCurrentEra() {
 
+    trusted_ip_era_arr=()
+
     trusted_counter=0
 
-    read -r -a trustedHosts < <(echo $(cat /etc/casper/1_0_0/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
+    active_config=$(ps -ef | grep casper | grep config.toml | head -1 | awk -F" " '{print $10}' | grep -oP 'casper/\K.*?(?=/config.toml)')
+
+    if [[ "${#active_config}" -lt 3 ]]; then
+      echo && echo -e " ${RED}ERROR:${NC} Can't get active configuration version from localhost, we need trusted endpoints from ${GREEN}/etc/casper/${RED}<version>${GREEN}/config.toml${NC}, terminating ..." && echo && sleep 1 && exit
+    fi
+
+    host_era_current=$(curl -s --connect-timeout 3 --max-time 3 "http://localhost:$HTTP_PORT/status" | jq -r '.last_added_block_info | .era_id')
+
+    if ! [[ "$host_era_current" =~ $numba ]]; then
+      echo && echo -e " ${RED}Can't get era from host !${NC} Replay: [ $host_era_current ]"
+    fi
+
+    echo && echo -e " We believe active host config version: ${GREEN}$active_config${NC}, host era: ${GREEN}$host_era_current${NC}"
+
+    read -r -a trustedHosts < <(echo $(cat /etc/casper/$active_config/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
 
     for seed_ip in "${trustedHosts[@]}"; do
-
-        echo && echo -e "Trusted address list: ${GREEN}$seed_ip${NC}, query era ..."
 
         Ch_hash=$(curl -s --connect-timeout 3 --max-time 3 "http://$seed_ip:$HTTP_PORT"/status | jq -r '.last_added_block_info | .hash')
 
         trusted_counter=$(( trusted_counter + 1 ))
 
         if [[ "${#Ch_hash}" -eq 64 ]]; then
+
             era_current=$(curl -s "http://$seed_ip:$HTTP_PORT/status" | jq -r '.last_added_block_info | .era_id')
+            echo && echo -e " Trusted host: ${GREEN}$seed_ip${NC}, era: ${GREEN}$era_current${NC}, hash: ${GREEN}$Ch_hash${NC}"
+
+            trusted_ip_era_arr=( "${trusted_ip_era_arr[@]}" "$era_current" )
+
         fi
 
         if ! [[ "$era_current" =~ $numba ]]; then
-            echo -e "${RED}ERROR: Bogus output [ $era_current ] from ${GREEN}$seed_ip${RED}, exit ...${NC}" && echo && exit 1
+            echo && echo -e " ${YELLOW}INFO:${NC} Can't get data from ${GREEN}$seed_ip${NC}, blocked or inactive, skip ..."
         fi
 
-	if [[ "$trusted_counter" -ge $trusted_cap ]]; then
-		break
-	fi
+        if ! [ "$era_current" != $numba ] && [ "$trusted_counter" -ge $trusted_cap ]; then
+            echo -e " ${RED}ERROR:${NC} Can't get era from trusted array, terminating ..." && sleep 1 && exit
+        fi
+
+        if [[ "$trusted_counter" -ge $trusted_cap ]]; then
+                break
+        fi
 
     done
+
+    if ! [[ "$era_current" =~ $numba ]]; then
+
+      echo && echo -e " ${RED}ERROR:${NC} Not able to get current era from trusted hosts, terminating ..." && echo && sleep 1 && exit
+
+    fi
+
+    for era in "${trusted_ip_era_arr[@]}" ; do ((era > chain_top_era)) && chain_top_era=$era; done
+
+    era_current="$chain_top_era"
+
+    echo && echo -e " ${CYAN}Current era: ${GREEN}$era_current${NC}" && echo
+
 }
 
 function GetVisibleEras() {
@@ -106,17 +142,11 @@ function GetVisibleEras() {
 
 }
 
-function DrawLine() {
-
-    echo && echo "------------------------------------------------------------------" && echo
-
-}
-
 function BrowseTroughEras() {
 
-    echo && echo '------------------------------------------------------------------'
-    echo -e "${CYAN}Ongoing era: ${YELLOW}$era_current${CYAN}, looking in to future ...      Following sequence: ${YELLOW}${VisibleEras[@]}${NC}"
-    echo '------------------------------------------------------------------'
+    echo && echo ' ------------------------------------------------------------------'
+    echo -e " ${CYAN}Ongoing era: ${YELLOW}$era_current${CYAN}, looking in to future ...      Following sequence: ${YELLOW}${VisibleEras[@]}${NC}"
+    echo ' ------------------------------------------------------------------'
 
     era_section=$(casper-client get-auction-info | jq -r '.result.auction_state.era_validators | .[]')
 
@@ -125,7 +155,7 @@ function BrowseTroughEras() {
 	validator_era=$(echo $era_section | jq -r 'select(.era_id=='$era')')
         validators_in_era=$(echo $validator_era | jq -r '.validator_weights | length')
 
-        echo && echo -e "---> ${YELLOW}Crawling era: ${CYAN}$era${YELLOW} amount of bonds: ${CYAN}$validators_in_era${NC}" && echo
+        echo && echo -e " >>> ${YELLOW}Crawling era: ${CYAN}$era${YELLOW} amount of bonds: ${CYAN}$validators_in_era${NC}" && echo
 
         for ((i = 0; i < "$validators_in_era"; ++i)); do
 			echo $validator_era | jq -r '.validator_weights['$i'] | [.public_key,.weight] | join(" ")'
@@ -164,7 +194,7 @@ function PrittyPrint() {
         fi
 
         # this will also set minimum bid amount, because we sort from height to low, last read will be the lowest one.
-        echo -e "$KeyColor$XValidator_pub_key $BondColor$Xbond_amount${NC}"
+        echo -e " $KeyColor$XValidator_pub_key $BondColor$Xbond_amount${NC}"
 
         # count validators in era
         ActiveValidatorsNow=$((ActiveValidatorsNow + 1))
@@ -183,21 +213,21 @@ function PrittyPrint() {
 
 function EraConditionReport() {
 
-    echo -e "${YELLOW}--------> ${CYAN}ERA $era${NC}" >>"$TMPDIR/report.txt"
+    echo -e " ${YELLOW}>>>>>>>>> ${CYAN}ERA $era${NC}" >>"$TMPDIR/report.txt"
 
     if [[ "$MyValidatorStatus" =~ true ]]; then
 
-        echo -e "Key is in ${GREEN}active${NC} validators list !" >>"$TMPDIR/report.txt"
-        echo -e "Position ${GREEN}$MyValidatorPosition${NC}, validator weight: ${YELLOW}$MyValidatorBidAmount${NC}" >>"$TMPDIR/report.txt"
-        echo -e "Active bonds: ${GREEN}$(($ActiveValidatorsNow - 1))${NC}" >>"$TMPDIR/report.txt"
-        echo >>"$TMPDIR/report.txt"
+        echo -e " Key is in ${GREEN}active${NC} validators list !" >>"$TMPDIR/report.txt"
+        echo -e " Position ${GREEN}$MyValidatorPosition${NC}, validator weight: ${YELLOW}$MyValidatorBidAmount${NC}" >>"$TMPDIR/report.txt"
+        echo -e " Active bonds: ${GREEN}$(($ActiveValidatorsNow - 1))${NC}" >>"$TMPDIR/report.txt"
+        echo >> "$TMPDIR/report.txt"
 
     elif ! [[ "$MyValidatorPubKey" =~ false ]] && ! [[ "$MyValidatorStatus" =~ true ]]; then
 
-        echo -e "Key is ${RED}not${NC} in active validators list !" >>"$TMPDIR/report.txt"
-        echo -e "Era minimum bid should be greater then: ${YELLOW}$Xbond_amount${NC}" >>"$TMPDIR/report.txt"
-        echo -e "Active bonds: ${GREEN}$(($ActiveValidatorsNow - 1))${NC}" >>"$TMPDIR/report.txt"
-        echo >>"$TMPDIR/report.txt"
+        echo -e " Key is ${RED}not${NC} in active validators list !" >>"$TMPDIR/report.txt"
+        echo -e " Era minimum bid should be greater then: ${YELLOW}$Xbond_amount${NC}" >>"$TMPDIR/report.txt"
+        echo -e " Active bonds: ${GREEN}$(($ActiveValidatorsNow - 1))${NC}" >>"$TMPDIR/report.txt"
+        echo >> "$TMPDIR/report.txt"
 
     fi
 }
@@ -207,9 +237,9 @@ function CheckAuction() {
     total_bids="0"
     Is_validator_in_bid_list="false"
 
-    echo && echo '------------------------------------------------------------------'
-    echo -e "${YELLOW}Crawling trough auction order book, looking for public key ...${NC}"
-    echo '------------------------------------------------------------------' && echo && sleep 1
+    echo && echo ' ------------------------------------------------------------------'
+    echo -e " ${YELLOW}Crawling trough auction order book, looking for public key ...${NC}"
+    echo ' ------------------------------------------------------------------' && echo && sleep 1
 
     # collect auction data >tmp
     casper-client get-auction-info --node-address "http://$API:$RPC_PORT" >"$TMPDIR/tmp.auction"
@@ -250,7 +280,7 @@ function CheckAuction() {
 
         fi
 
-        echo -e "$KeyColor$bid_pub_key $BondColor$bid_amount${NC}"
+        echo -e " $KeyColor$bid_pub_key $BondColor$bid_amount${NC}"
 
         val_count=$((val_count + 1))
 
@@ -258,24 +288,24 @@ function CheckAuction() {
 
     if ! [[ "$Is_validator_in_bid_list" =~ false ]]; then
 
-        echo -e "${CYAN}Bid ${GREEN}registered${NC}${CYAN}, position ${GREEN}$validator_position_In_BidList${CYAN}, bid amount: ${YELLOW}$validator_bid_list_amount${NC}" >>"$TMPDIR/report.txt"
+        echo -e " ${CYAN}Bid ${GREEN}registered${NC}${CYAN}, position ${GREEN}$validator_position_In_BidList${CYAN}, bid amount: ${YELLOW}$validator_bid_list_amount${NC}" >>"$TMPDIR/report.txt"
 
     else
 
-        echo -e "This public key ${RED}is not${NC} in auction." >>"$TMPDIR/report.txt"
+        echo -e " This public key ${RED}is not${NC} in auction." >>"$TMPDIR/report.txt"
 
     fi
 
-    echo >>"$TMPDIR/report.txt"
-    echo -e "${CYAN}Total bids made in to acution house: ${GREEN}$total_bids${NC}" >>"$TMPDIR/report.txt"
-    echo >>"$TMPDIR/report.txt"
+    echo >> "$TMPDIR/report.txt"
+    echo -e " ${CYAN}Total bids made in to acution house: ${GREEN}$total_bids${NC}" >>"$TMPDIR/report.txt"
+    echo >> "$TMPDIR/report.txt"
 
     auction_best_bid=$(echo "scale=$show_decimals; $(cat $TMPDIR/tmp.bids | head -n1 | cut -d ' ' -f 2) / 1000000000" | bc -l)
     auction_bottom_b=$(echo "scale=$show_decimals; $(cat $TMPDIR/tmp.bids | tail -n1 | cut -d ' ' -f 2) / 1000000000" | bc -l)
 
-    echo -e "${CYAN}Best bid:${NC}   $auction_best_bid" >>"$TMPDIR/report.txt"
-    echo -e "${CYAN}Bottom bid:${NC} $auction_bottom_b" >>"$TMPDIR/report.txt"
-    echo >>"$TMPDIR/report.txt"
+    echo -e " ${CYAN}Best bid:${NC}   $auction_best_bid" >>"$TMPDIR/report.txt"
+    echo -e " ${CYAN}Bottom bid:${NC} $auction_bottom_b" >>"$TMPDIR/report.txt"
+    echo >> "$TMPDIR/report.txt"
 
 }
 
