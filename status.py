@@ -2150,7 +2150,7 @@ def main():
 
     trusted_ips = []
     try:
-        known = config.get('network', 'known_addresses').strip('[]').split(',')
+        known = config.get('network', 'known_addresses').strip('[]').replace(' ','').split(',')
         for ip in known:
             clean_ip = ip.strip('\'') if ':' not in ip else ip.strip('\'').split(':')[0]
             if clean_ip not in trusted_ips:
