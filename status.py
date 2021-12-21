@@ -351,7 +351,10 @@ def casper_deploys():
                         if param_index > 4:
                             deploy_view.addstr('{}'.format(string[:11]), curses.color_pair(highlight_color))
                         else:
-                            deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
+                            if string == '{}..{}'.format(public_key[:4], public_key[-4:]):
+                                deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(1))
+                            else:
+                                deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
 
 
                 if amount and len(params) < 6:
