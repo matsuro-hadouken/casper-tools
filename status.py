@@ -1943,7 +1943,7 @@ def casper_validator():
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
     if current_weight:
-        validator.addstr(4, 42, '<- {:.2%} yearly'.format((reward/current_weight)*12*365, 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
+        validator.addstr(4, 42, '<- {:.2%} APR'.format((reward/current_weight)*12*365, 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
 
     validator.addstr(5, 2, 'Avg Reward   : ', curses.color_pair(1))
     reward = 0
