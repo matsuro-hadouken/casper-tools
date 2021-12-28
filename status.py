@@ -351,7 +351,10 @@ def casper_deploys():
                         if param_index > 4:
                             deploy_view.addstr('{}'.format(string[:11]), curses.color_pair(highlight_color))
                         else:
-                            deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
+                            if string == '{}..{}'.format(public_key[:4], public_key[-4:]):
+                                deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(1))
+                            else:
+                                deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(highlight_color))
 
 
                 if amount and len(params) < 6:
@@ -1943,7 +1946,7 @@ def casper_validator():
         this_str = '{:,} mote'.format(int(reward))
     validator.addstr('{}'.format(this_str.rjust(longest_len, ' ')), curses.color_pair(4))
     if current_weight:
-        validator.addstr(4, 42, '<- {:.2%} yearly'.format((reward/current_weight)*12*365, 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
+        validator.addstr(4, 42, '<- {:.2%} APR'.format((reward/current_weight)*12*365, 's' if len(our_rewards)>1 else ''), curses.color_pair(1))
 
     validator.addstr(5, 2, 'Avg Reward   : ', curses.color_pair(1))
     reward = 0
