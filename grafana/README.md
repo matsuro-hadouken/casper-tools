@@ -22,9 +22,7 @@ global:
     - targets: ['127.0.0.1:8888']
 
 ```
-
-![1](https://user-images.githubusercontent.com/50751381/135534072-e0779742-e015-40ae-84fb-f61f9c49c145.png)
-![2](https://user-images.githubusercontent.com/50751381/135534083-7744f44e-8447-4d59-9237-882ade28b7f4.png)
-![3](https://user-images.githubusercontent.com/50751381/135534091-684d9354-be4f-4932-bb76-d5149374674b.png)
-![4](https://user-images.githubusercontent.com/50751381/135534097-fdb81875-7e84-4e26-98b9-77b0b51dfe6d.png)
-![5](https://user-images.githubusercontent.com/50751381/135534105-d03c968f-cc8a-4a94-83cd-73d67e9852e1.png)
+![1](https://user-images.githubusercontent.com/50751381/149851735-9133dd55-4ec8-4c9f-8bd8-1d587c7e4ae1.jpg)
+![2](https://user-images.githubusercontent.com/50751381/149851752-656da766-f0bb-40c7-9f7b-699ff57bf6d2.jpg)
+![3](https://user-images.githubusercontent.com/50751381/149851761-79fd45f0-5eb7-4f15-bab0-2f78bfbdaa93.jpg)
+![4](https://user-images.githubusercontent.com/50751381/149851764-be630051-88fd-4c01-9efe-e31081a97446.jpg)
