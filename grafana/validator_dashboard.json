@@ -1,47 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": [],
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "8.3.3"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -65,8 +22,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
-  "iteration": 1642682774103,
+  "id": 86,
+  "iteration": 1642690827802,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -86,7 +43,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -202,7 +159,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "ICqh-bUMz"
           },
           "exemplar": true,
           "expr": "avg_over_time(pending_deploy{job=\"$job\", instance=\"$instance\"}[24h])",
@@ -217,7 +174,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -333,7 +290,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "ICqh-bUMz"
           },
           "exemplar": true,
           "expr": "avg_over_time(pending_deploy{job=\"$job\", instance=\"$instance\"}[7d])",
@@ -348,7 +305,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Below 12 is where all good healthy values are. Everything above will lead to networks degradation. If current setup doesn't fit in to ecosystem requirements, please  consider migration on better hardware, key factors for now are mostly IO, enterprise grade large NVMe storage is good starting point, nevertheless modern CPU and RAM are highly appreciated and will improve performance significantly. ",
       "fieldConfig": {
@@ -407,7 +364,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "ICqh-bUMz"
           },
           "exemplar": false,
           "expr": "contract_runtime_latest_commit_step{job=\"$job\", instance=\"$instance\"}",
@@ -421,6 +378,10 @@
       "type": "gauge"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS}"
+      },
       "description": "Old method < 1.4.4\n\nThis is a histogram metric, so it averages up before we get a real value. \n\nNodes that are working well hit sub 20s. With 32.7 s blocks, the commit needs to be 60% of that to not miss a propose after the switch block.",
       "fieldConfig": {
         "defaults": {
@@ -448,7 +409,7 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "none"
         },
         "overrides": []
       },
@@ -477,10 +438,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${DS}"
           },
           "exemplar": false,
-          "expr": "(contract_runtime_commit_step_sum / contract_runtime_commit_step_count)",
+          "expr": "(contract_runtime_commit_step_sum{job=\"$job\", instance=\"$instance\"}) /  (contract_runtime_commit_step_count{job=\"$job\", instance=\"$instance\"})",
           "instant": true,
           "interval": "",
           "legendFormat": " ",
@@ -493,7 +454,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Below 12 is where all good healthy values are. Everything above will lead to networks degradation. If current setup doesn't fit in to ecosystem requirements, please  consider migration on better hardware, key factors for now are mostly IO, enterprise grade large NVMe storage is good starting point, nevertheless modern CPU and RAM are highly appreciated and will improve performance significantly. ",
       "fieldConfig": {
@@ -584,7 +545,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "ICqh-bUMz"
           },
           "exemplar": true,
           "expr": "contract_runtime_latest_commit_step{job=\"$job\", instance=\"$instance\"}",
@@ -611,7 +572,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -667,7 +628,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -723,7 +684,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -794,7 +755,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -838,7 +799,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "ICqh-bUMz"
           },
           "exemplar": false,
           "expr": "finalization_time{job=\"$job\", instance=\"$instance\"} / 1000 > 0",
@@ -854,7 +815,8 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "type": "prometheus",
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -868,15 +830,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "rgb(158, 0, 255)",
+                "color": "dark-green",
                 "value": null
               },
               {
-                "color": "#EAB839",
+                "color": "dark-blue",
                 "value": 45
               },
               {
-                "color": "dark-red",
+                "color": "dark-orange",
                 "value": 60
               }
             ]
@@ -908,13 +870,16 @@
       "pluginVersion": "8.3.3",
       "targets": [
         {
-          "exemplar": false,
-          "expr": "time() - max_over_time(timestamp(changes(amount_of_blocks{job=\"$job\", instance=\"$instance\"}[45s]) > 0)[1h:45s])",
-          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS}"
+          },
+          "exemplar": true,
+          "expr": "time() - max_over_time(timestamp(changes(time_of_last_finalized_block{job=\"$job\", instance=\"$instance\"}[45s]) > 0)[2h:1m])",
+          "hide": false,
           "interval": "",
           "legendFormat": "",
-          "queryType": "randomWalk",
-          "refId": "A"
+          "refId": "B"
         }
       ],
       "title": "Block Time(s)",
@@ -923,7 +888,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "This is a histogram metric, so it averages up before we get a real value.  This is the current best indicator of your node performance. \n\nNodes that are working well hit sub 20s. With 32.7 s blocks, the commit needs to be 60% of that to not miss a propose after the switch block.",
       "fieldConfig": {
@@ -1049,7 +1014,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${DS}"
           },
           "exemplar": false,
           "expr": "( avg_over_time(finalization_time{job=\"$job\", instance=\"$instance\"}[2h]) / 1000 ) - ( contract_runtime_commit_step_sum{job=\"$job\", instance=\"$instance\"} / contract_runtime_commit_step_count{job=\"$job\", instance=\"$instance\"} )",
@@ -1064,7 +1029,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1123,7 +1088,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1247,7 +1212,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Block flow overview",
       "fieldConfig": {
@@ -1412,7 +1377,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1540,7 +1505,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "",
       "fieldConfig": {
@@ -1644,7 +1609,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1749,7 +1714,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1864,7 +1829,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1953,7 +1918,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2042,7 +2007,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2130,7 +2095,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2213,7 +2178,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2298,7 +2263,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2392,7 +2357,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2479,7 +2444,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2573,7 +2538,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "",
       "fieldConfig": {
@@ -2645,7 +2610,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2755,7 +2720,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2846,7 +2811,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2933,7 +2898,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3048,7 +3013,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3155,7 +3120,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3260,7 +3225,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3382,7 +3347,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Alerts doesn't support variables, specify particular instances.",
       "fieldConfig": {
@@ -3475,7 +3440,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "ICqh-bUMz"
           },
           "exemplar": true,
           "expr": "peers{job=\"$job\", instance=\"$instance\"}",
@@ -3489,7 +3454,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Alerts doesn't support variables, specify particular instances.",
       "fieldConfig": {
@@ -3586,7 +3551,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Alerts doesn't support variables, specify particular instances. If less then \"n\" blocks produced in [range] send alert.",
       "fieldConfig": {
@@ -3716,7 +3681,7 @@
     },
     {
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Alerts doesn't support variables, specify particular instances.\n\nCheck if era change in [range], if not this mean we halt or validator have serious issue. We use 3 hour here as a time frame.",
       "fieldConfig": {
@@ -3864,7 +3829,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${DS}"
       },
       "description": "Alerts doesn't support variables, specify particular instances.\n\nBelow 12 is where all good healthy values are. Everything above will lead to networks degradation. If current setup doesn't fit in to ecosystem requirements, please  consider migration on better hardware, key factors for now are mostly IO, enterprise grade large NVMe storage is good starting point, nevertheless modern CPU and RAM are highly appreciated and will improve performance significantly. ",
       "fieldConfig": {
@@ -3955,7 +3920,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "ICqh-bUMz"
           },
           "exemplar": true,
           "expr": "contract_runtime_latest_commit_step{job=\"$job\", instance=\"$instance\"}",
@@ -3994,9 +3959,13 @@
         "type": "datasource"
       },
       {
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "casper",
+          "value": "casper"
+        },
         "datasource": {
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${DS}"
         },
         "definition": "label_values(job)",
         "hide": 0,
@@ -4016,9 +3985,13 @@
         "type": "query"
       },
       {
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "127.0.0.1:8888",
+          "value": "127.0.0.1:8888"
+        },
         "datasource": {
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${DS}"
         },
         "definition": "label_values(instance)",
         "hide": 0,
@@ -4040,7 +4013,7 @@
     ]
   },
   "time": {
-    "from": "now-7d",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {
@@ -4059,6 +4032,6 @@
   "timezone": "utc",
   "title": "CASPER VALIDATOR  [ GitHub ]",
   "uid": "Hm3TnQNnk",
-  "version": 76,
+  "version": 85,
   "weekStart": ""
 }
