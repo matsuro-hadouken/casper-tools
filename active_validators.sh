@@ -77,7 +77,7 @@ function GetCurrentEra() {
 
     trusted_counter=0
 
-    active_config=$(ps -ef | grep casper | grep config.toml | head -1 | awk -F" " '{print $10}' | grep -oP 'casper/\K.*?(?=/config.toml)')
+    active_config=$(ps -ef | grep casper | grep config.toml | head -1 | awk -F" " '{print $10}')
 
     if [[ "${#active_config}" -lt 3 ]]; then
       echo && echo -e " ${RED}ERROR:${NC} Can't get active configuration version from localhost, we need trusted endpoints from ${GREEN}/etc/casper/${RED}<version>${GREEN}/config.toml${NC}, terminating ..." && echo && sleep 1 && exit
@@ -91,7 +91,7 @@ function GetCurrentEra() {
 
     echo && echo -e " We believe active host config version: ${GREEN}$active_config${NC}, host era: ${GREEN}$host_era_current${NC}"
 
-    read -r -a trustedHosts < <(echo $(cat /etc/casper/$active_config/config.toml | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
+    read -r -a trustedHosts < <(echo $(cat $active_config | grep 'known_addresses = ' | grep -E -o "$IPv4_STRING"))
 
     for seed_ip in "${trustedHosts[@]}"; do
 
