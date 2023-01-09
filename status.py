@@ -340,7 +340,7 @@ def casper_deploys():
                         elif len(param) > param_area_size:
                             param = '{}..{}'.format(param[:param_clip], param[-param_clip:])
                         if param_index > 4:
-                            deploy_view.addstr('{}: '.format(param), curses.color_pair(base_color))
+                            deploy_view.addstr('{}: '.format(param[:len(param)]), curses.color_pair(base_color))
                         else:
                             deploy_view.addstr('{}: '.format(param.rjust(param_area_size,' ')[:param_area_size]), curses.color_pair(base_color))
 
@@ -349,7 +349,7 @@ def casper_deploys():
                         elif len(string) > 11:
                             string = '{}..{}'.format(string[:5], string[-4:])
                         if param_index > 4:
-                            deploy_view.addstr('{}'.format(string[:11]), curses.color_pair(highlight_color))
+                            deploy_view.addstr('{}'.format(string[:len(string)]), curses.color_pair(highlight_color))
                         else:
                             if string == '{}..{}'.format(public_key[:4], public_key[-4:]):
                                 deploy_view.addstr('{}'.format(string.ljust(11,' '))[:11], curses.color_pair(1))
