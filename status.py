@@ -328,7 +328,8 @@ def casper_deploys():
                     if param == 'amount':
                         amount = int(params[param]) / 1000000000
                     else:
-                        deploy_view.addstr(' / ', curses.color_pair(4))
+#                        deploy_view.addstr(' / ', curses.color_pair(4))
+                        deploy_view.addstr(' / ')
                         string = str(params[param])
 
                         if param == 'delegation_rate':
@@ -340,7 +341,8 @@ def casper_deploys():
                         elif len(param) > param_area_size:
                             param = '{}..{}'.format(param[:param_clip], param[-param_clip:])
                         if param_index > 4:
-                            deploy_view.addstr('{}: '.format(param[:len(param)]), curses.color_pair(base_color))
+#                            deploy_view.addstr('{}: '.format(param[:len(param)]), curses.color_pair(base_color))
+                            deploy_view.addstr('{}: '.format(param), curses.color_pair(base_color))
                         else:
                             deploy_view.addstr('{}: '.format(param.rjust(param_area_size,' ')[:param_area_size]), curses.color_pair(base_color))
 
