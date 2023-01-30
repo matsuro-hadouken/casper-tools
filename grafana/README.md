@@ -6,7 +6,7 @@ _Update: New performance metric introduced in 1.4.4 implemented, bug fixes and U
 
 * _Casper validator serve metrics by default at `127.0.0.1:8888/metrics`_
 
-* _Grafana version: 8.3.3_ **[ MANDATORY UPGRADE IF CURRENT IS ABOVE 8.x.x CRITICAL SECURITY VULNURABILITY FIX !!! ]**
+* _Grafana version: >= 8.3.3_ **[ MANDATORY UPGRADE IF CURRENT IS ABOVE 8.x.x CRITICAL SECURITY VULNURABILITY FIX !!! ]**
 
 * _Grafana alerts system doesn't support variables, examples included, but should be set on specific target manualy._
 
