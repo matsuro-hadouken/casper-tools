@@ -675,7 +675,7 @@ class ProposerTask:
             time.sleep(1)
 
             try:
-                block_info = json.loads(os.popen("/opt/casper-client-rs/target/release/casper-client get-block").read())
+                block_info = json.loads(os.popen("casper-client get-block").read())
                 currentProposerBlock = int(
                     block_info["result"]["block"]["header"]["height"]
                 )
@@ -692,7 +692,7 @@ class ProposerTask:
             try:
                 block_info = json.loads(
                     os.popen(
-                        "/opt/casper-client-rs/target/release/casper-client get-block -b {}".format(currentProposerBlock)
+                        "casper-client get-block -b {}".format(currentProposerBlock)
                     ).read()
                 )
                 proposer = block_info["result"]["block"]["body"]["proposer"].strip('"')
@@ -716,7 +716,7 @@ class ProposerTask:
                 if transfers:
                     transfer = json.loads(
                         os.popen(
-                            "/opt/casper-client-rs/target/release/casper-client get-block-transfers -b {}".format(
+                            "casper-client get-block-transfers -b {}".format(
                                 currentProposerBlock
                             )
                         ).read()
@@ -749,7 +749,7 @@ class ProposerTask:
 
 def getEraInfo(block, currentEra, update_globals):
     block_info = json.loads(
-        os.popen("/opt/casper-client-rs/target/release/casper-client get-era-summary -b {}".format(block)).read()
+        os.popen("casper-client get-era-summary -b {}".format(block)).read()
     )
     summary = block_info["result"]["era_summary"]
     if summary != None:
@@ -818,7 +818,7 @@ class EraTask:
             time.sleep(1)
 
             try:
-                block_info = json.loads(os.popen("/opt/casper-client-rs/target/release/casper-client get-block").read())
+                block_info = json.loads(os.popen("casper-client get-block").read())
                 currentBlock = int(block_info["result"]["block"]["header"]["height"])
                 currentEra = int(block_info["result"]["block"]["header"]["era_id"])
                 era_block_start[currentEra] = currentBlock
@@ -1140,7 +1140,7 @@ def ProcessDeploy(deploys, height):
         for deploy in deploys:
             deploy = deploy.strip('"')
             d = json.loads(
-                os.popen("/opt/casper-client-rs/target/release/casper-client get-deploy {}".format(deploy)).read()
+                os.popen("casper-client get-deploy {}".format(deploy)).read()
             )
             payment = d["result"]["deploy"]["payment"]
             session = d["result"]["deploy"]["session"]
@@ -2126,7 +2126,6 @@ def casper_block_info():
     avg_num_blocks = (3600 * 2) / avg_rnd_time
     block_percent = 1
     number_blocks = 0
-
     if local_era in era_block_start and local_era - 1 in era_block_start:
         number_blocks = era_block_start[local_era] - era_block_start[local_era - 1]
         block_percent = int(
@@ -2255,7 +2254,7 @@ def casper_public_key():
     pub_key_win.addstr(2, 2, "Balance      : ", curses.color_pair(1))
 
     try:
-        block_info = json.loads(os.popen("/opt/casper-client-rs/target/release/casper-client get-block").read())
+        block_info = json.loads(os.popen("casper-client get-block").read())
         header_info = block_info["result"]["block"]["header"]
         body_info = block_info["result"]["block"]["body"]
         lfb_root = header_info["state_root_hash"]
@@ -2271,7 +2270,7 @@ def casper_public_key():
         if transfers:
             transfer = json.loads(
                 os.popen(
-                    "/opt/casper-client-rs/target/release/casper-client get-block-transfers -b {}".format(currentBlock)
+                    "casper-client get-block-transfers -b {}".format(currentBlock)
                 ).read()
             )
             transfers = transfer["result"]["transfers"]
@@ -2289,7 +2288,7 @@ def casper_public_key():
         if purse_uref == 0:
             query_state = json.loads(
                 os.popen(
-                    '/opt/casper-client-rs/target/release/casper-client  query-state -k "{}" -s "{}"'.format(
+                    'casper-client  query-state -k "{}" -s "{}"'.format(
                         public_key, lfb_root
                     )
                 ).read()
@@ -2298,7 +2297,7 @@ def casper_public_key():
 
         balance_json = json.loads(
             os.popen(
-                '/opt/casper-client-rs/target/release/casper-client get-balance --purse-uref "{}" --state-root-hash "{}"'.format(
+                'casper-client get-balance --purse-uref "{}" --state-root-hash "{}"'.format(
                     purse_uref, lfb_root
                 )
             ).read()
@@ -2358,7 +2357,7 @@ def casper_validator():
         current_weights = dict()
         future = dict()
 
-        auction_info = json.loads(os.popen("/opt/casper-client-rs/target/release/casper-client get-auction-info").read())
+        auction_info = json.loads(os.popen("casper-client get-auction-info").read())
         auction_info = auction_info["result"]["auction_state"]
         bid_info = auction_info["bids"]
 
