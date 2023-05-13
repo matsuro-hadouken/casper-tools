@@ -1,11 +1,25 @@
 #!/usr/bin/python3
-import sys, os, curses, json, time, select, random, threading, urllib.request, contextlib
-from datetime import datetime, timedelta
+import curses
+import getopt
+import json
+import math
+import os
+import platform
+import random
+import re
+import select
+import subprocess
+import sys
+import threading
+import time
 from collections import namedtuple
 from configparser import ConfigParser
-import platform, subprocess, re, getopt
-import requests, hmac, hashlib, base64
-import math
+from datetime import datetime, timedelta
+
+import base64
+import hashlib
+import hmac
+import requests
 
 peer_blacklist = []
 peer_wrong_chain = []
@@ -416,7 +430,7 @@ def casper_deploys():
                                 param[:param_clip], param[-param_clip:]
                             )
                         if param_index > 4:
-                            #                            deploy_view.addstr('{}: '.format(param[:len(param)]), curses.color_pair(base_color))
+                            # deploy_view.addstr('{}: '.format(param[:len(param)]), curses.color_pair(base_color))
                             deploy_view.addstr(
                                 "{}: ".format(param), curses.color_pair(base_color)
                             )
@@ -499,6 +513,7 @@ def casper_bonds():
     text_width = box_width - 17  # length of the Text before it gets printed
     bonds.addstr(0, 2, "Casper Bond Info", curses.color_pair(4))
 
+    # TODO: Replace this, it's slow and ugly.
     try:
         bids = auction_info["bids"]
         for item in bids:
@@ -1694,7 +1709,7 @@ def casper_peers():
         peers.addstr("Waiting to Scan", curses.color_pair(5))
 
     try:
-        num_peers = len(local_status["peers"])
+        num_peers = len(len(local_status["peers"]))
     except:
         num_peers = 0
 
@@ -1993,13 +2008,13 @@ def casper_block_info():
     previous_peer = peer_address
 
     try:
-        peer_to_use_as_global = random.choice(local_status["peers"])
+        peer_to_use_as_global = sys_random.choice(local_status["peers"])
         peer_address = peer_to_use_as_global["address"].split(":")[0]
         if peer_address in peer_blacklist or peer_address in peer_wrong_chain:
             peer_address = previous_peer
     except:
         try:
-            peer_address = random.choice(trusted_ips)
+            peer_address = sys_random.choice(trusted_ips)
         except:
             peer_address = previous_peer
 
@@ -2755,8 +2770,8 @@ def main():
     except:
         pass
 
-    global random
-    random = random.SystemRandom()
+    global sys_random
+    sys_random = random.SystemRandom()
 
     global localhost
     localhost = "localhost"
