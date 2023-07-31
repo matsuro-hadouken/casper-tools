@@ -30,6 +30,9 @@ peer_scan_dict = dict()
 peer_scan_running = False
 peer_scan_last_run = None 
 our_era_rewards = dict()
+available_min = 0
+available_max = 0
+historical_block_height= 0
 
 millnames = ['',' K',' M',' B',' T']
 
@@ -341,8 +344,7 @@ def casper_deploys():
                         elif len(param) > param_area_size:
                             param = '{}..{}'.format(param[:param_clip], param[-param_clip:])
                         if param_index > 4:
-#                            deploy_view.addstr('{}: '.format(param[:len(param)]), curses.color_pair(base_color))
-                            deploy_view.addstr('{}: '.format(param), curses.color_pair(base_color))
+                            deploy_view.addstr('{}: '.format(param[:10]), curses.color_pair(1))
                         else:
                             deploy_view.addstr('{}: '.format(param.rjust(param_area_size,' ')[:param_area_size]), curses.color_pair(base_color))
 
@@ -1571,6 +1573,10 @@ def casper_block_info():
             local_era = last_added_block_info['era_id']
         except:
             local_era = 0
+        try:
+            reactor_state= local_status['reactor_state']
+        except:
+            reactor_state = 'null'
     except:
         global_height = 0
         local_height = 'null'
@@ -1583,6 +1589,7 @@ def casper_block_info():
         local_era = 0
         local_chainspe = 'null'
         last_block_time = 0
+        reactor_state = 'null'
 
     global peer_address
     previous_peer = peer_address
@@ -1723,7 +1730,34 @@ def casper_block_info():
     block_info.addstr(index, 2, 'Proposer     : ', curses.color_pair(1))
     block_info.addstr('{}...{}'.format(current_proposer[:24],current_proposer[-24:]), curses.color_pair(4 if current_proposer != public_key else 5))
 
-    index += 2
+    index += 1
+    block_info.addstr(index, 2, 'Reactor State: ', curses.color_pair(1))
+    block_info.addstr('{}'.format(reactor_state), curses.color_pair(5 if reactor_state == 'CatchUp' else 4))
+    block_info.addstr(index, 34, 'Available Range: ', curses.color_pair(1))
+    block_info.addstr('{} - {}'.format(available_min,available_max), curses.color_pair(4))
+
+    historical_block_height= 0
+    try:
+        block_sync = local_status['block_sync']
+
+        try:
+            historical = block_sync['historical']
+            try:
+                historical_block_height = historical['block_height']
+            except:
+                historical_block_height= 0
+        except:
+            historical_block_height = 0
+
+    except:
+        historical_block_height = 0
+
+    if historical_block_height > 0:
+        global_events['hist_blck_hght'] = historical_block_height
+    else:
+        global_events.pop('hist_blck_hght')
+
+    index += 1
     block_info.addstr(index, 2, 'Chain Name   : ', curses.color_pair(1))
     block_info.addstr('{}'.format(chain_name), curses.color_pair(4))
     block_info.addstr(index, 34, 'Starting Hash : ', curses.color_pair(1))
@@ -1846,6 +1880,22 @@ def casper_validator():
             local_era = 0
     except:
         local_era = 0
+
+    try:
+        available_block_range = local_status['available_block_range']
+
+        try:
+            available_min = available_block_range['low']
+        except:
+            available_min = 0
+
+        try:
+            available_max = available_block_range['high']
+        except:
+            available_max = 0
+    except:
+        available_min = 0
+        available_max = 0
 
     current_era = future_era = 0
     current_weight = future_weight = 0
@@ -2035,7 +2085,7 @@ def draw_menu(casper):
     global blink
     blink = False
     
-    config.read('/etc/casper/1_0_0/chainspec.toml')
+    config.read(config_file.replace('config', 'chainspec'))
     global validator_slots
     validator_slots = config.get('core', 'validator_slots').strip('\'')
 
