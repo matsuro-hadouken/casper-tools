@@ -1805,7 +1805,11 @@ def casper_block_info():
         block_info.addstr(each_char, curses.color_pair(7 if string_start_x+char_index < 34 + num_blocks else 3))
         char_index += 1
 
-    index += 2
+    index += 1
+    block_info.addstr(index, 2, 'Speculative  : ', curses.color_pair(1))
+    block_info.addstr('{}'.format(speculative_exec_server), curses.color_pair(5))
+
+    index += 1
     block_info.addstr(index, 2, 'Config File  : ', curses.color_pair(1))
     block_info.addstr('{}'.format(config_file), curses.color_pair(4))
 
@@ -2086,7 +2090,16 @@ def draw_menu(casper):
     
     config.read(config_file.replace('config', 'chainspec'))
     global validator_slots
-    validator_slots = config.get('core', 'validator_slots').strip('\'')
+    try:
+        validator_slots = config.get('core', 'validator_slots').strip('\'')
+    except:
+        validator_slots = 100
+
+    global speculative_exec_server
+    try:
+        speculative_exec_server = config.get('speculative_exec_server', 'enable_server')
+    except:
+        speculative_exec_server = False
 
     global cpu_cores
     cpu_cores = os.cpu_count()
@@ -2175,7 +2188,7 @@ def main():
     config_file = '/etc/casper/1_0_0/config.toml'
 
     try:
-        config_file = os.popen('ps -ef | grep casper | grep config.toml | head -1 | awk -F" " \'{print $10}\'').read().split('\n')[0]
+        config_file = os.popen('ps -ef | grep casper-node | grep config.toml | head -1 | awk -F" " \'{print $10}\'').read().split('\n')[0]
     except:
         pass
 
