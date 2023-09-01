@@ -2088,10 +2088,10 @@ def draw_menu(casper):
     global blink
     blink = False
     
-    config.read(config_file.replace('config', 'chainspec'))
+    chainspec.read(config_file.replace('config', 'chainspec'))
     global validator_slots
     try:
-        validator_slots = config.get('core', 'validator_slots').strip('\'')
+        validator_slots = chainspec.get('core', 'validator_slots').strip('\'')
     except:
         validator_slots = 100
 
@@ -2182,6 +2182,9 @@ def main():
 
     global config
     config = ConfigParser()
+
+    global chainspec
+    chainspec = ConfigParser()
 
     global node_path
     global config_file
