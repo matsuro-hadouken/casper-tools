@@ -54,7 +54,7 @@ def run():
 
     block_info = json.loads(os.popen('casper-client get-block').read())
     currentProposerBlock = int(block_info['result']['block']['header']['height'])
-    lastBlock = currentProposerBlock - (1319 * 60) # 60 is the max days to search back (in case we're on the last day of the month and need to go back to the 1st of last month)
+    lastBlock = currentProposerBlock - (2600 * 60) # 60 is the max days to search back (in case we're on the last day of the month and need to go back to the 1st of last month)
     if lastBlock < 0:
         lastBlock = 0
 
@@ -100,7 +100,7 @@ def run():
     lastDayBlock = 0
     firstDayBlock = 0
     while currentProposerBlock >= 0 and firstDayBlock == 0:
-        currentProposerBlock -= 1319
+        currentProposerBlock -= 2600
         if currentProposerBlock < 1:
             currentProposerBlock = 0
         print("\rScanning...", currentProposerBlock, end =" ")
@@ -120,7 +120,7 @@ def run():
                         break
                 print("\rFound  1ast block for {} at ".format(lastDayMonth), lastDayBlock)
             elif event_time.date() == firstDayMonth:
-                currentProposerBlock -= 1319
+                currentProposerBlock -= 2600
                 if currentProposerBlock < 1:
                     currentProposerBlock = -1
                 while True:
@@ -323,7 +323,7 @@ try:
     if not ver:
         notFound(None)
     ver = ver.split()
-    if int(ver[2].replace('.', '')) < 132:
+    if int(ver[2].replace('.', '').split('-')[0]) < 132:
         notFound(ver[2])
 
 except:
