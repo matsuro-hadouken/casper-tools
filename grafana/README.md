@@ -1,4 +1,4 @@
-#### CASPER NODE DASHBOARD
+#### [CASPER NODE](https://github.com/casper-network) DASHBOARD
 
 _**Update:** Current release state is approach to adopt breaking changes in v1.5.2_
 
@@ -61,3 +61,5 @@ To update the regex, follow these steps:
 #### Get help
 
 Support available in Discord and Telegram dedicated chats
+
+[Casper Network GitHub Repository](https://github.com/casper-network)
