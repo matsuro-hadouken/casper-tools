@@ -1,10 +1,10 @@
 #### [CASPER NODE](https://github.com/casper-network) DASHBOARD
 
-_**Update:** Current release state is approach to adopt breaking changes in v1.5.2_
+_**Update:** Current release state is approach to adopt breaking changes in v1.5.6_
 
-* _Casper node serves metrics by default on `http://127.0.0.1:8888/metrics`_
+* _Casper node serves metrics by default on `curl -s http://127.0.0.1:8888/metrics`_
 
-* _Grafana version: >= **v10.1.5** ( Please keep your instance up to date )_
+* _Grafana version: >= **v10.3.1** ( Please keep your instance up to date )_
 
 * _Grafana **alerts system doesn't support variables**, examples included, but should be set on specific target manualy !_
 
@@ -25,19 +25,12 @@ global:
     static_configs:
     - targets: ['127.0.0.1:8888']
       labels:
-        alias: 'Casper Node'
+        alias: 'Casper Archive LA 1'
         instance: my-casper-us-1
 
 ```
 
 #### Dashboard integration:
-
-**With Grafana repository universal ID:**
-
-* In Grafana UI go to **Dashboards**
-* Click **New** to reveal menue
-* Copy paste current dashboard ID **`19447`** In the field `Import via grafana.com`
-* Click **Load**
 
 **With provided json from this repository:**
 
@@ -49,7 +42,7 @@ global:
 
 #### Troubleshooting
 
-In the Grafana dashboard configuration, the regular expression (regex) is currently set to match any sources that contain the string `cas` _(case sensitive)_. If you need to modify this behavior, you can change the regex value in the dashboard's variables settings.
+In the Grafana dashboard configuration, the regular expression (regex) is currently set to match any sources that contain the string `cas`. If you need to modify this behavior, you can change the regex value in the dashboard's variables settings.
 
 To update the regex, follow these steps:
 
@@ -60,6 +53,6 @@ To update the regex, follow these steps:
 
 #### Get help
 
-Support available in Discord and Telegram dedicated chats
+Support available in ~~Discord and ( RIP )~~ [Telegram Dedicated Chat](https://t.me/CasperTestNet)
 
 [Casper Network GitHub Repository](https://github.com/casper-network)
