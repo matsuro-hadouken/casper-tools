@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import sys,os,curses,json,time,select,random,threading,urllib.request,contextlib
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,timezone
 from collections import namedtuple
 from configparser import ConfigParser
 import platform,subprocess,re,getopt
@@ -710,7 +710,7 @@ class ScanValidatorsTask:
  #           global_events['scan_time'] = end - start
 
             peer_scan_running = False
-            peer_scan_last_run = datetime.utcnow()
+            peer_scan_last_run = datetime.now(timezone.utc)
 
             time.sleep(900)
 
@@ -969,7 +969,7 @@ class EventTask:
 
         CHUNK = 6 * 1024
         partial_line = ""
-        last_block_time = datetime.utcnow() + timedelta(seconds=65)
+        last_block_time = datetime.now(timezone.utc) + timedelta(seconds=65)
         last_height = 0
         StepEvents = False
 
@@ -1018,7 +1018,7 @@ class EventTask:
                                 continue
 
                             if key == 'BlockAdded':
-                                round_time = datetime.utcnow()
+                                round_time = datetime.now(timezone.utc)
                                 event_time = datetime.strptime(json_str[key]['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
                                 last_height = int(json_str[key]['block']['header']['height'])
 
@@ -1338,7 +1338,7 @@ def casper_peers():
     if peer_scan_running:
         peers.addstr('Scanning Peers', curses.color_pair(5))
     elif peer_scan_last_run != None:
-        elapsed = 900 - (datetime.utcnow() - peer_scan_last_run).total_seconds()
+        elapsed = 900 - (datetime.now(timezone.utc) - peer_scan_last_run).total_seconds()
         minutes = int(elapsed / 60)
         seconds = int(elapsed % 60)
         peers.addstr('Next scan in ~{}m {:02}s'.format(minutes, seconds), curses.color_pair(5))
@@ -1506,7 +1506,7 @@ def casper_launcher():
             os.execv(sys.argv[0], sys.argv)
         launcher.addstr(1, 2, 'Casper-Node-Launcher not running', curses.color_pair(2))
 
-    dt = datetime.utcnow()
+    dt = datetime.now(timezone.utc)
     launcher.addstr(1, 38, 'Time: ', curses.color_pair(1))
     launcher.addstr('{} UTC'.format(dt.strftime("%Y-%m-%d %H:%M:%S")), curses.color_pair(5))
 
@@ -1649,8 +1649,8 @@ def casper_block_info():
     global avg_rnd_time
 
     if not has_been_active:
-        round_time = datetime.utcnow()
-    elapsed = datetime.utcnow() - round_time
+        round_time = datetime.now(timezone.utc)
+    elapsed = datetime.now(timezone.utc) - round_time
     number_seconds = elapsed.total_seconds()
     round_percent = (number_seconds/avg_rnd_time)*100
     minutes = int(number_seconds/60)
@@ -1688,7 +1688,7 @@ def casper_block_info():
         block_percent = int((era_block_start[local_era]-era_block_start[local_era-1])/avg_num_blocks*100)
 
     if next_upgrade:
-        elapsed = datetime.utcnow() - round_time
+        elapsed = datetime.now(timezone.utc) - round_time
         eras_left = next_era_upgrade - local_era - 1
         block_left = int(avg_num_blocks - number_blocks)
         number_seconds = int(eras_left * (2*60*60) + (block_left * avg_rnd_time) + (avg_rnd_time - elapsed.total_seconds()))
@@ -2235,7 +2235,7 @@ def main():
     localhost = 'localhost'
 
     global round_time
-    round_time = datetime.utcnow()
+    round_time = datetime.now(timezone.utc)
     global avg_rnd_time
     avg_rnd_time = 16.384
 
