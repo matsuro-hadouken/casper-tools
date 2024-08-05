@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import sys,os,curses,json,time,select,random,threading,urllib.request,contextlib
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,timezone
 from collections import namedtuple
 from configparser import ConfigParser
 import platform,subprocess,re,getopt
@@ -25,20 +25,20 @@ num_decimals = 2
 
 def checkBalance(block):
     pass
-    block_info = json.loads(os.popen('casper-client get-block -b {}'.format(block)).read())
+    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(block)).read())
     state_root = block_info['result']['block']['header']['state_root_hash']
     
-    query_state = json.loads(os.popen('casper-client query-state -k {} -s {}'.format(public_key, state_root)).read())
+    query_state = json.loads(os.popen('casper-client query-state -k {} -s {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(public_key, state_root)).read())
     main_purse = query_state['result']['stored_value']['Account']['main_purse']
 
-    balance_info = json.loads(os.popen('casper-client get-balance --purse-uref {} --state-root-hash {}'.format(main_purse, state_root)).read())
+    balance_info = json.loads(os.popen('casper-client get-balance --purse-uref {} --state-root-hash {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(main_purse, state_root)).read())
     balance = balance_info['result']['balance_value']
     return int(balance)
 
 #-------------------------------------------------------
 
 def getAuctionInfo(block):
-    auction_info = json.loads(os.popen('casper-client get-auction-info -b {}'.format(block)).read())
+    auction_info = json.loads(os.popen('casper-client get-auction-info -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(block)).read())
     auction_info = auction_info['result']['auction_state']
     bid_info = auction_info['bids']
 
@@ -52,17 +52,14 @@ def getAuctionInfo(block):
 
 def run():
 
-    block_info = json.loads(os.popen('casper-client get-block').read())
+    block_info = json.loads(os.popen('casper-client get-block --node-address https://rpc.mainnet.casperlabs.io/rpc').read())
     currentProposerBlock = int(block_info['result']['block']['header']['height'])
-    lastBlock = currentProposerBlock - (2600 * 60) # 60 is the max days to search back (in case we're on the last day of the month and need to go back to the 1st of last month)
-    if lastBlock < 0:
-        lastBlock = 0
 
     print('\nAll data is gathered at the beginning of each day, and then a final entry is on the last day @11:59pm\n(so you can see total earning from Midnight on first day to Midnight on last day)')
     print("\nCasper Blockchain is currently at Block:", currentProposerBlock)
     print("\nUsing Public Key", public_key)
 
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     first = today.replace(day=1)
     lastDayMonth = first - timedelta(days=1)
     firstDayMonth = lastDayMonth.replace(day=1)
@@ -100,19 +97,19 @@ def run():
     lastDayBlock = 0
     firstDayBlock = 0
     while currentProposerBlock >= 0 and firstDayBlock == 0:
-        currentProposerBlock -= 2600
+        currentProposerBlock -= 400
         if currentProposerBlock < 1:
             currentProposerBlock = 0
         print("\rScanning...", currentProposerBlock, end =" ")
         try:
-            block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
+            block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
             event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
             if lastDayBlock == 0 and event_time.date() == lastDayMonth:
                 lastDayBlock = currentProposerBlock
                 while True:
                     currentProposerBlock += 1
                     print("\rScanning...", currentProposerBlock, end =" ")
-                    block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
+                    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
                     event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
                     if event_time.date() == lastDayMonth:
                         lastDayBlock = currentProposerBlock
@@ -120,13 +117,13 @@ def run():
                         break
                 print("\rFound  1ast block for {} at ".format(lastDayMonth), lastDayBlock)
             elif event_time.date() == firstDayMonth:
-                currentProposerBlock -= 2600
+                currentProposerBlock -= 5300
                 if currentProposerBlock < 1:
                     currentProposerBlock = -1
                 while True:
                     currentProposerBlock += 1
                     print("\rScanning...", currentProposerBlock, end =" ")
-                    block_info = json.loads(os.popen('casper-client get-block -b {}'.format(currentProposerBlock)).read())
+                    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
                     event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
                     if event_time.date() == firstDayMonth or (event_time.date() > firstDayMonth and currentProposerBlock == 0):
                         firstDayBlock = currentProposerBlock
@@ -143,6 +140,8 @@ def run():
         except:
             pass
 
+    print("\nDone Searching")
+
     if output_file != None:
         f = open(output_file, 'w')
         writer = csv.writer(f)
@@ -152,10 +151,13 @@ def run():
     startMonth = firstDayMonth
     startBlock = firstDayBlock
 
+    print("Checking Balance...")
     firstBalance = checkBalance(startBlock)
+    print("Getting Auction Info...")
     firstAuction = getAuctionInfo(startBlock)
 
-    block_info = json.loads(os.popen('casper-client get-block -b {}'.format(startBlock)).read())
+    print("Getting Block Info {}".format(startBlock))
+    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
     event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
 
     print("\n\n")
@@ -168,38 +170,45 @@ def run():
 
     while startMonth < lastDayMonth:
         if startBlock != 0:
-            startBlock += 1300
+            startBlock += int(5200)
         startMonth += timedelta(days=1)
         loop = -1
         while True:
             startBlock += 1
             loop += 1
-            block_info = json.loads(os.popen('casper-client get-block -b {}'.format(startBlock)).read())
+            print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, end =" ")
+            block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(int(startBlock))).read())
             event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
             if event_time.date() == startMonth:
                 if loop == 0:
                     while event_time.date() == startMonth:
                         # then we went too far... skip backward to find the first block of the day
                         startBlock -= 1
-                        block_info = json.loads(os.popen('casper-client get-block -b {}'.format(startBlock)).read())
+                        print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, end =" ")
+                        block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
                         event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
 
                     startBlock += 1
-                    block_info = json.loads(os.popen('casper-client get-block -b {}'.format(startBlock)).read())
+                    print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, end =" ")
+                    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
                     event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
 
+                print("\rChecking Balance...            ", end =" ")
                 balance = checkBalance(startBlock)
+                print("\rGetting Auction Info...", end =" ")
                 auction = getAuctionInfo(startBlock)
-                print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, round(balance/1000000000,num_decimals), round(auction/1000000000,num_decimals), round((balance+auction)/1000000000),num_decimals))
+                print("\r                                                                                     \r{}\t{}\t{:.2f} CSPR\t{:.2f} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, round(balance/1000000000,num_decimals), round(auction/1000000000,num_decimals), round((balance+auction)/1000000000),num_decimals))
                 if output_file != None:
                     data = [event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, balance/1000000000, auction/1000000000, (balance+auction)/1000000000]
                     writer.writerow(data)
+                break;
+            elif event_time.date() > startMonth:
                 break;
 
     lastBalance = checkBalance(lastDayBlock)
     lastAuction = getAuctionInfo(lastDayBlock)
 
-    block_info = json.loads(os.popen('casper-client get-block -b {}'.format(lastDayBlock)).read())
+    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(lastDayBlock)).read())
     event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
 
     print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format("{}".format(event_time.strftime("%Y-%m-%d %H:%M:%S")), lastDayBlock, round(lastBalance/1000000000,num_decimals), round(lastAuction/1000000000,num_decimals), round((lastBalance+lastAuction)/1000000000),num_decimals))
