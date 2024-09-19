@@ -24,26 +24,46 @@ num_decimals = 2
 #-------------------------------------------------------
 
 def checkBalance(block):
-    pass
-    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(block)).read())
-    state_root = block_info['result']['block']['header']['state_root_hash']
+    while True:
+        try:
+            block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(block)).read())
+            state_root = block_info['result']['block']['header']['state_root_hash']
+            break
+        except:
+            pass
     
-    query_state = json.loads(os.popen('casper-client query-state -k {} -s {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(public_key, state_root)).read())
-    main_purse = query_state['result']['stored_value']['Account']['main_purse']
+    while True:
+        try:
+            query_state = json.loads(os.popen('casper-client query-state -k {} -s {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(public_key, state_root)).read())
+            main_purse = query_state['result']['stored_value']['Account']['main_purse']
+            break
+        except:
+            pass
 
-    balance_info = json.loads(os.popen('casper-client get-balance --purse-uref {} --state-root-hash {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(main_purse, state_root)).read())
-    balance = balance_info['result']['balance_value']
+    while True:
+        try:
+            balance_info = json.loads(os.popen('casper-client get-balance --purse-uref {} --state-root-hash {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(main_purse, state_root)).read())
+            balance = balance_info['result']['balance_value']
+            break
+        except:
+            pass
+
     return int(balance)
 
 #-------------------------------------------------------
 
 def getAuctionInfo(block):
-    auction_info = json.loads(os.popen('casper-client get-auction-info -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(block)).read())
-    auction_info = auction_info['result']['auction_state']
-    bid_info = auction_info['bids']
+    while True:
+        try:
+            auction_info = json.loads(os.popen('casper-client get-auction-info -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(block)).read())
+            auction_info = auction_info['result']['auction_state']
+            bid_info = auction_info['bids']
+            break
+        except:
+            pass
 
     for item in bid_info:
-        key = item['public_key'].strip("\"");
+        key = item['public_key'].strip("\"")
         value = int(item['bid']['staked_amount'].strip("\""))
         if key == public_key:
             return int(value)
@@ -52,8 +72,14 @@ def getAuctionInfo(block):
 
 def run():
 
-    block_info = json.loads(os.popen('casper-client get-block --node-address https://rpc.mainnet.casperlabs.io/rpc').read())
-    currentProposerBlock = int(block_info['result']['block']['header']['height'])
+    while True:
+        try:
+            block_info = json.loads(os.popen('casper-client get-block --node-address https://rpc.mainnet.casperlabs.io/rpc').read())
+            currentProposerBlock = int(block_info['result']['block']['header']['height'])
+            event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+            break
+        except:
+            pass
 
     print('\nAll data is gathered at the beginning of each day, and then a final entry is on the last day @11:59pm\n(so you can see total earning from Midnight on first day to Midnight on last day)')
     print("\nCasper Blockchain is currently at Block:", currentProposerBlock)
@@ -63,6 +89,9 @@ def run():
     first = today.replace(day=1)
     lastDayMonth = first - timedelta(days=1)
     firstDayMonth = lastDayMonth.replace(day=1)
+
+    if event_time.date() > lastDayMonth:
+        currentProposerBlock -= (event_time.day -1) * 5300
 
     if start_day != None:
         a,z = calendar.monthrange(firstDayMonth.year, firstDayMonth.month)
@@ -96,11 +125,14 @@ def run():
 
     lastDayBlock = 0
     firstDayBlock = 0
+    retryMessage = ""
+    blockAmount = 100
     while currentProposerBlock >= 0 and firstDayBlock == 0:
-        currentProposerBlock -= 400
+        currentProposerBlock -= blockAmount
         if currentProposerBlock < 1:
             currentProposerBlock = 0
-        print("\rScanning...", currentProposerBlock, end =" ")
+        print("\rScanning...", currentProposerBlock, event_time, retryMessage, end ="                        \r")
+        retryMessage = ""
         try:
             block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
             event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
@@ -108,37 +140,52 @@ def run():
                 lastDayBlock = currentProposerBlock
                 while True:
                     currentProposerBlock += 1
-                    print("\rScanning...", currentProposerBlock, end =" ")
-                    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
-                    event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
-                    if event_time.date() == lastDayMonth:
-                        lastDayBlock = currentProposerBlock
-                    else:
-                        break
-                print("\rFound  1ast block for {} at ".format(lastDayMonth), lastDayBlock)
+                    print("\rScanning...", currentProposerBlock, event_time.time(), retryMessage, end ="                        \r")
+                    retryMessage = ""
+                    try:
+                        block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
+                        event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                        if event_time.date() == lastDayMonth:
+                            lastDayBlock = currentProposerBlock
+                            retryMessage = ""
+                        else:
+                            blockAmount = 5000
+                            currentProposerBlock -= 27 * blockAmount
+                            break
+                    except:
+                        currentProposerBlock -= 1
+                        retryMessage = "retrying..."
+
+                print("\rFound  last block for {} at ".format(lastDayMonth), lastDayBlock, end ="                        \n")
             elif event_time.date() == firstDayMonth:
-                currentProposerBlock -= 5300
-                if currentProposerBlock < 1:
-                    currentProposerBlock = -1
+                blockAmount = 100
+            elif event_time.date() < firstDayMonth:
                 while True:
                     currentProposerBlock += 1
-                    print("\rScanning...", currentProposerBlock, end =" ")
-                    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
-                    event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
-                    if event_time.date() == firstDayMonth or (event_time.date() > firstDayMonth and currentProposerBlock == 0):
-                        firstDayBlock = currentProposerBlock
-                        firstDayMonth = event_time.date()
-                        break
-                print("\rFound first block for {} at ".format(event_time.date()), firstDayBlock)
+                    print("\rScanning...", currentProposerBlock, event_time.time(), retryMessage, end ="                        \r")
+                    retryMessage = ""
+                    try:
+                        block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(currentProposerBlock)).read())
+                        event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                        if event_time.date() == firstDayMonth or (event_time.date() > firstDayMonth and currentProposerBlock == 0):
+                            firstDayBlock = currentProposerBlock
+                            firstDayMonth = event_time.date()
+                            break
+                    except:
+                        currentProposerBlock -= 1
+                        retryMessage = "retrying..."
+                        
+                print("\rFound first block for {} at ".format(event_time.date()), firstDayBlock, end ="                        \n")
             elif currentProposerBlock == 0:
                 firstDayBlock = currentProposerBlock
                 firstDayMonth = event_time.date()
                 print("\rGenesis Block =", firstDayBlock)
                 print("\rStart Month   =", firstDayMonth)
-                break;
+                break
 
-        except:
-            pass
+        except Exception as e: 
+            currentProposerBlock += blockAmount
+            retryMessage = "retrying..."
 
     print("\nDone Searching")
 
@@ -151,17 +198,22 @@ def run():
     startMonth = firstDayMonth
     startBlock = firstDayBlock
 
-    print("Checking Balance...")
+    print("Checking Balance...                                                           ")
     firstBalance = checkBalance(startBlock)
     print("Getting Auction Info...")
     firstAuction = getAuctionInfo(startBlock)
 
     print("Getting Block Info {}".format(startBlock))
-    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
-    event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+    while True:
+        try:
+            block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
+            event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+            break
+        except:
+            print("Getting Block Info {}".format(startBlock), "retrying...")
 
     print("\n\n")
-    print("Date\tBlock\tLiquid\tAuction\tTotal")
+    print("Date\t\t\tBlock\tLiquid\t\tAuction\t\t\tTotal")
     print("{}\t{}\t{} CSPR\t{} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, round(firstBalance/1000000000,num_decimals), round(firstAuction/1000000000,num_decimals), round((firstBalance+firstAuction)/1000000000),num_decimals))
 
     if output_file != None:
@@ -174,36 +226,53 @@ def run():
         startMonth += timedelta(days=1)
         loop = -1
         while True:
-            startBlock += 1
-            loop += 1
-            print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, end =" ")
-            block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(int(startBlock))).read())
-            event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
-            if event_time.date() == startMonth:
-                if loop == 0:
-                    while event_time.date() == startMonth:
-                        # then we went too far... skip backward to find the first block of the day
-                        startBlock -= 1
-                        print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, end =" ")
-                        block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
-                        event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+            try:
+                startBlock += 1
+                loop += 1
+                print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, retryMessage, end ="                        \r")
+                retryMessage = ""
+                block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(int(startBlock))).read())
+                event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                if event_time.date() == startMonth:
+                    if loop == 0:
+                        while event_time.date() == startMonth:
+                            try:
+                                # then we went too far... skip backward to find the first block of the day
+                                startBlock -= 1
+                                print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, retryMessage, end ="                        \r")
+                                retryMessage = ""
+                                block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
+                                event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                            except:
+                                startBlock += 1
+                                retryMessage = "retrying..."
 
-                    startBlock += 1
-                    print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, end =" ")
-                    block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
-                    event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                        startBlock += 1
+                        while True:
+                            try:
+                                print("\rGetting Block Info ", int(startBlock), event_time.date(), startMonth, retryMessage, end ="                        \r")
+                                retryMessage = ""
+                                block_info = json.loads(os.popen('casper-client get-block -b {} --node-address https://rpc.mainnet.casperlabs.io/rpc'.format(startBlock)).read())
+                                event_time = datetime.strptime(block_info['result']['block']['header']['timestamp'],'%Y-%m-%dT%H:%M:%S.%fZ')
+                                break
+                            except:
+                                retryMessage = "retrying..."
 
-                print("\rChecking Balance...            ", end =" ")
-                balance = checkBalance(startBlock)
-                print("\rGetting Auction Info...", end =" ")
-                auction = getAuctionInfo(startBlock)
-                print("\r                                                                                     \r{}\t{}\t{:.2f} CSPR\t{:.2f} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, round(balance/1000000000,num_decimals), round(auction/1000000000,num_decimals), round((balance+auction)/1000000000),num_decimals))
-                if output_file != None:
-                    data = [event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, balance/1000000000, auction/1000000000, (balance+auction)/1000000000]
-                    writer.writerow(data)
-                break;
-            elif event_time.date() > startMonth:
-                break;
+                    print("\rChecking Balance...            ", end ="                              \r")
+                    balance = checkBalance(startBlock)
+                    print("\rGetting Auction Info...", end ="                        \r")
+                    auction = getAuctionInfo(startBlock)
+                    print("\r                                                                                     \r{}\t{}\t{:.2f} CSPR\t{:.2f} CSPR\t{} CSPR".format(event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, round(balance/1000000000,num_decimals), round(auction/1000000000,num_decimals), round((balance+auction)/1000000000),num_decimals))
+                    if output_file != None:
+                        data = [event_time.strftime("%Y-%m-%d %H:%M:%S"), startBlock, balance/1000000000, auction/1000000000, (balance+auction)/1000000000]
+                        writer.writerow(data)
+                    break
+                elif event_time.date() > startMonth:
+                    break
+            except:
+                startBlock -= 1
+                loop -= 1
+                retryMessage = "retrying..."
 
     lastBalance = checkBalance(lastDayBlock)
     lastAuction = getAuctionInfo(lastDayBlock)
